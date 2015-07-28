@@ -21,16 +21,25 @@ func TestGetenvUnseted(t *testing.T) {
 }
 
 type env1 struct {
-	Some string `env:"somevar"`
+	Some  string `env:"somevar"`
+	Other bool   `env:"othervar"`
+	Port  int    `env:"PORT"`
 }
 
 func TestParsesEnv(t *testing.T) {
-	key := "somevar"
-	value := "somevalue"
-	Set(key, value)
-	defer Unset(key)
+	Set("somevar", "somevalue")
+	Set("othervar", "true")
+	Set("PORT", "8080")
+
+	defer Unset("somevar")
+	defer Unset("othervar")
+	defer Unset("PORT")
+
 	env := env1{}
 	err := ParseEnv(env, &env)
+
 	assert.Nil(t, err)
-	assert.Equal(t, value, env.Some)
+	assert.Equal(t, "somevalue", env.Some)
+	assert.Equal(t, true, env.Other)
+	assert.Equal(t, 8080, env.Port)
 }

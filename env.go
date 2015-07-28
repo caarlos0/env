@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"reflect"
+	"strconv"
 )
 
 // Set alias to os.Setenv
@@ -41,7 +42,26 @@ func ParseEnv(t interface{}, v interface{}) error {
 	for i := 0; i < it.NumField(); i++ {
 		field := it.Field(i)
 		value := Get(field.Tag.Get("env"))
-		reflect.ValueOf(v).Elem().FieldByName(field.Name).SetString(value)
+		if value == "" {
+			continue
+		}
+		vfield := reflect.ValueOf(v).Elem().FieldByName(field.Name)
+		switch vfield.Kind() {
+		case reflect.String:
+			vfield.SetString(value)
+		case reflect.Bool:
+			bvalue, err := strconv.ParseBool(value)
+			if err != nil {
+				return err
+			}
+			vfield.SetBool(bvalue)
+		case reflect.Int:
+			intValue, err := strconv.ParseInt(value, 10, 32)
+			if err != nil {
+				return err
+			}
+			vfield.SetInt(intValue)
+		}
 	}
 	return nil
 }
