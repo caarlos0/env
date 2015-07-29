@@ -1,8 +1,10 @@
-package env
+package env_test
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/caarlos0/env"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,15 +17,15 @@ type Config struct {
 }
 
 func TestParsesEnv(t *testing.T) {
-	Set("somevar", "somevalue")
-	Set("othervar", "true")
-	Set("PORT", "8080")
-	defer Unset("somevar")
-	defer Unset("othervar")
-	defer Unset("PORT")
+	env.Set("somevar", "somevalue")
+	env.Set("othervar", "true")
+	env.Set("PORT", "8080")
+	defer env.Unset("somevar")
+	defer env.Unset("othervar")
+	defer env.Unset("PORT")
 
 	cfg := Config{}
-	assert.NoError(t, Parse(&cfg))
+	assert.NoError(t, env.Parse(&cfg))
 	assert.Equal(t, "somevalue", cfg.Some)
 	assert.Equal(t, true, cfg.Other)
 	assert.Equal(t, 8080, cfg.Port)
@@ -31,7 +33,7 @@ func TestParsesEnv(t *testing.T) {
 
 func TestEmptyVars(t *testing.T) {
 	cfg := Config{}
-	assert.NoError(t, Parse(&cfg))
+	assert.NoError(t, env.Parse(&cfg))
 	assert.Equal(t, "", cfg.Some)
 	assert.Equal(t, false, cfg.Other)
 	assert.Equal(t, 0, cfg.Port)
@@ -39,38 +41,49 @@ func TestEmptyVars(t *testing.T) {
 
 func TestPassAnInvalidPtr(t *testing.T) {
 	var thisShouldBreak int
-	assert.Error(t, Parse(&thisShouldBreak))
+	assert.Error(t, env.Parse(&thisShouldBreak))
 }
 
 func TestPassReference(t *testing.T) {
 	cfg := Config{}
-	assert.Error(t, Parse(cfg))
+	assert.Error(t, env.Parse(cfg))
 }
 
 func TestInvalidBool(t *testing.T) {
-	Set("othervar", "should-be-a-bool")
-	defer Unset("othervar")
+	env.Set("othervar", "should-be-a-bool")
+	defer env.Unset("othervar")
 
 	cfg := Config{}
-	assert.Error(t, Parse(&cfg))
+	assert.Error(t, env.Parse(&cfg))
 }
 
 func TestInvalidInt(t *testing.T) {
-	Set("PORT", "should-be-an-int")
-	defer Unset("PORT")
+	env.Set("PORT", "should-be-an-int")
+	defer env.Unset("PORT")
 
 	cfg := Config{}
-	assert.Error(t, Parse(&cfg))
+	assert.Error(t, env.Parse(&cfg))
 }
 
 func TestParsesDefaultConfig(t *testing.T) {
 	cfg := Config{}
-	assert.NoError(t, Parse(&cfg))
+	assert.NoError(t, env.Parse(&cfg))
 	assert.Equal(t, "postgres://localhost:5432/db", cfg.DatabaseURL)
 }
 
 func TestParseStructWithoutEnvTag(t *testing.T) {
 	cfg := Config{}
-	assert.NoError(t, Parse(&cfg))
+	assert.NoError(t, env.Parse(&cfg))
 	assert.Empty(t, cfg.NotAnEnv)
+}
+
+func ExampleParse() {
+	type config struct {
+		Home         string `env:"HOME"`
+		Port         int    `env:"PORT" default:"3000"`
+		IsProduction bool   `env:"PRODUCTION"`
+	}
+	cfg := config{}
+	env.Parse(&cfg)
+	fmt.Println(cfg)
 }
