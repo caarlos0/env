@@ -31,37 +31,54 @@ func GetOr(key, defaultValue string) string {
 	return defaultValue
 }
 
-// ErrNotAStruct is returned if you pass something that is not a Struct to
-// ParseEnv
-var ErrNotAStruct = errors.New("Expected a Struct")
+// ErrNotAStructPtr is returned if you pass something that is not a pointer to a
+// Struct to ParseEnv
+var ErrNotAStructPtr = errors.New("Expected a pointer to a Struct")
+
+// ErrUnsuportedType if the struct field type is not supported by env
+var ErrUnsuportedType = errors.New("Type is not supported")
 
 // ParseEnv parses a struct containing `env` tags and loads its values from
 // environment variables.
-func ParseEnv(t interface{}, v interface{}) error {
-	it := reflect.TypeOf(t)
-	for i := 0; i < it.NumField(); i++ {
-		field := it.Field(i)
-		value := Get(field.Tag.Get("env"))
+func ParseEnv(val interface{}) error {
+	ptrRef := reflect.ValueOf(val)
+	if ptrRef.Kind() != reflect.Ptr {
+		return ErrNotAStructPtr
+	}
+	ref := ptrRef.Elem()
+	if ref.Kind() != reflect.Struct {
+		return ErrNotAStructPtr
+	}
+	refType := ref.Type()
+	for i := 0; i < refType.NumField(); i++ {
+		field := refType.Field(i)
+		value := os.Getenv(field.Tag.Get("env"))
 		if value == "" {
 			continue
 		}
-		vfield := reflect.ValueOf(v).Elem().FieldByName(field.Name)
-		switch vfield.Kind() {
-		case reflect.String:
-			vfield.SetString(value)
-		case reflect.Bool:
-			bvalue, err := strconv.ParseBool(value)
-			if err != nil {
-				return err
-			}
-			vfield.SetBool(bvalue)
-		case reflect.Int:
-			intValue, err := strconv.ParseInt(value, 10, 32)
-			if err != nil {
-				return err
-			}
-			vfield.SetInt(intValue)
+		if err := set(ref.Field(i), value); err != nil {
+			return err
 		}
+	}
+	return nil
+}
+
+func set(field reflect.Value, value string) error {
+	switch field.Kind() {
+	case reflect.String:
+		field.SetString(value)
+	case reflect.Bool:
+		bvalue, err := strconv.ParseBool(value)
+		if err != nil {
+			return err
+		}
+		field.SetBool(bvalue)
+	case reflect.Int:
+		intValue, err := strconv.ParseInt(value, 10, 32)
+		if err != nil {
+			return err
+		}
+		field.SetInt(intValue)
 	}
 	return nil
 }
