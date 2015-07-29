@@ -84,6 +84,8 @@ func ExampleParse() {
 		IsProduction bool   `env:"PRODUCTION"`
 	}
 	cfg := config{}
+	env.Set("HOME", "/tmp/fakehome")
 	env.Parse(&cfg)
 	fmt.Println(cfg)
+	// Output: {/tmp/fakehome 3000 false}
 }
