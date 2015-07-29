@@ -1,4 +1,4 @@
-# env
+# env [![Build Status](https://drone.io/github.com/caarlos0/env/status.png)](https://drone.io/github.com/caarlos0/env/latest) [![Coverage Status](https://coveralls.io/repos/caarlos0/env/badge.svg?branch=master&service=github)](https://coveralls.io/github/caarlos0/env?branch=master)
 
 A KISS way to deal with environment variables in Go.
 
