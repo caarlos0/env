@@ -26,8 +26,7 @@ func Parse(val interface{}) error {
 	}
 	refType := ref.Type()
 	for i := 0; i < refType.NumField(); i++ {
-		field := refType.Field(i)
-		value := get(field)
+		value := get(refType.Field(i))
 		if value == "" {
 			continue
 		}
