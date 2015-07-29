@@ -35,7 +35,7 @@ func TestParsesEnv(t *testing.T) {
 	defer Unset("PORT")
 
 	env := Env{}
-	err := ParseEnv(&env)
+	err := Parse(&env)
 
 	assert.Nil(t, err)
 	assert.Equal(t, "somevalue", env.Some)
@@ -45,7 +45,7 @@ func TestParsesEnv(t *testing.T) {
 
 func TestEmptyVars(t *testing.T) {
 	env := Env{}
-	err := ParseEnv(&env)
+	err := Parse(&env)
 
 	assert.Nil(t, err)
 	assert.Equal(t, "", env.Some)
@@ -55,12 +55,12 @@ func TestEmptyVars(t *testing.T) {
 
 func TestPassAnInvalidPtr(t *testing.T) {
 	var thisShouldBreak int
-	assert.Error(t, ParseEnv(&thisShouldBreak))
+	assert.Error(t, Parse(&thisShouldBreak))
 }
 
 func TestPassReference(t *testing.T) {
 	env := Env{}
-	assert.Error(t, ParseEnv(env))
+	assert.Error(t, Parse(env))
 }
 
 func TestInvalidBool(t *testing.T) {
@@ -68,7 +68,7 @@ func TestInvalidBool(t *testing.T) {
 	defer Unset("othervar")
 
 	env := Env{}
-	assert.Error(t, ParseEnv(&env))
+	assert.Error(t, Parse(&env))
 }
 
 func TestInvalidInt(t *testing.T) {
@@ -76,5 +76,5 @@ func TestInvalidInt(t *testing.T) {
 	defer Unset("PORT")
 
 	env := Env{}
-	assert.Error(t, ParseEnv(&env))
+	assert.Error(t, Parse(&env))
 }

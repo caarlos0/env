@@ -32,15 +32,15 @@ func GetOr(key, defaultValue string) string {
 }
 
 // ErrNotAStructPtr is returned if you pass something that is not a pointer to a
-// Struct to ParseEnv
+// Struct to Parse
 var ErrNotAStructPtr = errors.New("Expected a pointer to a Struct")
 
 // ErrUnsuportedType if the struct field type is not supported by env
 var ErrUnsuportedType = errors.New("Type is not supported")
 
-// ParseEnv parses a struct containing `env` tags and loads its values from
+// Parse parses a struct containing `env` tags and loads its values from
 // environment variables.
-func ParseEnv(val interface{}) error {
+func Parse(val interface{}) error {
 	ptrRef := reflect.ValueOf(val)
 	if ptrRef.Kind() != reflect.Ptr {
 		return ErrNotAStructPtr
