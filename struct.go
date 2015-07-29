@@ -62,6 +62,8 @@ func set(field reflect.Value, value string) error {
 			return err
 		}
 		field.SetInt(intValue)
+	default:
+		return ErrUnsuportedType
 	}
 	return nil
 }

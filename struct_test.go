@@ -77,14 +77,23 @@ func TestParseStructWithoutEnvTag(t *testing.T) {
 	assert.Empty(t, cfg.NotAnEnv)
 }
 
+func TestParseStructWithInvalidFieldKind(t *testing.T) {
+	type config struct {
+		WontWork int64 `env:"BLAH"`
+	}
+	env.Set("BLAH", "10")
+	cfg := config{}
+	assert.Error(t, env.Parse(&cfg))
+}
+
 func ExampleParse() {
 	type config struct {
 		Home         string `env:"HOME"`
 		Port         int    `env:"PORT" default:"3000"`
 		IsProduction bool   `env:"PRODUCTION"`
 	}
-	cfg := config{}
 	env.Set("HOME", "/tmp/fakehome")
+	cfg := config{}
 	env.Parse(&cfg)
 	fmt.Println(cfg)
 	// Output: {/tmp/fakehome 3000 false}
