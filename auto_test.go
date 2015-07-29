@@ -10,6 +10,7 @@ type Config struct {
 	Some        string `env:"somevar"`
 	Other       bool   `env:"othervar"`
 	Port        int    `env:"PORT"`
+	NotAnEnv    string
 	DatabaseURL string `env:"DATABASE_URL" default:"postgres://localhost:5432/db"`
 }
 
@@ -66,4 +67,10 @@ func TestParsesDefaultConfig(t *testing.T) {
 	cfg := Config{}
 	assert.NoError(t, Parse(&cfg))
 	assert.Equal(t, "postgres://localhost:5432/db", cfg.DatabaseURL)
+}
+
+func TestParseStructWithoutEnvTag(t *testing.T) {
+	cfg := Config{}
+	assert.NoError(t, Parse(&cfg))
+	assert.Empty(t, cfg.NotAnEnv)
 }
