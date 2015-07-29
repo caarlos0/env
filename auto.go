@@ -2,7 +2,6 @@ package env
 
 import (
 	"errors"
-	"os"
 	"reflect"
 	"strconv"
 )
@@ -28,7 +27,7 @@ func Parse(val interface{}) error {
 	refType := ref.Type()
 	for i := 0; i < refType.NumField(); i++ {
 		field := refType.Field(i)
-		value := os.Getenv(field.Tag.Get("env"))
+		value := get(field)
 		if value == "" {
 			continue
 		}
@@ -37,6 +36,11 @@ func Parse(val interface{}) error {
 		}
 	}
 	return nil
+}
+
+func get(field reflect.StructField) string {
+	defaultValue := field.Tag.Get("default")
+	return GetOr(field.Tag.Get("env"), defaultValue)
 }
 
 func set(field reflect.Value, value string) error {

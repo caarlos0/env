@@ -7,9 +7,10 @@ import (
 )
 
 type Config struct {
-	Some  string `env:"somevar"`
-	Other bool   `env:"othervar"`
-	Port  int    `env:"PORT"`
+	Some        string `env:"somevar"`
+	Other       bool   `env:"othervar"`
+	Port        int    `env:"PORT"`
+	DatabaseURL string `env:"DATABASE_URL" default:"postgres://localhost:5432/db"`
 }
 
 func TestParsesEnv(t *testing.T) {
@@ -21,9 +22,7 @@ func TestParsesEnv(t *testing.T) {
 	defer Unset("PORT")
 
 	cfg := Config{}
-	err := Parse(&cfg)
-
-	assert.Nil(t, err)
+	assert.NoError(t, Parse(&cfg))
 	assert.Equal(t, "somevalue", cfg.Some)
 	assert.Equal(t, true, cfg.Other)
 	assert.Equal(t, 8080, cfg.Port)
@@ -31,9 +30,7 @@ func TestParsesEnv(t *testing.T) {
 
 func TestEmptyVars(t *testing.T) {
 	cfg := Config{}
-	err := Parse(&cfg)
-
-	assert.Nil(t, err)
+	assert.NoError(t, Parse(&cfg))
 	assert.Equal(t, "", cfg.Some)
 	assert.Equal(t, false, cfg.Other)
 	assert.Equal(t, 0, cfg.Port)
@@ -63,4 +60,10 @@ func TestInvalidInt(t *testing.T) {
 
 	cfg := Config{}
 	assert.Error(t, Parse(&cfg))
+}
+
+func TestParsesDefaultConfig(t *testing.T) {
+	cfg := Config{}
+	assert.NoError(t, Parse(&cfg))
+	assert.Equal(t, "postgres://localhost:5432/db", cfg.DatabaseURL)
 }
