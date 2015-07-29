@@ -24,6 +24,10 @@ func Parse(val interface{}) error {
 	if ref.Kind() != reflect.Struct {
 		return ErrNotAStructPtr
 	}
+	return doParse(ref, val)
+}
+
+func doParse(ref reflect.Value, val interface{}) error {
 	refType := ref.Type()
 	for i := 0; i < refType.NumField(); i++ {
 		value := get(refType.Field(i))
