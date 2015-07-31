@@ -43,7 +43,7 @@ func doParse(ref reflect.Value, val interface{}) error {
 }
 
 func get(field reflect.StructField) string {
-	defaultValue := field.Tag.Get("default")
+	defaultValue := field.Tag.Get("envDefault")
 	return getOr(field.Tag.Get("env"), defaultValue)
 }
 

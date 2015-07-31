@@ -14,7 +14,7 @@ type Config struct {
 	Other       bool   `env:"othervar"`
 	Port        int    `env:"PORT"`
 	NotAnEnv    string
-	DatabaseURL string `env:"DATABASE_URL" default:"postgres://localhost:5432/db"`
+	DatabaseURL string `env:"DATABASE_URL" envDefault:"postgres://localhost:5432/db"`
 }
 
 func TestParsesEnv(t *testing.T) {
@@ -90,7 +90,7 @@ func TestParseStructWithInvalidFieldKind(t *testing.T) {
 func ExampleParse() {
 	type config struct {
 		Home         string `env:"HOME"`
-		Port         int    `env:"PORT" default:"3000"`
+		Port         int    `env:"PORT" envDefault:"3000"`
 		IsProduction bool   `env:"PRODUCTION"`
 	}
 	os.Setenv("HOME", "/tmp/fakehome")
