@@ -25,7 +25,7 @@ package main
 
 import (
 	"fmt"
-	"os
+	"os"
 
 	"github.com/caarlos0/env"
 )
