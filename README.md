@@ -25,6 +25,7 @@ package main
 
 import (
 	"fmt"
+	"os
 
 	"github.com/caarlos0/env"
 )
@@ -36,9 +37,10 @@ type config struct {
 }
 
 func main() {
+	os.Setenv("HOME", "/tmp/fakehome")
 	cfg := config{}
 	env.Parse(&cfg)
-	fmt.Println(cfg)
+	fmt.Println(cfg) // {/tmp/fakehome 3000 false}
 }
 ```
 
