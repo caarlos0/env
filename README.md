@@ -31,7 +31,7 @@ import (
 
 type config struct {
 	Home         string `env:"HOME"`
-	Port         int    `env:"PORT" default:"3000"`
+	Port         int    `env:"PORT" envDefault:"3000"`
 	IsProduction bool   `env:"PRODUCTION"`
 }
 
@@ -45,14 +45,14 @@ func main() {
 You can run it like this:
 
 ```sh
-$ PORT=8080 PRODUCTION=true go run examples/first.go
+$ PRODUCTION=true go run examples/first.go
 ```
 
 ## Supported types and defaults
 
 Currently we only support `string`, `bool` and `int`.
 
-If you set the `default` tag for something, this value will be used in the
+If you set the `envDefault` tag for something, this value will be used in the
 case of absence of it in the environment. If you don't do that AND the
 environment variable is also not set, the zero-value
 of the type will be used: `` (empty) for strings, `false` for bools
