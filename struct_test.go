@@ -2,6 +2,7 @@ package env_test
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/caarlos0/env"
@@ -17,12 +18,12 @@ type Config struct {
 }
 
 func TestParsesEnv(t *testing.T) {
-	env.Set("somevar", "somevalue")
-	env.Set("othervar", "true")
-	env.Set("PORT", "8080")
-	defer env.Unset("somevar")
-	defer env.Unset("othervar")
-	defer env.Unset("PORT")
+	os.Setenv("somevar", "somevalue")
+	os.Setenv("othervar", "true")
+	os.Setenv("PORT", "8080")
+	defer os.Setenv("somevar", "")
+	defer os.Setenv("othervar", "")
+	defer os.Setenv("PORT", "")
 
 	cfg := Config{}
 	assert.NoError(t, env.Parse(&cfg))
@@ -50,16 +51,16 @@ func TestPassReference(t *testing.T) {
 }
 
 func TestInvalidBool(t *testing.T) {
-	env.Set("othervar", "should-be-a-bool")
-	defer env.Unset("othervar")
+	os.Setenv("othervar", "should-be-a-bool")
+	defer os.Setenv("othervar", "")
 
 	cfg := Config{}
 	assert.Error(t, env.Parse(&cfg))
 }
 
 func TestInvalidInt(t *testing.T) {
-	env.Set("PORT", "should-be-an-int")
-	defer env.Unset("PORT")
+	os.Setenv("PORT", "should-be-an-int")
+	defer os.Setenv("PORT", "")
 
 	cfg := Config{}
 	assert.Error(t, env.Parse(&cfg))
@@ -81,7 +82,7 @@ func TestParseStructWithInvalidFieldKind(t *testing.T) {
 	type config struct {
 		WontWork int64 `env:"BLAH"`
 	}
-	env.Set("BLAH", "10")
+	os.Setenv("BLAH", "10")
 	cfg := config{}
 	assert.Error(t, env.Parse(&cfg))
 }
@@ -92,7 +93,7 @@ func ExampleParse() {
 		Port         int    `env:"PORT" default:"3000"`
 		IsProduction bool   `env:"PRODUCTION"`
 	}
-	env.Set("HOME", "/tmp/fakehome")
+	os.Setenv("HOME", "/tmp/fakehome")
 	cfg := config{}
 	env.Parse(&cfg)
 	fmt.Println(cfg)

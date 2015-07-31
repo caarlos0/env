@@ -11,6 +11,7 @@ For that manner, I wrote the `GetOr` function.
 
 Then, I got pissed about writing `os.Getenv`, `os.Setenv`, `os.Unsetenv`...
 it kind of make more sense to me write it as `env.Get`, `env.Set`, `env.Unset`.
+
 So I did.
 
 Then I got a better idea: to use struct tags to do that work for me.
