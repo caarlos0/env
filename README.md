@@ -48,7 +48,7 @@ You can run it like this:
 
 ```sh
 $ PRODUCTION=true go run examples/first.go
-{/tmp/fakehome 3000 false}
+{/tmp/fakehome 3000 true}
 ```
 
 ## Supported types and defaults
