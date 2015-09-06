@@ -1,4 +1,4 @@
-# env [![Build Status](https://img.shields.io/circleci/project/caarlos0/env/master.svg)] [![](https://godoc.org/github.com/caarlos0/env?status.svg)](http://godoc.org/github.com/caarlos0/env) [![Stories in Ready](https://badge.waffle.io/caarlos0/env.svg?label=ready&title=Ready)](http://waffle.io/caarlos0/env)
+# env [![Build Status](https://img.shields.io/circleci/project/caarlos0/env/master.svg)]((https://circleci.com/gh/caarlos0/env)) [![](https://godoc.org/github.com/caarlos0/env?status.svg)](http://godoc.org/github.com/caarlos0/env) [![Stories in Ready](https://badge.waffle.io/caarlos0/env.svg?label=ready&title=Ready)](http://waffle.io/caarlos0/env)
 
 A KISS way to deal with environment variables in Go.
 
