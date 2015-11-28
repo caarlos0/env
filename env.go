@@ -90,10 +90,6 @@ func set(field reflect.Value, refType reflect.StructField, value string) error {
 }
 
 func handleSlice(field reflect.Value, value, separator string) error {
-	if field.Kind() != reflect.Slice {
-		return ErrUnsuportedType
-	}
-
 	if separator == "" {
 		separator = ","
 	}

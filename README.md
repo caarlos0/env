@@ -31,9 +31,10 @@ import (
 )
 
 type config struct {
-	Home         string `env:"HOME"`
-	Port         int    `env:"PORT" envDefault:"3000"`
-	IsProduction bool   `env:"PRODUCTION"`
+	Home         string   `env:"HOME"`
+	Port         int      `env:"PORT" envDefault:"3000"`
+	IsProduction bool     `env:"PRODUCTION"`
+	Hosts        []string `env:"HOSTS" envSeparator:":"`
 }
 
 func main() {
@@ -47,13 +48,20 @@ func main() {
 You can run it like this:
 
 ```sh
-$ PRODUCTION=true go run examples/first.go
-{/tmp/fakehome 3000 true}
+$ PRODUCTION=true HOSTS="host1:host2:host3" go run examples/first.go
+{/tmp/fakehome 3000 false [host1 host2 host3]}
 ```
 
 ## Supported types and defaults
 
-Currently we only support `string`, `bool` and `int`.
+The library has support for the following types:
+
+* `string`
+* `int`
+* `bool`
+* `[]string`
+* `[]int`
+* `[]bool`
 
 If you set the `envDefault` tag for something, this value will be used in the
 case of absence of it in the environment. If you don't do that AND the
@@ -61,3 +69,4 @@ environment variable is also not set, the zero-value
 of the type will be used: empty for `string`s, `false` for `bool`s
 and `0` for `int`s.
 
+By default, slice types will split the environment value on `,`; you can change this behavior by setting the `envSeparator` tag.
