@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/dselans/env"
+	"github.com/caarlos0/env"
 )
 
 type config struct {
