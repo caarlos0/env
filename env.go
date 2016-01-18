@@ -13,10 +13,10 @@ import (
 var ErrNotAStructPtr = errors.New("Expected a pointer to a Struct")
 
 // ErrUnsuportedType if the struct field type is not supported by env
-var ErrUnsuportedType = errors.New("Type is not supported")
+var ErrUnsupportedType = errors.New("Type is not supported")
 
 // ErrUnsupportedSliceType if the slice element type is not supported by env
-var ErrUnsuportedSliceType = errors.New("Unsupported slice type")
+var ErrUnsupportedSliceType = errors.New("Unsupported slice type")
 
 // Friendly names for reflect types
 var sliceOfInts = reflect.TypeOf([]int(nil))
@@ -112,7 +112,7 @@ func handleSlice(field reflect.Value, value, separator string) error {
 		}
 		field.Set(reflect.ValueOf(boolData))
 	default:
-		return ErrUnsuportedSliceType
+		return ErrUnsupportedSliceType
 	}
 	return nil
 }
