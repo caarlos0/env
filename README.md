@@ -27,7 +27,7 @@ import (
 	"fmt"
 	"os"
 
-	"gopkg.in/caarlos0/env.v1"
+	"gopkg.in/caarlos0/env.v2"
 )
 
 type config struct {
