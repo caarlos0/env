@@ -12,7 +12,7 @@ import (
 // Struct to Parse
 var ErrNotAStructPtr = errors.New("Expected a pointer to a Struct")
 
-// ErrUnsuportedType if the struct field type is not supported by env
+// ErrUnsupportedType if the struct field type is not supported by env
 var ErrUnsupportedType = errors.New("Type is not supported")
 
 // ErrUnsupportedSliceType if the slice element type is not supported by env
@@ -84,7 +84,7 @@ func set(field reflect.Value, refType reflect.StructField, value string) error {
 		}
 		field.SetInt(intValue)
 	default:
-		return ErrUnsuportedType
+		return ErrUnsupportedType
 	}
 	return nil
 }
