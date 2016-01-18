@@ -118,7 +118,7 @@ func handleSlice(field reflect.Value, value, separator string) error {
 }
 
 func parseInts(data []string) ([]int, error) {
-	intSlice := make([]int, 0)
+	var intSlice []int
 
 	for _, v := range data {
 		intValue, err := strconv.ParseInt(v, 10, 32)
@@ -131,7 +131,7 @@ func parseInts(data []string) ([]int, error) {
 }
 
 func parseBools(data []string) ([]bool, error) {
-	boolSlice := make([]bool, 0)
+	var boolSlice []bool
 
 	for _, v := range data {
 		bvalue, err := strconv.ParseBool(v)
