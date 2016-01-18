@@ -12,11 +12,11 @@ import (
 // Struct to Parse
 var ErrNotAStructPtr = errors.New("Expected a pointer to a Struct")
 
-// ErrUnsuportedType if the struct field type is not supported by env
-var ErrUnsuportedType = errors.New("Type is not supported")
+// ErrUnsupportedType if the struct field type is not supported by env
+var ErrUnsupportedType = errors.New("Type is not supported")
 
 // ErrUnsupportedSliceType if the slice element type is not supported by env
-var ErrUnsuportedSliceType = errors.New("Unsupported slice type")
+var ErrUnsupportedSliceType = errors.New("Unsupported slice type")
 
 // Friendly names for reflect types
 var sliceOfInts = reflect.TypeOf([]int(nil))
@@ -84,7 +84,7 @@ func set(field reflect.Value, refType reflect.StructField, value string) error {
 		}
 		field.SetInt(intValue)
 	default:
-		return ErrUnsuportedType
+		return ErrUnsupportedType
 	}
 	return nil
 }
@@ -112,7 +112,7 @@ func handleSlice(field reflect.Value, value, separator string) error {
 		}
 		field.Set(reflect.ValueOf(boolData))
 	default:
-		return ErrUnsuportedSliceType
+		return ErrUnsupportedSliceType
 	}
 	return nil
 }
