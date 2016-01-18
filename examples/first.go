@@ -7,9 +7,10 @@ import (
 )
 
 type config struct {
-	Home         string `env:"HOME"`
-	Port         int    `env:"PORT" default:"3000"`
-	IsProduction bool   `env:"PRODUCTION"`
+	Home         string   `env:"HOME"`
+	Port         int      `env:"PORT" default:"3000"`
+	IsProduction bool     `env:"PRODUCTION"`
+	Hosts        []string `env:"HOSTS" envSeparator:":"`
 }
 
 func main() {
