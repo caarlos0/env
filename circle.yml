@@ -1,9 +1,0 @@
-test:
-  pre:
-    - go get github.com/axw/gocov/gocov
-    - go get github.com/mattn/goveralls
-    - go get golang.org/x/tools/cmd/cover
-  override:
-    - go test -v -cover -race -coverprofile=coverage.out
-  post:
-    - goveralls -coverprofile=coverage.out -service=circle-ci -repotoken=$COVERALLS_TOKEN
