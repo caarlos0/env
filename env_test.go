@@ -55,6 +55,10 @@ func TestEmptyVars(t *testing.T) {
 	assert.Equal(t, "", cfg.Some)
 	assert.Equal(t, false, cfg.Other)
 	assert.Equal(t, 0, cfg.Port)
+	assert.Equal(t, 0, len(cfg.Strings))
+	assert.Equal(t, 0, len(cfg.SepStrings))
+	assert.Equal(t, 0, len(cfg.Numbers))
+	assert.Equal(t, 0, len(cfg.Bools))
 }
 
 func TestPassAnInvalidPtr(t *testing.T) {
