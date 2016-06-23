@@ -73,8 +73,8 @@ By default, slice types will split the environment value on `,`; you can change 
 
 ## Required fields
 
-The `env` tag option `required` (e.g., `env:"tagKey,required"`) can be added 
-to ensure that some environment variable is set.  In the example above, 
+The `env` tag option `required` (e.g., `env:"tagKey,required"`) can be added
+to ensure that some environment variable is set.  In the example above,
 an error is returned if the `config` struct is changed to:
 
 
