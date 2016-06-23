@@ -40,7 +40,10 @@ func Parse(val interface{}) error {
 func doParse(ref reflect.Value, val interface{}) error {
 	refType := ref.Type()
 	for i := 0; i < refType.NumField(); i++ {
-		value := get(refType.Field(i))
+		value, err := get(refType.Field(i))
+		if err != nil {
+			return err
+		}
 		if value == "" {
 			continue
 		}
@@ -51,9 +54,44 @@ func doParse(ref reflect.Value, val interface{}) error {
 	return nil
 }
 
-func get(field reflect.StructField) string {
-	defaultValue := field.Tag.Get("envDefault")
-	return getOr(field.Tag.Get("env"), defaultValue)
+func get(field reflect.StructField) (string, error) {
+	var (
+		val string
+		err error
+	)
+
+	key, opt := parseKeyForOption(field.Tag.Get("env"))
+	// The only option supported is "required".
+	switch opt {
+	case "":
+		defaultValue := field.Tag.Get("envDefault")
+		val = getOr(key, defaultValue)
+	case "required":
+		val, err = getRequired(key)
+	default:
+		err = errors.New("Env tag option " + opt + " not supported.")
+	}
+	return val, err
+}
+
+// split the env tag's key into the expected key and desired option, if any.
+func parseKeyForOption(key string) (string, string) {
+	i := strings.Index(key, ",")
+	if i == -1 {
+		return key, ""
+	}
+	if i == len(key)-1 {
+		return key[:i], ""
+	}
+	return key[:i], key[i+1:]
+}
+
+func getRequired(key string) (string, error) {
+	if value := os.Getenv(key); value != "" {
+		return value, nil
+	}
+	// We do not use fmt.Errorf to avoid another import.
+	return "", errors.New("Required environment variable " + key + " is not set")
 }
 
 func getOr(key, defaultValue string) string {

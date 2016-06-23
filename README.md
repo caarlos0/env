@@ -70,3 +70,20 @@ of the type will be used: empty for `string`s, `false` for `bool`s
 and `0` for `int`s.
 
 By default, slice types will split the environment value on `,`; you can change this behavior by setting the `envSeparator` tag.
+
+## Required fields
+
+The `env` tag option `required` (e.g., `env:"tagKey,required"`) can be added 
+to ensure that some environment variable is set.  In the example above, 
+an error is returned if the `config` struct is changed to:
+
+
+```go
+type config struct {
+    Home         string   `env:"HOME"`
+    Port         int      `env:"PORT" envDefault:"3000"`
+    IsProduction bool     `env:"PRODUCTION"`
+    Hosts        []string `env:"HOSTS" envSeparator:":"`
+    SecretKey    string   `env:"SECRET_KEY,required"`
+}
+```

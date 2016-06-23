@@ -142,6 +142,51 @@ func TestBadSeparator(t *testing.T) {
 	assert.Error(t, env.Parse(cfg))
 }
 
+func TestNoErrorRequiredSet(t *testing.T) {
+	type config struct {
+		IsRequired string `env:"IS_REQUIRED,required"`
+	}
+
+	cfg := &config{}
+
+	os.Setenv("IS_REQUIRED", "val")
+	defer os.Setenv("IS_REQUIRED", "")
+	assert.NoError(t, env.Parse(cfg))
+	assert.Equal(t, "val", cfg.IsRequired)
+}
+
+func TestErrorRequiredNotSet(t *testing.T) {
+	type config struct {
+		IsRequired string `env:"IS_REQUIRED,required"`
+	}
+
+	cfg := &config{}
+	assert.Error(t, env.Parse(cfg))
+}
+
+func TestEmptyOption(t *testing.T) {
+	type config struct {
+		Var string `env:"VAR,"`
+	}
+
+	cfg := &config{}
+
+	os.Setenv("VAR", "val")
+	defer os.Setenv("VAR", "")
+	assert.NoError(t, env.Parse(cfg))
+	assert.Equal(t, "val", cfg.Var)
+}
+
+func TestErrorOptionNotRecognized(t *testing.T) {
+	type config struct {
+		Var string `env:"VAR,not_supported!"`
+	}
+
+	cfg := &config{}
+	assert.Error(t, env.Parse(cfg))
+
+}
+
 func ExampleParse() {
 	type config struct {
 		Home         string `env:"HOME"`
@@ -153,4 +198,18 @@ func ExampleParse() {
 	env.Parse(&cfg)
 	fmt.Println(cfg)
 	// Output: {/tmp/fakehome 3000 false}
+}
+
+func ExampleParseRequiredField() {
+	type config struct {
+		Home         string `env:"HOME"`
+		Port         int    `env:"PORT" envDefault:"3000"`
+		IsProduction bool   `env:"PRODUCTION"`
+		SecretKey    string `env:"SECRET_KEY,required"`
+	}
+	os.Setenv("HOME", "/tmp/fakehome")
+	cfg := config{}
+	err := env.Parse(&cfg)
+	fmt.Println(err)
+	// Output: Required environment variable SECRET_KEY is not set
 }
