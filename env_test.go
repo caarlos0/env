@@ -213,3 +213,17 @@ func ExampleParseRequiredField() {
 	fmt.Println(err)
 	// Output: Required environment variable SECRET_KEY is not set
 }
+
+func ExampleParseMultipleOptions() {
+	type config struct {
+		Home         string `env:"HOME"`
+		Port         int    `env:"PORT" envDefault:"3000"`
+		IsProduction bool   `env:"PRODUCTION"`
+		SecretKey    string `env:"SECRET_KEY,required,option1"`
+	}
+	os.Setenv("HOME", "/tmp/fakehome")
+	cfg := config{}
+	err := env.Parse(&cfg)
+	fmt.Println(err)
+	// Output: Env tag option option1 not supported.
+}

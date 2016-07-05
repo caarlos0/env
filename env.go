@@ -8,25 +8,24 @@ import (
 	"strings"
 )
 
-// ErrNotAStructPtr is returned if you pass something that is not a pointer to a
-// Struct to Parse
-var ErrNotAStructPtr = errors.New("Expected a pointer to a Struct")
-
-// ErrUnsupportedType if the struct field type is not supported by env
-var ErrUnsupportedType = errors.New("Type is not supported")
-
-// ErrUnsupportedSliceType if the slice element type is not supported by env
-var ErrUnsupportedSliceType = errors.New("Unsupported slice type")
-
-// Friendly names for reflect types
-var sliceOfInts = reflect.TypeOf([]int(nil))
-var sliceOfStrings = reflect.TypeOf([]string(nil))
-var sliceOfBools = reflect.TypeOf([]bool(nil))
+var (
+	// ErrNotAStructPtr is returned if you pass something that is not a pointer to a
+	// Struct to Parse
+	ErrNotAStructPtr = errors.New("Expected a pointer to a Struct")
+	// ErrUnsupportedType if the struct field type is not supported by env
+	ErrUnsupportedType = errors.New("Type is not supported")
+	// ErrUnsupportedSliceType if the slice element type is not supported by env
+	ErrUnsupportedSliceType = errors.New("Unsupported slice type")
+	// Friendly names for reflect types
+	sliceOfInts    = reflect.TypeOf([]int(nil))
+	sliceOfStrings = reflect.TypeOf([]string(nil))
+	sliceOfBools   = reflect.TypeOf([]bool(nil))
+)
 
 // Parse parses a struct containing `env` tags and loads its values from
 // environment variables.
-func Parse(val interface{}) error {
-	ptrRef := reflect.ValueOf(val)
+func Parse(v interface{}) error {
+	ptrRef := reflect.ValueOf(v)
 	if ptrRef.Kind() != reflect.Ptr {
 		return ErrNotAStructPtr
 	}
@@ -34,10 +33,10 @@ func Parse(val interface{}) error {
 	if ref.Kind() != reflect.Struct {
 		return ErrNotAStructPtr
 	}
-	return doParse(ref, val)
+	return doParse(ref)
 }
 
-func doParse(ref reflect.Value, val interface{}) error {
+func doParse(ref reflect.Value) error {
 	refType := ref.Type()
 	for i := 0; i < refType.NumField(); i++ {
 		value, err := get(refType.Field(i))
@@ -60,30 +59,32 @@ func get(field reflect.StructField) (string, error) {
 		err error
 	)
 
-	key, opt := parseKeyForOption(field.Tag.Get("env"))
-	// The only option supported is "required".
-	switch opt {
-	case "":
-		defaultValue := field.Tag.Get("envDefault")
-		val = getOr(key, defaultValue)
-	case "required":
-		val, err = getRequired(key)
-	default:
-		err = errors.New("Env tag option " + opt + " not supported.")
+	key, opts := parseKeyForOption(field.Tag.Get("env"))
+
+	defaultValue := field.Tag.Get("envDefault")
+	val = getOr(key, defaultValue)
+
+	if len(opts) > 0 {
+		for _, opt := range opts {
+			// The only option supported is "required".
+			switch opt {
+			case "":
+				break
+			case "required":
+				val, err = getRequired(key)
+			default:
+				err = errors.New("Env tag option " + opt + " not supported.")
+			}
+		}
 	}
+
 	return val, err
 }
 
 // split the env tag's key into the expected key and desired option, if any.
-func parseKeyForOption(key string) (string, string) {
-	i := strings.Index(key, ",")
-	if i == -1 {
-		return key, ""
-	}
-	if i == len(key)-1 {
-		return key[:i], ""
-	}
-	return key[:i], key[i+1:]
+func parseKeyForOption(key string) (string, []string) {
+	opts := strings.Split(key, ",")
+	return opts[0], opts[1:]
 }
 
 func getRequired(key string) (string, error) {
