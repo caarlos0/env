@@ -103,6 +103,14 @@ func TestInvalidBoolsSlice(t *testing.T) {
 	assert.Error(t, env.Parse(cfg))
 }
 
+func TestInvalidDuration(t *testing.T) {
+	os.Setenv("DURATION", "should-be-a-valid-duration")
+	defer os.Setenv("DURATION", "")
+
+	cfg := Config{}
+	assert.Error(t, env.Parse(&cfg))
+}
+
 func TestParsesDefaultConfig(t *testing.T) {
 	cfg := Config{}
 	assert.NoError(t, env.Parse(&cfg))
