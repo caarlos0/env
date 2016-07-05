@@ -68,6 +68,8 @@ func get(field reflect.StructField) (string, error) {
 		for _, opt := range opts {
 			// The only option supported is "required".
 			switch opt {
+			case "":
+				break
 			case "required":
 				val, err = getRequired(key)
 			default:
