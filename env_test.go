@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/caarlos0/env"
 	"github.com/stretchr/testify/assert"
@@ -14,11 +15,12 @@ type Config struct {
 	Other       bool   `env:"othervar"`
 	Port        int    `env:"PORT"`
 	NotAnEnv    string
-	DatabaseURL string   `env:"DATABASE_URL" envDefault:"postgres://localhost:5432/db"`
-	Strings     []string `env:"STRINGS"`
-	SepStrings  []string `env:"SEPSTRINGS" envSeparator:":"`
-	Numbers     []int    `env:"NUMBERS"`
-	Bools       []bool   `env:"BOOLS"`
+	DatabaseURL string        `env:"DATABASE_URL" envDefault:"postgres://localhost:5432/db"`
+	Strings     []string      `env:"STRINGS"`
+	SepStrings  []string      `env:"SEPSTRINGS" envSeparator:":"`
+	Numbers     []int         `env:"NUMBERS"`
+	Bools       []bool        `env:"BOOLS"`
+	Duration    time.Duration `env:"DURATION"`
 }
 
 func TestParsesEnv(t *testing.T) {
@@ -29,6 +31,7 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("SEPSTRINGS", "string1:string2:string3")
 	os.Setenv("NUMBERS", "1,2,3,4")
 	os.Setenv("BOOLS", "t,TRUE,0,1")
+	os.Setenv("DURATION", "1s")
 
 	defer os.Setenv("somevar", "")
 	defer os.Setenv("othervar", "")
@@ -37,6 +40,7 @@ func TestParsesEnv(t *testing.T) {
 	defer os.Setenv("SEPSTRINGS", "")
 	defer os.Setenv("NUMBERS", "")
 	defer os.Setenv("BOOLS", "")
+	defer os.Setenv("DURATION", "")
 
 	cfg := Config{}
 	assert.NoError(t, env.Parse(&cfg))
@@ -47,6 +51,8 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.SepStrings)
 	assert.Equal(t, []int{1, 2, 3, 4}, cfg.Numbers)
 	assert.Equal(t, []bool{true, true, false, true}, cfg.Bools)
+	d, _ := time.ParseDuration("1s")
+	assert.Equal(t, d, cfg.Duration)
 }
 
 func TestEmptyVars(t *testing.T) {
