@@ -25,31 +25,34 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"time"
 
-	"gopkg.in/caarlos0/env.v2"
+	"github.com/caarlos0/env"
 )
 
 type config struct {
-	Home         string   `env:"HOME"`
-	Port         int      `env:"PORT" envDefault:"3000"`
-	IsProduction bool     `env:"PRODUCTION"`
-	Hosts        []string `env:"HOSTS" envSeparator:":"`
+	Home         string        `env:"HOME"`
+	Port         int           `env:"PORT" envDefault:"3000"`
+	IsProduction bool          `env:"PRODUCTION"`
+	Hosts        []string      `env:"HOSTS" envSeparator:":"`
+	Duration     time.Duration `env:"DURATION"`
 }
 
 func main() {
-	os.Setenv("HOME", "/tmp/fakehome")
 	cfg := config{}
-	env.Parse(&cfg)
-	fmt.Println(cfg)
+	err := env.Parse(&cfg)
+	if err != nil {
+		fmt.Printf("%+v\n", err)
+	}
+	fmt.Printf("%+v\n", cfg)
 }
 ```
 
 You can run it like this:
 
 ```sh
-$ PRODUCTION=true HOSTS="host1:host2:host3" go run examples/first.go
-{/tmp/fakehome 3000 false [host1 host2 host3]}
+$ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s go run examples/first.go
+{Home:/your/home Port:3000 IsProduction:true Hosts:[host1 host2 host3] Duration:1s}
 ```
 
 ## Supported types and defaults

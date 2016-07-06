@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
@@ -122,6 +123,16 @@ func set(field reflect.Value, refType reflect.StructField, value string) error {
 			return err
 		}
 		field.SetInt(intValue)
+	case reflect.Int64:
+		if refType.Type.String() == "time.Duration" {
+			dValue, err := time.ParseDuration(value)
+			if err != nil {
+				return err
+			}
+			field.Set(reflect.ValueOf(dValue))
+		} else {
+			return ErrUnsupportedType
+		}
 	default:
 		return ErrUnsupportedType
 	}
