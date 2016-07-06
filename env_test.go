@@ -123,11 +123,20 @@ func TestParseStructWithoutEnvTag(t *testing.T) {
 	assert.Empty(t, cfg.NotAnEnv)
 }
 
-func TestParseStructWithInvalidFieldKind(t *testing.T) {
+func TestParseStructWithInvalidFieldKindInt64(t *testing.T) {
 	type config struct {
 		WontWork int64 `env:"BLAH"`
 	}
 	os.Setenv("BLAH", "10")
+	cfg := config{}
+	assert.Error(t, env.Parse(&cfg))
+}
+
+func TestParseStructWithInvalidFieldKind(t *testing.T) {
+	type config struct {
+		WontWorkFloat float32 `env:"BLAH"`
+	}
+	os.Setenv("BLAH", "10.0")
 	cfg := config{}
 	assert.Error(t, env.Parse(&cfg))
 }
