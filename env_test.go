@@ -21,6 +21,10 @@ type Config struct {
 	Numbers     []int         `env:"NUMBERS"`
 	Bools       []bool        `env:"BOOLS"`
 	Duration    time.Duration `env:"DURATION"`
+	Float32			float32 			`env:"FLOAT32"`
+	Float64			float64 			`env:"FLOAT64"`
+	Float32s  	[]float32			`env:"FLOAT32S"`
+	Float64s	  []float64			`env:"FLOAT64S"`
 }
 
 func TestParsesEnv(t *testing.T) {
@@ -32,6 +36,10 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("NUMBERS", "1,2,3,4")
 	os.Setenv("BOOLS", "t,TRUE,0,1")
 	os.Setenv("DURATION", "1s")
+	os.Setenv("FLOAT32","3.40282346638528859811704183484516925440e+38")
+	os.Setenv("FLOAT64","1.797693134862315708145274237317043567981e+308")
+	os.Setenv("FLOAT32S","1.0,2.0,3.0")
+	os.Setenv("FLOAT64S","1.0,2.0,3.0")
 
 	defer os.Setenv("somevar", "")
 	defer os.Setenv("othervar", "")
@@ -41,6 +49,10 @@ func TestParsesEnv(t *testing.T) {
 	defer os.Setenv("NUMBERS", "")
 	defer os.Setenv("BOOLS", "")
 	defer os.Setenv("DURATION", "")
+	defer os.Setenv("FLOAT32","")
+	defer os.Setenv("FLOAT64","")
+	defer os.Setenv("FLOAT32S","")
+	defer os.Setenv("FLOAT64S","")
 
 	cfg := Config{}
 	assert.NoError(t, env.Parse(&cfg))
@@ -53,6 +65,12 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, []bool{true, true, false, true}, cfg.Bools)
 	d, _ := time.ParseDuration("1s")
 	assert.Equal(t, d, cfg.Duration)
+	f32 := float32(3.40282346638528859811704183484516925440e+38)
+	assert.Equal(t, f32, cfg.Float32)
+	f64 := float64(1.797693134862315708145274237317043567981e+308)
+	assert.Equal(t, f64, cfg.Float64)
+	assert.Equal(t, []float32{float32(1.0),float32(2.0),float32(3.0)},cfg.Float32s)
+	assert.Equal(t, []float64{float64(1.0),float64(2.0),float64(3.0)},cfg.Float64s)
 }
 
 func TestEmptyVars(t *testing.T) {
@@ -134,9 +152,9 @@ func TestParseStructWithInvalidFieldKindInt64(t *testing.T) {
 
 func TestParseStructWithInvalidFieldKind(t *testing.T) {
 	type config struct {
-		WontWorkFloat float32 `env:"BLAH"`
+		WontWorkByte byte `env:"BLAH"`
 	}
-	os.Setenv("BLAH", "10.0")
+	os.Setenv("BLAH", "a")
 	cfg := config{}
 	assert.Error(t, env.Parse(&cfg))
 }

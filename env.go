@@ -21,6 +21,8 @@ var (
 	sliceOfInts    = reflect.TypeOf([]int(nil))
 	sliceOfStrings = reflect.TypeOf([]string(nil))
 	sliceOfBools   = reflect.TypeOf([]bool(nil))
+	sliceOfFloat32s = reflect.TypeOf([]float32(nil))
+	sliceOfFloat64s = reflect.TypeOf([]float64(nil))
 )
 
 // Parse parses a struct containing `env` tags and loads its values from
@@ -123,6 +125,18 @@ func set(field reflect.Value, refType reflect.StructField, value string) error {
 			return err
 		}
 		field.SetInt(intValue)
+	case reflect.Float32:
+		v, err := strconv.ParseFloat(value, 32)
+		if err != nil {
+			return err
+		}
+		field.SetFloat(v)
+	case reflect.Float64:
+		v, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return err
+		}
+		field.Set(reflect.ValueOf(v))
 	case reflect.Int64:
 		if refType.Type.String() == "time.Duration" {
 			dValue, err := time.ParseDuration(value)
@@ -155,6 +169,18 @@ func handleSlice(field reflect.Value, value, separator string) error {
 			return err
 		}
 		field.Set(reflect.ValueOf(intData))
+	case sliceOfFloat32s:
+		data, err := parseFloat32s(splitData)
+		if err != nil {
+			return err
+		}
+		field.Set(reflect.ValueOf(data))
+	case sliceOfFloat64s:
+		data, err := parseFloat64s(splitData)
+		if err != nil {
+			return err
+		}
+		field.Set(reflect.ValueOf(data))
 	case sliceOfBools:
 		boolData, err := parseBools(splitData)
 		if err != nil {
@@ -178,6 +204,32 @@ func parseInts(data []string) ([]int, error) {
 		intSlice = append(intSlice, int(intValue))
 	}
 	return intSlice, nil
+}
+
+func parseFloat32s(data []string) ([]float32, error) {
+	var float32Slice []float32
+
+	for _, v := range data {
+		data, err := strconv.ParseFloat(v, 32)
+		if err != nil {
+			return nil, err
+		}
+		float32Slice = append(float32Slice, float32(data))
+	}
+	return float32Slice, nil
+}
+
+func parseFloat64s(data []string) ([]float64, error) {
+	var float64Slice []float64
+
+	for _, v := range data {
+		data, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return nil, err
+		}
+		float64Slice = append(float64Slice, float64(data))
+	}
+	return float64Slice, nil
 }
 
 func parseBools(data []string) ([]bool, error) {
