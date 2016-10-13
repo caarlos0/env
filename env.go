@@ -18,9 +18,9 @@ var (
 	// ErrUnsupportedSliceType if the slice element type is not supported by env
 	ErrUnsupportedSliceType = errors.New("Unsupported slice type")
 	// Friendly names for reflect types
-	sliceOfInts    = reflect.TypeOf([]int(nil))
-	sliceOfStrings = reflect.TypeOf([]string(nil))
-	sliceOfBools   = reflect.TypeOf([]bool(nil))
+	sliceOfInts     = reflect.TypeOf([]int(nil))
+	sliceOfStrings  = reflect.TypeOf([]string(nil))
+	sliceOfBools    = reflect.TypeOf([]bool(nil))
 	sliceOfFloat32s = reflect.TypeOf([]float32(nil))
 	sliceOfFloat64s = reflect.TypeOf([]float64(nil))
 )
