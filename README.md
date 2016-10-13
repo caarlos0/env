@@ -62,9 +62,13 @@ The library has support for the following types:
 * `string`
 * `int`
 * `bool`
+* `float32`
+* `float64`
 * `[]string`
 * `[]int`
 * `[]bool`
+* `[]float32`
+* `[]float64`
 
 If you set the `envDefault` tag for something, this value will be used in the
 case of absence of it in the environment. If you don't do that AND the
