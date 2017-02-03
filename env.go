@@ -19,6 +19,7 @@ var (
 	ErrUnsupportedSliceType = errors.New("Unsupported slice type")
 	// Friendly names for reflect types
 	sliceOfInts     = reflect.TypeOf([]int(nil))
+	sliceOfInt64s   = reflect.TypeOf([]int64(nil))
 	sliceOfStrings  = reflect.TypeOf([]string(nil))
 	sliceOfBools    = reflect.TypeOf([]bool(nil))
 	sliceOfFloat32s = reflect.TypeOf([]float32(nil))
@@ -145,7 +146,11 @@ func set(field reflect.Value, refType reflect.StructField, value string) error {
 			}
 			field.Set(reflect.ValueOf(dValue))
 		} else {
-			return ErrUnsupportedType
+			intValue, err := strconv.ParseInt(value, 10, 64)
+			if err != nil {
+				return err
+			}
+			field.SetInt(intValue)
 		}
 	default:
 		return ErrUnsupportedType
@@ -169,6 +174,13 @@ func handleSlice(field reflect.Value, value, separator string) error {
 			return err
 		}
 		field.Set(reflect.ValueOf(intData))
+	case sliceOfInt64s:
+		int64Data, err := parseInt64s(splitData)
+		if err != nil {
+			return err
+		}
+		field.Set(reflect.ValueOf(int64Data))
+
 	case sliceOfFloat32s:
 		data, err := parseFloat32s(splitData)
 		if err != nil {
@@ -205,6 +217,22 @@ func parseInts(data []string) ([]int, error) {
 	}
 	return intSlice, nil
 }
+
+
+func parseInt64s(data []string) ([]int64, error) {
+	var intSlice []int64
+
+	for _, v := range data {
+		intValue, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		intSlice = append(intSlice, int64(intValue))
+	}
+	return intSlice, nil
+}
+
+
 
 func parseFloat32s(data []string) ([]float32, error) {
 	var float32Slice []float32
