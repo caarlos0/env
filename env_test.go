@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 	"time"
-
 	"github.com/caarlos0/env"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,6 +18,7 @@ type Config struct {
 	Strings     []string      `env:"STRINGS"`
 	SepStrings  []string      `env:"SEPSTRINGS" envSeparator:":"`
 	Numbers     []int         `env:"NUMBERS"`
+	Numbers64   []int64         `env:"NUMBERS64"`
 	Bools       []bool        `env:"BOOLS"`
 	Duration    time.Duration `env:"DURATION"`
 	Float32     float32       `env:"FLOAT32"`
@@ -34,6 +34,7 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("STRINGS", "string1,string2,string3")
 	os.Setenv("SEPSTRINGS", "string1:string2:string3")
 	os.Setenv("NUMBERS", "1,2,3,4")
+	os.Setenv("NUMBERS64", "1,2,2147483640,-2147483640")
 	os.Setenv("BOOLS", "t,TRUE,0,1")
 	os.Setenv("DURATION", "1s")
 	os.Setenv("FLOAT32", "3.40282346638528859811704183484516925440e+38")
@@ -47,6 +48,7 @@ func TestParsesEnv(t *testing.T) {
 	defer os.Setenv("STRINGS", "")
 	defer os.Setenv("SEPSTRINGS", "")
 	defer os.Setenv("NUMBERS", "")
+	defer os.Setenv("NUMBERS64", "")
 	defer os.Setenv("BOOLS", "")
 	defer os.Setenv("DURATION", "")
 	defer os.Setenv("FLOAT32", "")
@@ -62,6 +64,7 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.Strings)
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.SepStrings)
 	assert.Equal(t, []int{1, 2, 3, 4}, cfg.Numbers)
+	assert.Equal(t, []int64{1,2,2147483640,-2147483640}, cfg.Numbers64)
 	assert.Equal(t, []bool{true, true, false, true}, cfg.Bools)
 	d, _ := time.ParseDuration("1s")
 	assert.Equal(t, d, cfg.Duration)
@@ -141,14 +144,6 @@ func TestParseStructWithoutEnvTag(t *testing.T) {
 	assert.Empty(t, cfg.NotAnEnv)
 }
 
-func TestParseStructWithInvalidFieldKindInt64(t *testing.T) {
-	type config struct {
-		WontWork int64 `env:"BLAH"`
-	}
-	os.Setenv("BLAH", "10")
-	cfg := config{}
-	assert.Error(t, env.Parse(&cfg))
-}
 
 func TestParseStructWithInvalidFieldKind(t *testing.T) {
 	type config struct {
