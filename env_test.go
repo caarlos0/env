@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 	"time"
-	"env"
+	"github.com/caarlos0/env"
 	"github.com/stretchr/testify/assert"
 )
 
