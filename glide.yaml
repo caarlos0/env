@@ -1,1 +1,3 @@
-package env
+package: env
+import:
+- package: github.com/stretchr/testify/assert
