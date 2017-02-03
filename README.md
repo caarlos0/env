@@ -61,6 +61,7 @@ The library has support for the following types:
 
 * `string`
 * `int`
+* `int64`
 * `bool`
 * `float32`
 * `float64`
