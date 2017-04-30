@@ -42,19 +42,26 @@ func Parse(v interface{}) error {
 
 func doParse(ref reflect.Value) error {
 	refType := ref.Type()
+	var errorList []string
+
 	for i := 0; i < refType.NumField(); i++ {
 		value, err := get(refType.Field(i))
 		if err != nil {
-			return err
+			errorList = append(errorList, err.Error())
+			continue
 		}
 		if value == "" {
 			continue
 		}
 		if err := set(ref.Field(i), refType.Field(i), value); err != nil {
-			return err
+			errorList = append(errorList, err.Error())
+			continue
 		}
 	}
-	return nil
+	if len(errorList) == 0 {
+		return nil
+	}
+	return errors.New(strings.Join(errorList, ". "))
 }
 
 func get(field reflect.StructField) (string, error) {
@@ -218,7 +225,6 @@ func parseInts(data []string) ([]int, error) {
 	return intSlice, nil
 }
 
-
 func parseInt64s(data []string) ([]int64, error) {
 	var intSlice []int64
 
@@ -231,8 +237,6 @@ func parseInt64s(data []string) ([]int64, error) {
 	}
 	return intSlice, nil
 }
-
-
 
 func parseFloat32s(data []string) ([]float32, error) {
 	var float32Slice []float32
