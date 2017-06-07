@@ -133,6 +133,12 @@ func set(field reflect.Value, refType reflect.StructField, value string) error {
 			return err
 		}
 		field.SetInt(intValue)
+	case reflect.Uint:
+		uintValue, err := strconv.ParseUint(value, 10, 32)
+		if err != nil {
+			return err
+		}
+		field.SetUint(uintValue)
 	case reflect.Float32:
 		v, err := strconv.ParseFloat(value, 32)
 		if err != nil {
