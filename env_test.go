@@ -13,6 +13,7 @@ type Config struct {
 	Some        string `env:"somevar"`
 	Other       bool   `env:"othervar"`
 	Port        int    `env:"PORT"`
+	UintVal     uint   `env:"UINTVAL"`
 	NotAnEnv    string
 	DatabaseURL string        `env:"DATABASE_URL" envDefault:"postgres://localhost:5432/db"`
 	Strings     []string      `env:"STRINGS"`
@@ -41,6 +42,7 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("FLOAT64", "1.797693134862315708145274237317043567981e+308")
 	os.Setenv("FLOAT32S", "1.0,2.0,3.0")
 	os.Setenv("FLOAT64S", "1.0,2.0,3.0")
+	os.Setenv("UINTVAL", "44")
 
 	defer os.Setenv("somevar", "")
 	defer os.Setenv("othervar", "")
@@ -55,12 +57,14 @@ func TestParsesEnv(t *testing.T) {
 	defer os.Setenv("FLOAT64", "")
 	defer os.Setenv("FLOAT32S", "")
 	defer os.Setenv("FLOAT64S", "")
+    defer os.Setenv("UINTVAL", "")
 
 	cfg := Config{}
 	assert.NoError(t, env.Parse(&cfg))
 	assert.Equal(t, "somevalue", cfg.Some)
 	assert.Equal(t, true, cfg.Other)
 	assert.Equal(t, 8080, cfg.Port)
+	assert.Equal(t, uint(44), cfg.UintVal)
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.Strings)
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.SepStrings)
 	assert.Equal(t, []int{1, 2, 3, 4}, cfg.Numbers)
@@ -82,6 +86,7 @@ func TestEmptyVars(t *testing.T) {
 	assert.Equal(t, "", cfg.Some)
 	assert.Equal(t, false, cfg.Other)
 	assert.Equal(t, 0, cfg.Port)
+	assert.Equal(t, uint(0), cfg.UintVal)
 	assert.Equal(t, 0, len(cfg.Strings))
 	assert.Equal(t, 0, len(cfg.SepStrings))
 	assert.Equal(t, 0, len(cfg.Numbers))
@@ -109,6 +114,14 @@ func TestInvalidBool(t *testing.T) {
 func TestInvalidInt(t *testing.T) {
 	os.Setenv("PORT", "should-be-an-int")
 	defer os.Setenv("PORT", "")
+
+	cfg := Config{}
+	assert.Error(t, env.Parse(&cfg))
+}
+
+func TestInvalidUint(t *testing.T) {
+	os.Setenv("UINTVAL", "-44")
+	defer os.Setenv("UINTVAL", "")
 
 	cfg := Config{}
 	assert.Error(t, env.Parse(&cfg))
