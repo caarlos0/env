@@ -2,11 +2,12 @@ package env_test
 
 import (
 	"fmt"
-	"github.com/caarlos0/env"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/caarlos0/env"
+	"github.com/stretchr/testify/assert"
 )
 
 type Config struct {
