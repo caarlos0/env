@@ -99,7 +99,7 @@ func parseKeyForOption(key string) (string, []string) {
 }
 
 func getRequired(key string) (string, error) {
-	if value := os.Getenv(key); value != "" {
+	if value, ok := os.LookupEnv(key); ok {
 		return value, nil
 	}
 	// We do not use fmt.Errorf to avoid another import.
@@ -107,8 +107,8 @@ func getRequired(key string) (string, error) {
 }
 
 func getOr(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value != "" {
+	value, ok := os.LookupEnv(key)
+	if ok {
 		return value
 	}
 	return defaultValue

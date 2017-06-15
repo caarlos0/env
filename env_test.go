@@ -2,11 +2,11 @@ package env_test
 
 import (
 	"fmt"
+	"github.com/caarlos0/env"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 	"time"
-	"github.com/caarlos0/env"
-	"github.com/stretchr/testify/assert"
 )
 
 type Config struct {
@@ -19,7 +19,7 @@ type Config struct {
 	Strings     []string      `env:"STRINGS"`
 	SepStrings  []string      `env:"SEPSTRINGS" envSeparator:":"`
 	Numbers     []int         `env:"NUMBERS"`
-	Numbers64   []int64         `env:"NUMBERS64"`
+	Numbers64   []int64       `env:"NUMBERS64"`
 	Bools       []bool        `env:"BOOLS"`
 	Duration    time.Duration `env:"DURATION"`
 	Float32     float32       `env:"FLOAT32"`
@@ -44,20 +44,7 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("FLOAT64S", "1.0,2.0,3.0")
 	os.Setenv("UINTVAL", "44")
 
-	defer os.Setenv("somevar", "")
-	defer os.Setenv("othervar", "")
-	defer os.Setenv("PORT", "")
-	defer os.Setenv("STRINGS", "")
-	defer os.Setenv("SEPSTRINGS", "")
-	defer os.Setenv("NUMBERS", "")
-	defer os.Setenv("NUMBERS64", "")
-	defer os.Setenv("BOOLS", "")
-	defer os.Setenv("DURATION", "")
-	defer os.Setenv("FLOAT32", "")
-	defer os.Setenv("FLOAT64", "")
-	defer os.Setenv("FLOAT32S", "")
-	defer os.Setenv("FLOAT64S", "")
-    defer os.Setenv("UINTVAL", "")
+	defer os.Clearenv()
 
 	cfg := Config{}
 	assert.NoError(t, env.Parse(&cfg))
@@ -68,7 +55,7 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.Strings)
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.SepStrings)
 	assert.Equal(t, []int{1, 2, 3, 4}, cfg.Numbers)
-	assert.Equal(t, []int64{1,2,2147483640,-2147483640}, cfg.Numbers64)
+	assert.Equal(t, []int64{1, 2, 2147483640, -2147483640}, cfg.Numbers64)
 	assert.Equal(t, []bool{true, true, false, true}, cfg.Bools)
 	d, _ := time.ParseDuration("1s")
 	assert.Equal(t, d, cfg.Duration)
@@ -105,7 +92,7 @@ func TestPassReference(t *testing.T) {
 
 func TestInvalidBool(t *testing.T) {
 	os.Setenv("othervar", "should-be-a-bool")
-	defer os.Setenv("othervar", "")
+	defer os.Clearenv()
 
 	cfg := Config{}
 	assert.Error(t, env.Parse(&cfg))
@@ -113,7 +100,7 @@ func TestInvalidBool(t *testing.T) {
 
 func TestInvalidInt(t *testing.T) {
 	os.Setenv("PORT", "should-be-an-int")
-	defer os.Setenv("PORT", "")
+	defer os.Clearenv()
 
 	cfg := Config{}
 	assert.Error(t, env.Parse(&cfg))
@@ -121,7 +108,7 @@ func TestInvalidInt(t *testing.T) {
 
 func TestInvalidUint(t *testing.T) {
 	os.Setenv("UINTVAL", "-44")
-	defer os.Setenv("UINTVAL", "")
+	defer os.Clearenv()
 
 	cfg := Config{}
 	assert.Error(t, env.Parse(&cfg))
@@ -139,7 +126,7 @@ func TestInvalidBoolsSlice(t *testing.T) {
 
 func TestInvalidDuration(t *testing.T) {
 	os.Setenv("DURATION", "should-be-a-valid-duration")
-	defer os.Setenv("DURATION", "")
+	defer os.Clearenv()
 
 	cfg := Config{}
 	assert.Error(t, env.Parse(&cfg))
@@ -157,7 +144,6 @@ func TestParseStructWithoutEnvTag(t *testing.T) {
 	assert.Empty(t, cfg.NotAnEnv)
 }
 
-
 func TestParseStructWithInvalidFieldKind(t *testing.T) {
 	type config struct {
 		WontWorkByte byte `env:"BLAH"`
@@ -173,7 +159,7 @@ func TestUnsupportedSliceType(t *testing.T) {
 	}
 
 	os.Setenv("WONTWORK", "1,2,3")
-	defer os.Setenv("WONTWORK", "")
+	defer os.Clearenv()
 
 	cfg := &config{}
 	assert.Error(t, env.Parse(cfg))
@@ -186,7 +172,7 @@ func TestBadSeparator(t *testing.T) {
 
 	cfg := &config{}
 	os.Setenv("WONTWORK", "1,2,3,4")
-	defer os.Setenv("WONTWORK", "")
+	defer os.Clearenv()
 
 	assert.Error(t, env.Parse(cfg))
 }
@@ -199,7 +185,7 @@ func TestNoErrorRequiredSet(t *testing.T) {
 	cfg := &config{}
 
 	os.Setenv("IS_REQUIRED", "val")
-	defer os.Setenv("IS_REQUIRED", "")
+	defer os.Clearenv()
 	assert.NoError(t, env.Parse(cfg))
 	assert.Equal(t, "val", cfg.IsRequired)
 }
@@ -221,7 +207,7 @@ func TestEmptyOption(t *testing.T) {
 	cfg := &config{}
 
 	os.Setenv("VAR", "val")
-	defer os.Setenv("VAR", "")
+	defer os.Clearenv()
 	assert.NoError(t, env.Parse(cfg))
 	assert.Equal(t, "val", cfg.Var)
 }
