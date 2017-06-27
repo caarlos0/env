@@ -121,7 +121,7 @@ func set(field reflect.Value, refType reflect.StructField, value string) error {
 		separator := refType.Tag.Get("envSeparator")
 		return handleSlice(field, value, separator)
 	case reflect.Ptr:
-		handlePointers(field, refType, value)
+		return handlePointers(field, refType, value)
 	case reflect.String:
 		field.SetString(value)
 	case reflect.Bool:

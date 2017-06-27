@@ -1,4 +1,4 @@
-package env_test
+package env
 
 import (
 	"fmt"
@@ -6,7 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/caarlos0/env"
+	"net/url"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,6 +28,7 @@ type Config struct {
 	Float64     float64       `env:"FLOAT64"`
 	Float32s    []float32     `env:"FLOAT32S"`
 	Float64s    []float64     `env:"FLOAT64S"`
+	Url         *url.URL      `env:"URL"`
 }
 
 func TestParsesEnv(t *testing.T) {
@@ -45,10 +47,15 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("FLOAT64S", "1.0,2.0,3.0")
 	os.Setenv("UINTVAL", "44")
 
+	rawUrl := "https://www.github.com"
+	url, err := url.Parse(rawUrl)
+	assert.Nil(t, err)
+	os.Setenv("URL", rawUrl)
+
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.NoError(t, env.Parse(&cfg))
+	assert.NoError(t, Parse(&cfg))
 	assert.Equal(t, "somevalue", cfg.Some)
 	assert.Equal(t, true, cfg.Other)
 	assert.Equal(t, 8080, cfg.Port)
@@ -66,11 +73,12 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, f64, cfg.Float64)
 	assert.Equal(t, []float32{float32(1.0), float32(2.0), float32(3.0)}, cfg.Float32s)
 	assert.Equal(t, []float64{float64(1.0), float64(2.0), float64(3.0)}, cfg.Float64s)
+	assert.Equal(t, url, cfg.Url)
 }
 
 func TestEmptyVars(t *testing.T) {
 	cfg := Config{}
-	assert.NoError(t, env.Parse(&cfg))
+	assert.NoError(t, Parse(&cfg))
 	assert.Equal(t, "", cfg.Some)
 	assert.Equal(t, false, cfg.Other)
 	assert.Equal(t, 0, cfg.Port)
@@ -79,16 +87,17 @@ func TestEmptyVars(t *testing.T) {
 	assert.Equal(t, 0, len(cfg.SepStrings))
 	assert.Equal(t, 0, len(cfg.Numbers))
 	assert.Equal(t, 0, len(cfg.Bools))
+	assert.Nil(t, cfg.Url)
 }
 
 func TestPassAnInvalidPtr(t *testing.T) {
 	var thisShouldBreak int
-	assert.Error(t, env.Parse(&thisShouldBreak))
+	assert.Error(t, Parse(&thisShouldBreak))
 }
 
 func TestPassReference(t *testing.T) {
 	cfg := Config{}
-	assert.Error(t, env.Parse(cfg))
+	assert.Error(t, Parse(cfg))
 }
 
 func TestInvalidBool(t *testing.T) {
@@ -96,7 +105,7 @@ func TestInvalidBool(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.Error(t, env.Parse(&cfg))
+	assert.Error(t, Parse(&cfg))
 }
 
 func TestInvalidInt(t *testing.T) {
@@ -104,7 +113,7 @@ func TestInvalidInt(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.Error(t, env.Parse(&cfg))
+	assert.Error(t, Parse(&cfg))
 }
 
 func TestInvalidUint(t *testing.T) {
@@ -112,7 +121,7 @@ func TestInvalidUint(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.Error(t, env.Parse(&cfg))
+	assert.Error(t, Parse(&cfg))
 }
 
 func TestInvalidBoolsSlice(t *testing.T) {
@@ -122,7 +131,7 @@ func TestInvalidBoolsSlice(t *testing.T) {
 
 	os.Setenv("BADBOOLS", "t,f,TRUE,faaaalse")
 	cfg := &config{}
-	assert.Error(t, env.Parse(cfg))
+	assert.Error(t, Parse(cfg))
 }
 
 func TestInvalidDuration(t *testing.T) {
@@ -130,18 +139,26 @@ func TestInvalidDuration(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.Error(t, env.Parse(&cfg))
+	assert.Error(t, Parse(&cfg))
+}
+
+func TestInvalidUrl(t *testing.T) {
+	os.Setenv("URL", "https://bad host")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.Error(t, Parse(&cfg))
 }
 
 func TestParsesDefaultConfig(t *testing.T) {
 	cfg := Config{}
-	assert.NoError(t, env.Parse(&cfg))
+	assert.NoError(t, Parse(&cfg))
 	assert.Equal(t, "postgres://localhost:5432/db", cfg.DatabaseURL)
 }
 
 func TestParseStructWithoutEnvTag(t *testing.T) {
 	cfg := Config{}
-	assert.NoError(t, env.Parse(&cfg))
+	assert.NoError(t, Parse(&cfg))
 	assert.Empty(t, cfg.NotAnEnv)
 }
 
@@ -151,7 +168,7 @@ func TestParseStructWithInvalidFieldKind(t *testing.T) {
 	}
 	os.Setenv("BLAH", "a")
 	cfg := config{}
-	assert.Error(t, env.Parse(&cfg))
+	assert.Error(t, Parse(&cfg))
 }
 
 func TestUnsupportedSliceType(t *testing.T) {
@@ -163,7 +180,7 @@ func TestUnsupportedSliceType(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := &config{}
-	assert.Error(t, env.Parse(cfg))
+	assert.Error(t, Parse(cfg))
 }
 
 func TestBadSeparator(t *testing.T) {
@@ -175,7 +192,7 @@ func TestBadSeparator(t *testing.T) {
 	os.Setenv("WONTWORK", "1,2,3,4")
 	defer os.Clearenv()
 
-	assert.Error(t, env.Parse(cfg))
+	assert.Error(t, Parse(cfg))
 }
 
 func TestNoErrorRequiredSet(t *testing.T) {
@@ -187,7 +204,7 @@ func TestNoErrorRequiredSet(t *testing.T) {
 
 	os.Setenv("IS_REQUIRED", "val")
 	defer os.Clearenv()
-	assert.NoError(t, env.Parse(cfg))
+	assert.NoError(t, Parse(cfg))
 	assert.Equal(t, "val", cfg.IsRequired)
 }
 
@@ -197,7 +214,7 @@ func TestErrorRequiredNotSet(t *testing.T) {
 	}
 
 	cfg := &config{}
-	assert.Error(t, env.Parse(cfg))
+	assert.Error(t, Parse(cfg))
 }
 
 func TestEmptyOption(t *testing.T) {
@@ -209,7 +226,7 @@ func TestEmptyOption(t *testing.T) {
 
 	os.Setenv("VAR", "val")
 	defer os.Clearenv()
-	assert.NoError(t, env.Parse(cfg))
+	assert.NoError(t, Parse(cfg))
 	assert.Equal(t, "val", cfg.Var)
 }
 
@@ -219,8 +236,7 @@ func TestErrorOptionNotRecognized(t *testing.T) {
 	}
 
 	cfg := &config{}
-	assert.Error(t, env.Parse(cfg))
-
+	assert.Error(t, Parse(cfg))
 }
 
 func ExampleParse() {
@@ -231,7 +247,7 @@ func ExampleParse() {
 	}
 	os.Setenv("HOME", "/tmp/fakehome")
 	cfg := config{}
-	env.Parse(&cfg)
+	Parse(&cfg)
 	fmt.Println(cfg)
 	// Output: {/tmp/fakehome 3000 false}
 }
@@ -245,7 +261,7 @@ func ExampleParseRequiredField() {
 	}
 	os.Setenv("HOME", "/tmp/fakehome")
 	cfg := config{}
-	err := env.Parse(&cfg)
+	err := Parse(&cfg)
 	fmt.Println(err)
 	// Output: Required environment variable SECRET_KEY is not set
 }
@@ -259,7 +275,7 @@ func ExampleParseMultipleOptions() {
 	}
 	os.Setenv("HOME", "/tmp/fakehome")
 	cfg := config{}
-	err := env.Parse(&cfg)
+	err := Parse(&cfg)
 	fmt.Println(err)
 	// Output: Env tag option option1 not supported.
 }
