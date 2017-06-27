@@ -2,11 +2,10 @@ package env
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"testing"
 	"time"
-
-	"net/url"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -28,7 +27,7 @@ type Config struct {
 	Float64     float64       `env:"FLOAT64"`
 	Float32s    []float32     `env:"FLOAT32S"`
 	Float64s    []float64     `env:"FLOAT64S"`
-	Url         *url.URL      `env:"URL"`
+	URL         *url.URL      `env:"URL"`
 }
 
 func TestParsesEnv(t *testing.T) {
@@ -47,10 +46,10 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("FLOAT64S", "1.0,2.0,3.0")
 	os.Setenv("UINTVAL", "44")
 
-	rawUrl := "https://www.github.com"
-	url, err := url.Parse(rawUrl)
+	rawURL := "https://www.github.com"
+	url, err := url.Parse(rawURL)
 	assert.Nil(t, err)
-	os.Setenv("URL", rawUrl)
+	os.Setenv("URL", rawURL)
 
 	defer os.Clearenv()
 
@@ -73,7 +72,7 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, f64, cfg.Float64)
 	assert.Equal(t, []float32{float32(1.0), float32(2.0), float32(3.0)}, cfg.Float32s)
 	assert.Equal(t, []float64{float64(1.0), float64(2.0), float64(3.0)}, cfg.Float64s)
-	assert.Equal(t, url, cfg.Url)
+	assert.Equal(t, url, cfg.URL)
 }
 
 func TestEmptyVars(t *testing.T) {
@@ -87,7 +86,7 @@ func TestEmptyVars(t *testing.T) {
 	assert.Equal(t, 0, len(cfg.SepStrings))
 	assert.Equal(t, 0, len(cfg.Numbers))
 	assert.Equal(t, 0, len(cfg.Bools))
-	assert.Nil(t, cfg.Url)
+	assert.Nil(t, cfg.URL)
 }
 
 func TestPassAnInvalidPtr(t *testing.T) {
