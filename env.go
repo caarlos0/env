@@ -183,6 +183,7 @@ func handlePointers(field reflect.Value, refType reflect.StructField, value stri
 		}
 		field.Set(reflect.ValueOf(dValue))
 	}
+
 	return nil
 }
 
