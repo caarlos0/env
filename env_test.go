@@ -142,7 +142,7 @@ func TestInvalidDuration(t *testing.T) {
 }
 
 func TestInvalidUrl(t *testing.T) {
-	os.Setenv("URL", "https://bad host")
+	os.Setenv("URL", "https://`1234567890-=\\][poiuytrewqasdfghjkl;'/.,mnbvcxz ~!@#$%^&*()_+|}{\":<>?'")
 	defer os.Clearenv()
 
 	cfg := Config{}
