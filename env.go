@@ -182,6 +182,8 @@ func handlePointers(field reflect.Value, refType reflect.StructField, value stri
 			return err
 		}
 		field.Set(reflect.ValueOf(dValue))
+	default:
+		return ErrUnsupportedType
 	}
 
 	return nil
