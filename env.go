@@ -2,6 +2,7 @@ package env
 
 import (
 	"errors"
+	"net/url"
 	"os"
 	"reflect"
 	"strconv"
@@ -119,6 +120,8 @@ func set(field reflect.Value, refType reflect.StructField, value string) error {
 	case reflect.Slice:
 		separator := refType.Tag.Get("envSeparator")
 		return handleSlice(field, value, separator)
+	case reflect.Ptr:
+		return handlePointers(field, refType, value)
 	case reflect.String:
 		field.SetString(value)
 	case reflect.Bool:
@@ -168,6 +171,21 @@ func set(field reflect.Value, refType reflect.StructField, value string) error {
 	default:
 		return ErrUnsupportedType
 	}
+	return nil
+}
+
+func handlePointers(field reflect.Value, refType reflect.StructField, value string) error {
+	switch refType.Type.String() {
+	case "*url.URL":
+		dValue, err := url.Parse(value)
+		if err != nil {
+			return err
+		}
+		field.Set(reflect.ValueOf(dValue))
+	default:
+		return ErrUnsupportedType
+	}
+
 	return nil
 }
 
