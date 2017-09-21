@@ -45,6 +45,12 @@ func doParse(ref reflect.Value) error {
 	var errorList []string
 
 	for i := 0; i < refType.NumField(); i++ {
+		if reflect.Ptr == ref.Field(i).Kind() {
+			err := Parse(ref.Field(i).Interface())
+			if nil != err {
+				return err
+			}
+		}
 		value, err := get(refType.Field(i))
 		if err != nil {
 			errorList = append(errorList, err.Error())
