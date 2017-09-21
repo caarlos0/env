@@ -50,6 +50,7 @@ func doParse(ref reflect.Value) error {
 			if nil != err {
 				return err
 			}
+			continue
 		}
 		value, err := get(refType.Field(i))
 		if err != nil {
