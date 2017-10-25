@@ -77,7 +77,6 @@ func TestParsesEnv(t *testing.T) {
 }
 
 func TestParsesEnvInner(t *testing.T) {
-
 	os.Setenv("innervar", "someinnervalue")
 	defer os.Clearenv()
 	cfg := ParentStruct{&InnerStruct{}}
@@ -86,7 +85,6 @@ func TestParsesEnvInner(t *testing.T) {
 }
 
 func TestParsesEnvInnerNil(t *testing.T) {
-
 	os.Setenv("innervar", "someinnervalue")
 	defer os.Clearenv()
 	cfg := ParentStruct{}
@@ -246,6 +244,20 @@ func TestErrorOptionNotRecognized(t *testing.T) {
 	cfg := &config{}
 	assert.Error(t, env.Parse(cfg))
 
+}
+
+func TestMustParse(t *testing.T) {
+	type config struct {
+		Var string `env:"VAR,not_supported!"`
+	}
+	defer func() {
+		if r := recover(); r == nil {
+			assert.Fail(t, "should have panicked")
+		}
+	}()
+
+	cfg := &config{}
+	env.MustParse(cfg)
 }
 
 func ExampleParse() {

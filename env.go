@@ -26,6 +26,14 @@ var (
 	sliceOfFloat64s = reflect.TypeOf([]float64(nil))
 )
 
+// MustParse parses a struct containg `env`tags and loads its values from
+// environment variables, panics in case of error.
+func MustParse(v interface{}) {
+	if err := Parse(v); err != nil {
+		panic(err)
+	}
+}
+
 // Parse parses a struct containing `env` tags and loads its values from
 // environment variables.
 func Parse(v interface{}) error {
