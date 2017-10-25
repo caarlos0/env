@@ -29,6 +29,14 @@ type Config struct {
 	Float64s    []float64     `env:"FLOAT64S"`
 }
 
+type ParentStruct struct {
+	InnerStruct *InnerStruct
+}
+
+type InnerStruct struct {
+	Inner string `env:"innervar"`
+}
+
 func TestParsesEnv(t *testing.T) {
 	os.Setenv("somevar", "somevalue")
 	os.Setenv("othervar", "true")
@@ -66,6 +74,23 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, f64, cfg.Float64)
 	assert.Equal(t, []float32{float32(1.0), float32(2.0), float32(3.0)}, cfg.Float32s)
 	assert.Equal(t, []float64{float64(1.0), float64(2.0), float64(3.0)}, cfg.Float64s)
+}
+
+func TestParsesEnvInner(t *testing.T) {
+
+	os.Setenv("innervar", "someinnervalue")
+	defer os.Clearenv()
+	cfg := ParentStruct{&InnerStruct{}}
+	assert.NoError(t, env.Parse(&cfg))
+	assert.Equal(t, "someinnervalue", cfg.InnerStruct.Inner)
+}
+
+func TestParsesEnvInnerNil(t *testing.T) {
+
+	os.Setenv("innervar", "someinnervalue")
+	defer os.Clearenv()
+	cfg := ParentStruct{}
+	assert.Error(t, env.Parse(&cfg))
 }
 
 func TestEmptyVars(t *testing.T) {
