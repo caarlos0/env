@@ -253,7 +253,7 @@ func TestGettingEnvVarsUsingAPrefix(t *testing.T) {
 	os.Setenv("PREFIX_somevar", "aVarWithPrefix")
 	os.Setenv("PREFIX_othervar", "t")
 	cfg := Config{}
-	assert.NoError(t, env.ParseUsingPrefix(&cfg, "PREFIX"))
+	assert.NoError(t, env.ParseUsingPrefix(&cfg, "PREFIX_"))
 	assert.Equal(t, "aVarWithPrefix", cfg.Some)
 	assert.Equal(t, true, cfg.Other)
 
@@ -291,7 +291,7 @@ func ExampleParseUsingPrefix() {
 	}
 	os.Setenv("MYPREFIX_HOME", "/tmp/fakehome")
 	cfg := config{}
-	env.ParseUsingPrefix(&cfg, "MYPREFIX")
+	env.ParseUsingPrefix(&cfg, "MYPREFIX_")
 	fmt.Println(cfg)
 	// Output: {/tmp/fakehome 3000 false}
 }

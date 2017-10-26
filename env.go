@@ -124,7 +124,7 @@ func getRequired(key string) (string, error) {
 
 func getOr(key, defaultValue string, prefix string) string {
 	if &prefix != nil && prefix != "" {
-		key = prefix + "_" + key
+		key = prefix + key
 	}
 	value, ok := os.LookupEnv(key)
 	if ok {
