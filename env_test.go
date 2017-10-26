@@ -46,6 +46,7 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("SEPSTRINGS", "string1:string2:string3")
 	os.Setenv("NUMBERS", "1,2,3,4")
 	os.Setenv("NUMBERS64", "1,2,2147483640,-2147483640")
+	os.Setenv("INT64", "999")
 	os.Setenv("BOOLS", "t,TRUE,0,1")
 	os.Setenv("DURATION", "1s")
 	os.Setenv("FLOAT32", "3.40282346638528859811704183484516925440e+38")
@@ -66,6 +67,7 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.SepStrings)
 	assert.Equal(t, []int{1, 2, 3, 4}, cfg.Numbers)
 	assert.Equal(t, []int64{1, 2, 2147483640, -2147483640}, cfg.Numbers64)
+	assert.Equal(t, int64(999), cfg.Int64)
 	assert.Equal(t, []bool{true, true, false, true}, cfg.Bools)
 	d, _ := time.ParseDuration("1s")
 	assert.Equal(t, d, cfg.Duration)
@@ -134,17 +136,33 @@ func TestInvalidInt(t *testing.T) {
 }
 
 func TestInvalidInt64(t *testing.T) {
-	os.Setenv("INT64", "999")
+	os.Setenv("INT64", "notAnInt")
 	defer os.Clearenv()
 
 	cfg := Config{}
 	env.Parse(&cfg)
 
-	assert.Equal(t, int64(999), cfg.Int64)
+	assert.Error(t, env.Parse(&cfg))
 }
 
 func TestInvalidUint(t *testing.T) {
 	os.Setenv("UINTVAL", "-44")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.Error(t, env.Parse(&cfg))
+}
+
+func TestInvalidFloat32(t *testing.T) {
+	os.Setenv("FLOAT32", "notfloat")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.Error(t, env.Parse(&cfg))
+}
+
+func TestInvalidFloat64(t *testing.T) {
+	os.Setenv("FLOAT64", "notfloat")
 	defer os.Clearenv()
 
 	cfg := Config{}
