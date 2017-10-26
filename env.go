@@ -44,7 +44,7 @@ func Parse(v interface{}) error {
 
 // Parse parses a struct containing `env` tags and loads its values from
 // environment variables that start with the prefix `prefix`
-func ParseUsingPrefix(v interface{}, prefix string) error{
+func ParseUsingPrefix(v interface{}, prefix string) error {
 	envVariablePrefix = prefix
 	return Parse(v)
 }

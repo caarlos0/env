@@ -21,6 +21,7 @@ type Config struct {
 	SepStrings  []string      `env:"SEPSTRINGS" envSeparator:":"`
 	Numbers     []int         `env:"NUMBERS"`
 	Numbers64   []int64       `env:"NUMBERS64"`
+	Int64       int64         `env:"INT64"`
 	Bools       []bool        `env:"BOOLS"`
 	Duration    time.Duration `env:"DURATION"`
 	Float32     float32       `env:"FLOAT32"`
@@ -130,6 +131,16 @@ func TestInvalidInt(t *testing.T) {
 
 	cfg := Config{}
 	assert.Error(t, env.Parse(&cfg))
+}
+
+func TestInvalidInt64(t *testing.T) {
+	os.Setenv("INT64", "999")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	env.Parse(&cfg)
+
+	assert.Equal(t, int64(999), cfg.Int64)
 }
 
 func TestInvalidUint(t *testing.T) {
