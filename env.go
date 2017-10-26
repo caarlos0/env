@@ -24,6 +24,8 @@ var (
 	sliceOfBools    = reflect.TypeOf([]bool(nil))
 	sliceOfFloat32s = reflect.TypeOf([]float32(nil))
 	sliceOfFloat64s = reflect.TypeOf([]float64(nil))
+
+	envVariablePrefix string
 )
 
 // Parse parses a struct containing `env` tags and loads its values from
@@ -38,6 +40,13 @@ func Parse(v interface{}) error {
 		return ErrNotAStructPtr
 	}
 	return doParse(ref)
+}
+
+// Parse parses a struct containing `env` tags and loads its values from
+// environment variables that start with the prefix `prefix`
+func ParseUsingPrefix(v interface{}, prefix string) error{
+	envVariablePrefix = prefix
+	return Parse(v)
 }
 
 func doParse(ref reflect.Value) error {
@@ -80,7 +89,7 @@ func get(field reflect.StructField) (string, error) {
 	key, opts := parseKeyForOption(field.Tag.Get("env"))
 
 	defaultValue := field.Tag.Get("envDefault")
-	val = getOr(key, defaultValue)
+	val = getOr(key, defaultValue, envVariablePrefix)
 
 	if len(opts) > 0 {
 		for _, opt := range opts {
@@ -113,7 +122,10 @@ func getRequired(key string) (string, error) {
 	return "", errors.New("Required environment variable " + key + " is not set")
 }
 
-func getOr(key, defaultValue string) string {
+func getOr(key, defaultValue string, prefix string) string {
+	if &prefix != nil && prefix != "" {
+		key = prefix + "_" + key
+	}
 	value, ok := os.LookupEnv(key)
 	if ok {
 		return value

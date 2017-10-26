@@ -248,6 +248,28 @@ func TestErrorOptionNotRecognized(t *testing.T) {
 
 }
 
+func TestGettingEnvVarsUsingAPrefix(t *testing.T) {
+
+	os.Setenv("PREFIX_somevar", "aVarWithPrefix")
+	os.Setenv("PREFIX_othervar", "t")
+	cfg := Config{}
+	assert.NoError(t, env.ParseUsingPrefix(&cfg, "PREFIX"))
+	assert.Equal(t, "aVarWithPrefix", cfg.Some)
+	assert.Equal(t, true, cfg.Other)
+
+}
+
+func TestGettingEnvVarsWithAnEmptyPrefix(t *testing.T) {
+
+	os.Setenv("somevar", "aVarWithPrefix")
+	os.Setenv("othervar", "t")
+	cfg := Config{}
+	assert.NoError(t, env.ParseUsingPrefix(&cfg, ""))
+	assert.Equal(t, "aVarWithPrefix", cfg.Some)
+	assert.Equal(t, true, cfg.Other)
+
+}
+
 func ExampleParse() {
 	type config struct {
 		Home         string `env:"HOME"`
@@ -257,6 +279,19 @@ func ExampleParse() {
 	os.Setenv("HOME", "/tmp/fakehome")
 	cfg := config{}
 	env.Parse(&cfg)
+	fmt.Println(cfg)
+	// Output: {/tmp/fakehome 3000 false}
+}
+
+func ExampleParseUsingPrefix() {
+	type config struct {
+		Home         string `env:"HOME"`
+		Port         int    `env:"PORT" envDefault:"3000"`
+		IsProduction bool   `env:"PRODUCTION"`
+	}
+	os.Setenv("MYPREFIX_HOME", "/tmp/fakehome")
+	cfg := config{}
+	env.ParseUsingPrefix(&cfg, "MYPREFIX")
 	fmt.Println(cfg)
 	// Output: {/tmp/fakehome 3000 false}
 }
