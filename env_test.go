@@ -21,6 +21,7 @@ type Config struct {
 	SepStrings  []string      `env:"SEPSTRINGS" envSeparator:":"`
 	Numbers     []int         `env:"NUMBERS"`
 	Numbers64   []int64       `env:"NUMBERS64"`
+	Int64       int64         `env:"INT64"`
 	Bools       []bool        `env:"BOOLS"`
 	Duration    time.Duration `env:"DURATION"`
 	Float32     float32       `env:"FLOAT32"`
@@ -45,6 +46,7 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("SEPSTRINGS", "string1:string2:string3")
 	os.Setenv("NUMBERS", "1,2,3,4")
 	os.Setenv("NUMBERS64", "1,2,2147483640,-2147483640")
+	os.Setenv("INT64", "999")
 	os.Setenv("BOOLS", "t,TRUE,0,1")
 	os.Setenv("DURATION", "1s")
 	os.Setenv("FLOAT32", "3.40282346638528859811704183484516925440e+38")
@@ -65,6 +67,7 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.SepStrings)
 	assert.Equal(t, []int{1, 2, 3, 4}, cfg.Numbers)
 	assert.Equal(t, []int64{1, 2, 2147483640, -2147483640}, cfg.Numbers64)
+	assert.Equal(t, int64(999), cfg.Int64)
 	assert.Equal(t, []bool{true, true, false, true}, cfg.Bools)
 	d, _ := time.ParseDuration("1s")
 	assert.Equal(t, d, cfg.Duration)
@@ -132,8 +135,34 @@ func TestInvalidInt(t *testing.T) {
 	assert.Error(t, env.Parse(&cfg))
 }
 
+func TestInvalidInt64(t *testing.T) {
+	os.Setenv("INT64", "notAnInt")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	env.Parse(&cfg)
+
+	assert.Error(t, env.Parse(&cfg))
+}
+
 func TestInvalidUint(t *testing.T) {
 	os.Setenv("UINTVAL", "-44")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.Error(t, env.Parse(&cfg))
+}
+
+func TestInvalidFloat32(t *testing.T) {
+	os.Setenv("FLOAT32", "notfloat")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.Error(t, env.Parse(&cfg))
+}
+
+func TestInvalidFloat64(t *testing.T) {
+	os.Setenv("FLOAT64", "notfloat")
 	defer os.Clearenv()
 
 	cfg := Config{}
@@ -248,6 +277,28 @@ func TestErrorOptionNotRecognized(t *testing.T) {
 
 }
 
+func TestGettingEnvVarsUsingAPrefix(t *testing.T) {
+
+	os.Setenv("PREFIX_somevar", "aVarWithPrefix")
+	os.Setenv("PREFIX_othervar", "t")
+	cfg := Config{}
+	assert.NoError(t, env.ParseUsingPrefix(&cfg, "PREFIX_"))
+	assert.Equal(t, "aVarWithPrefix", cfg.Some)
+	assert.Equal(t, true, cfg.Other)
+
+}
+
+func TestGettingEnvVarsWithAnEmptyPrefix(t *testing.T) {
+
+	os.Setenv("somevar", "aVarWithPrefix")
+	os.Setenv("othervar", "t")
+	cfg := Config{}
+	assert.NoError(t, env.ParseUsingPrefix(&cfg, ""))
+	assert.Equal(t, "aVarWithPrefix", cfg.Some)
+	assert.Equal(t, true, cfg.Other)
+
+}
+
 func ExampleParse() {
 	type config struct {
 		Home         string `env:"HOME"`
@@ -257,6 +308,19 @@ func ExampleParse() {
 	os.Setenv("HOME", "/tmp/fakehome")
 	cfg := config{}
 	env.Parse(&cfg)
+	fmt.Println(cfg)
+	// Output: {/tmp/fakehome 3000 false}
+}
+
+func ExampleParseUsingPrefix() {
+	type config struct {
+		Home         string `env:"HOME"`
+		Port         int    `env:"PORT" envDefault:"3000"`
+		IsProduction bool   `env:"PRODUCTION"`
+	}
+	os.Setenv("MYPREFIX_HOME", "/tmp/fakehome")
+	cfg := config{}
+	env.ParseUsingPrefix(&cfg, "MYPREFIX_")
 	fmt.Println(cfg)
 	// Output: {/tmp/fakehome 3000 false}
 }
