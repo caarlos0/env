@@ -31,6 +31,7 @@ type Config struct {
 
 type ParentStruct struct {
 	InnerStruct *InnerStruct
+	unexported  *InnerStruct
 }
 
 type InnerStruct struct {
@@ -77,16 +78,14 @@ func TestParsesEnv(t *testing.T) {
 }
 
 func TestParsesEnvInner(t *testing.T) {
-
 	os.Setenv("innervar", "someinnervalue")
 	defer os.Clearenv()
-	cfg := ParentStruct{&InnerStruct{}}
+	cfg := ParentStruct{&InnerStruct{}, &InnerStruct{}}
 	assert.NoError(t, env.Parse(&cfg))
 	assert.Equal(t, "someinnervalue", cfg.InnerStruct.Inner)
 }
 
 func TestParsesEnvInnerNil(t *testing.T) {
-
 	os.Setenv("innervar", "someinnervalue")
 	defer os.Clearenv()
 	cfg := ParentStruct{}
