@@ -2,6 +2,7 @@ package env_test
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -32,6 +33,7 @@ type Config struct {
 type ParentStruct struct {
 	InnerStruct *InnerStruct
 	unexported  *InnerStruct
+	Ignored     *http.Client
 }
 
 type InnerStruct struct {
@@ -80,7 +82,10 @@ func TestParsesEnv(t *testing.T) {
 func TestParsesEnvInner(t *testing.T) {
 	os.Setenv("innervar", "someinnervalue")
 	defer os.Clearenv()
-	cfg := ParentStruct{&InnerStruct{}, &InnerStruct{}}
+	cfg := ParentStruct{
+		InnerStruct: &InnerStruct{},
+		unexported:  &InnerStruct{},
+	}
 	assert.NoError(t, env.Parse(&cfg))
 	assert.Equal(t, "someinnervalue", cfg.InnerStruct.Inner)
 }
@@ -89,7 +94,7 @@ func TestParsesEnvInnerNil(t *testing.T) {
 	os.Setenv("innervar", "someinnervalue")
 	defer os.Clearenv()
 	cfg := ParentStruct{}
-	assert.Error(t, env.Parse(&cfg))
+	assert.NoError(t, env.Parse(&cfg))
 }
 
 func TestEmptyVars(t *testing.T) {
