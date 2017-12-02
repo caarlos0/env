@@ -252,6 +252,20 @@ func TestErrorOptionNotRecognized(t *testing.T) {
 
 }
 
+func TestMustParse(t *testing.T) {
+	type config struct {
+		Var string `env:"VAR,not_supported!"`
+	}
+	defer func() {
+		if r := recover(); r == nil {
+			assert.Fail(t, "should have panicked")
+		}
+	}()
+
+	cfg := &config{}
+	env.MustParse(cfg)
+}
+
 func ExampleParse() {
 	type config struct {
 		Home         string `env:"HOME"`
