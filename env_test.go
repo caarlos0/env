@@ -1,9 +1,12 @@
 package env_test
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 
@@ -28,6 +31,8 @@ type Config struct {
 	Float64     float64       `env:"FLOAT64"`
 	Float32s    []float32     `env:"FLOAT32S"`
 	Float64s    []float64     `env:"FLOAT64S"`
+	TestURL1    url.URL       `env:"TEST_URL1"`
+	TestURL2    url.URL       `env:"TEST_URL2" envDefault:"https://google.com"`
 }
 
 type ParentStruct struct {
@@ -55,6 +60,7 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("FLOAT32S", "1.0,2.0,3.0")
 	os.Setenv("FLOAT64S", "1.0,2.0,3.0")
 	os.Setenv("UINTVAL", "44")
+	os.Setenv("TEST_URL1", "https://foo.bar")
 
 	defer os.Clearenv()
 
@@ -77,6 +83,8 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, f64, cfg.Float64)
 	assert.Equal(t, []float32{float32(1.0), float32(2.0), float32(3.0)}, cfg.Float32s)
 	assert.Equal(t, []float64{float64(1.0), float64(2.0), float64(3.0)}, cfg.Float64s)
+	assert.Equal(t, "https://foo.bar", cfg.TestURL1.String())
+	assert.Equal(t, "https://google.com", cfg.TestURL2.String())
 }
 
 func TestParsesEnvInner(t *testing.T) {
@@ -229,6 +237,83 @@ func TestErrorRequiredNotSet(t *testing.T) {
 	assert.Error(t, env.Parse(cfg))
 }
 
+func TestNotURLStruct(t *testing.T) {
+	type config struct {
+		Foo http.Client `env:"FOO"`
+	}
+
+	os.Setenv("FOO", "foo")
+
+	cfg := &config{}
+	err := env.Parse(cfg)
+
+	assert.Error(t, err)
+	assert.Equal(t, env.ErrUnsupportedType, err)
+}
+
+func TestCustomParser(t *testing.T) {
+	type foo struct {
+		name string
+	}
+
+	type config struct {
+		Var foo `env:"VAR"`
+	}
+
+	os.Setenv("VAR", "test")
+
+	customParserFunc := func(v string) (interface{}, error) {
+		return foo{name: v}, nil
+	}
+
+	cfg := &config{}
+	err := env.ParseWithFuncs(cfg, map[reflect.Type]env.ParserFunc{
+		reflect.TypeOf(foo{}): customParserFunc,
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, cfg.Var.name, "test")
+}
+
+func TestCustomParserError(t *testing.T) {
+	type foo struct {
+		name string
+	}
+
+	type config struct {
+		Var foo `env:"VAR"`
+	}
+
+	os.Setenv("VAR", "test")
+
+	customParserFunc := func(v string) (interface{}, error) {
+		return nil, errors.New("something broke")
+	}
+
+	cfg := &config{}
+	err := env.ParseWithFuncs(cfg, map[reflect.Type]env.ParserFunc{
+		reflect.TypeOf(foo{}): customParserFunc,
+	})
+
+	assert.Empty(t, cfg.Var.name, "Var.name should not be filled out when parse errors")
+	assert.Error(t, err)
+	assert.Equal(t, err.Error(), "Custom parser error: something broke")
+}
+
+func TestParseBadURL(t *testing.T) {
+	type config struct {
+		MyURL url.URL `env:"MY_URL"`
+	}
+
+	os.Setenv("MY_URL", "!@#$%^&*()-_+=")
+
+	cfg := &config{}
+	err := env.Parse(cfg)
+
+	assert.Error(t, err)
+	assert.Equal(t, cfg.MyURL.String(), "", "URL should not be set when parse fails")
+	assert.Contains(t, err.Error(), "invalid URL escape")
+}
 func TestEmptyOption(t *testing.T) {
 	type config struct {
 		Var string `env:"VAR,"`
