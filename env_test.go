@@ -275,6 +275,20 @@ func TestCustomParser(t *testing.T) {
 	assert.Equal(t, cfg.Var.name, "test")
 }
 
+func TestParseWithFuncsNoPtr(t *testing.T) {
+	type foo struct{}
+	err := env.ParseWithFuncs(foo{}, nil)
+	assert.Error(t, err)
+	assert.Equal(t, err, env.ErrNotAStructPtr)
+}
+
+func TestParseWithFuncsInvalidType(t *testing.T) {
+	var c int
+	err := env.ParseWithFuncs(&c, nil)
+	assert.Error(t, err)
+	assert.Equal(t, err, env.ErrNotAStructPtr)
+}
+
 func TestCustomParserError(t *testing.T) {
 	type foo struct {
 		name string
