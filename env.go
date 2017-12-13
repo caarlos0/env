@@ -3,7 +3,6 @@ package env
 import (
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"reflect"
 	"strconv"
@@ -50,7 +49,7 @@ func Parse(v interface{}) error {
 
 // ParseWithFuncs is the same as `Parse` except it also allows the user to pass
 // in custom parsers.
-func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc) error {
+func ParseWithFuncs(v interface{}, funcMap CustomParsers) error {
 	ptrRef := reflect.ValueOf(v)
 	if ptrRef.Kind() != reflect.Ptr {
 		return ErrNotAStructPtr
@@ -203,32 +202,22 @@ func set(field reflect.Value, refType reflect.StructField, value string, funcMap
 }
 
 func handleStruct(field reflect.Value, refType reflect.StructField, value string, funcMap CustomParsers) error {
-	switch refType.Type.String() {
-	case "url.URL":
-		u, err := url.Parse(value)
-		if err != nil {
-			return fmt.Errorf("Unable to complete URL parse: %v", err)
-		}
-
-		field.Set(reflect.ValueOf(*u))
-	default:
-		// Does the custom parser func map contain this type?
-		parserFunc, ok := funcMap[field.Type()]
-		if !ok {
-			// Map does not contain a custom parser for this type
-			return ErrUnsupportedType
-		}
-
-		// Call on the custom parser func
-		data, err := parserFunc(value)
-		if err != nil {
-			return fmt.Errorf("Custom parser error: %v", err)
-		}
-
-		// Set the field to the data returned by the customer parser func
-		rv := reflect.ValueOf(data)
-		field.Set(rv)
+	// Does the custom parser func map contain this type?
+	parserFunc, ok := funcMap[field.Type()]
+	if !ok {
+		// Map does not contain a custom parser for this type
+		return ErrUnsupportedType
 	}
+
+	// Call on the custom parser func
+	data, err := parserFunc(value)
+	if err != nil {
+		return fmt.Errorf("Custom parser error: %v", err)
+	}
+
+	// Set the field to the data returned by the customer parser func
+	rv := reflect.ValueOf(data)
+	field.Set(rv)
 
 	return nil
 }

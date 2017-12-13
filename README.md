@@ -36,7 +36,6 @@ type config struct {
 	IsProduction bool          `env:"PRODUCTION"`
 	Hosts        []string      `env:"HOSTS" envSeparator:":"`
 	Duration     time.Duration `env:"DURATION"`
-	HostURL      url.URL       `env:"HostURL" envDefault:"https://google.com"`
 }
 
 func main() {
@@ -73,8 +72,7 @@ The library has built-in support for the following types:
 * `[]float32`
 * `[]float64`
 * `time.Duration`
-* `url.URL`
-* .. or define a [custom parser func](#custom-parser-funcs) for any other type
+* .. or use/define a [custom parser func](#custom-parser-funcs) for any other type
 
 If you set the `envDefault` tag for something, this value will be used in the
 case of absence of it in the environment. If you don't do that AND the
@@ -87,13 +85,16 @@ By default, slice types will split the environment value on `,`; you can change 
 ## Custom Parser Funcs
 
 If you have a type that is not supported out of the box by the lib, you are able
-to define and pass custom parsers (and their associated `reflect.Type`) to the
+to use (or define) and pass custom parsers (and their associated `reflect.Type`) to the
 `env.ParseWithFuncs()` function.
 
-In addition to accepting the struct ref (same as `Parse()`), this function also
+In addition to accepting a struct pointer (same as `Parse()`), this function also
 accepts a `env.CustomParsers` arg that under the covers is a `map[reflect.Type]env.ParserFunc`.
 
-To see what this looks like in practice, take a look at the [commented block in the example](https://github.com/caarlos0/env/blob/master/examples/first.go#L37-L41).
+To see what this looks like in practice, take a look at the [commented block in the example](https://github.com/caarlos0/env/blob/master/examples/first.go#L35-L39).
+
+`env` also ships with some pre-built custom parser funcs for common types. You
+can check them out [here](parsers/).
 
 ## Required fields
 

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/url"
 	"strings"
 	"time"
 
@@ -16,7 +15,6 @@ type config struct {
 	IsProduction bool          `env:"PRODUCTION"`
 	Hosts        []string      `env:"HOSTS" envSeparator:":"`
 	Duration     time.Duration `env:"DURATION"`
-	ExampleURL   url.URL       `env:"EXAMPLE_URL" envDefault:"https://google.com"`
 	ExampleFoo   Foo           `env:"EXAMPLE_FOO"`
 }
 
