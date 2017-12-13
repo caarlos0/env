@@ -2,6 +2,7 @@ package env
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"reflect"
 	"strconv"
@@ -26,6 +27,12 @@ var (
 	sliceOfFloat64s = reflect.TypeOf([]float64(nil))
 )
 
+// CustomParsers is a friendly name for the type that `ParseWithFuncs()` accepts
+type CustomParsers map[reflect.Type]ParserFunc
+
+// ParserFunc defines the signature of a function that can be used within `CustomParsers`
+type ParserFunc func(v string) (interface{}, error)
+
 // Parse parses a struct containing `env` tags and loads its values from
 // environment variables.
 func Parse(v interface{}) error {
@@ -37,10 +44,24 @@ func Parse(v interface{}) error {
 	if ref.Kind() != reflect.Struct {
 		return ErrNotAStructPtr
 	}
-	return doParse(ref)
+	return doParse(ref, make(map[reflect.Type]ParserFunc, 0))
 }
 
-func doParse(ref reflect.Value) error {
+// ParseWithFuncs is the same as `Parse` except it also allows the user to pass
+// in custom parsers.
+func ParseWithFuncs(v interface{}, funcMap CustomParsers) error {
+	ptrRef := reflect.ValueOf(v)
+	if ptrRef.Kind() != reflect.Ptr {
+		return ErrNotAStructPtr
+	}
+	ref := ptrRef.Elem()
+	if ref.Kind() != reflect.Struct {
+		return ErrNotAStructPtr
+	}
+	return doParse(ref, funcMap)
+}
+
+func doParse(ref reflect.Value, funcMap CustomParsers) error {
 	refType := ref.Type()
 	var errorList []string
 
@@ -60,7 +81,7 @@ func doParse(ref reflect.Value) error {
 		if value == "" {
 			continue
 		}
-		if err := set(ref.Field(i), refType.Field(i), value); err != nil {
+		if err := set(ref.Field(i), refType.Field(i), value, funcMap); err != nil {
 			errorList = append(errorList, err.Error())
 			continue
 		}
@@ -121,7 +142,7 @@ func getOr(key, defaultValue string) string {
 	return defaultValue
 }
 
-func set(field reflect.Value, refType reflect.StructField, value string) error {
+func set(field reflect.Value, refType reflect.StructField, value string, funcMap CustomParsers) error {
 	switch field.Kind() {
 	case reflect.Slice:
 		separator := refType.Tag.Get("envSeparator")
@@ -172,9 +193,32 @@ func set(field reflect.Value, refType reflect.StructField, value string) error {
 			}
 			field.SetInt(intValue)
 		}
+	case reflect.Struct:
+		return handleStruct(field, refType, value, funcMap)
 	default:
 		return ErrUnsupportedType
 	}
+	return nil
+}
+
+func handleStruct(field reflect.Value, refType reflect.StructField, value string, funcMap CustomParsers) error {
+	// Does the custom parser func map contain this type?
+	parserFunc, ok := funcMap[field.Type()]
+	if !ok {
+		// Map does not contain a custom parser for this type
+		return ErrUnsupportedType
+	}
+
+	// Call on the custom parser func
+	data, err := parserFunc(value)
+	if err != nil {
+		return fmt.Errorf("Custom parser error: %v", err)
+	}
+
+	// Set the field to the data returned by the customer parser func
+	rv := reflect.ValueOf(data)
+	field.Set(rv)
+
 	return nil
 }
 
