@@ -196,7 +196,15 @@ func set(field reflect.Value, refType reflect.StructField, value string, funcMap
 	case reflect.Struct:
 		return handleStruct(field, refType, value, funcMap)
 	default:
-		return ErrUnsupportedType
+		parserFunc, ok := funcMap[refType.Type]
+		if !ok {
+			return ErrUnsupportedType
+		}
+		val, err := parserFunc(value)
+		if err != nil {
+			return err
+		}
+		field.Set(reflect.ValueOf(val))
 	}
 	return nil
 }

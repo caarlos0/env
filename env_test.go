@@ -6,10 +6,11 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
-	"github.com/caarlos0/env"
+	"github.com/caarl0s/env"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -292,6 +293,34 @@ func TestCustomParserError(t *testing.T) {
 	assert.Empty(t, cfg.Var.name, "Var.name should not be filled out when parse errors")
 	assert.Error(t, err)
 	assert.Equal(t, err.Error(), "Custom parser error: something broke")
+}
+
+func TestCustomParserBasicType(t *testing.T) {
+	type ConstT int
+
+	type config struct {
+		Const ConstT `env:"CONST_VAL"`
+	}
+
+	exp := ConstT(123)
+	os.Setenv("CONST_VAL", fmt.Sprintf("%d", exp))
+
+	customParserFunc := func(v string) (interface{}, error) {
+		i, err := strconv.Atoi(v)
+		if err != nil {
+			return nil, err
+		}
+		r := ConstT(i)
+		return r, nil
+	}
+
+	cfg := &config{}
+	err := env.ParseWithFuncs(cfg, map[reflect.Type]env.ParserFunc{
+		reflect.TypeOf(ConstT(0)): customParserFunc,
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, exp, cfg.Const)
 }
 
 func TestUnsupportedStructType(t *testing.T) {
