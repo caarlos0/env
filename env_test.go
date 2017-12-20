@@ -330,18 +330,11 @@ func TypeCustomParserBasicInvalid(t *testing.T) {
 		Const ConstT `env:"CONST_VAL"`
 	}
 
-	envVal := "invalid"
+	os.Setenv("CONST_VAL", "foobar")
 
-	_, expErr := strconv.Atoi(envVal)
-	os.Setenv("CONST_VAL", envVal)
-
-	customParserFunc := func(v string) (interface{}, error) {
-		i, err := strconv.Atoi(v)
-		if err != nil {
-			return nil, err
-		}
-		r := ConstT(i)
-		return r, nil
+	expErr := errors.New("Random error")
+	customParserFunc := func(_ string) (interface{}, error) {
+		return nil, expErr
 	}
 
 	cfg := &config{}
@@ -351,7 +344,7 @@ func TypeCustomParserBasicInvalid(t *testing.T) {
 
 	assert.Empty(t, cfg.Const)
 	assert.Error(t, err)
-	assert.Equal(t, expErr.Error(), err.Error())
+	assert.Equal(t, expErr, err)
 }
 
 func TestCustomParserBasicUnsupported(t *testing.T) {
