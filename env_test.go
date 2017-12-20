@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/caarl0s/env"
+	"github.com/caarlos0/env"
 	"github.com/stretchr/testify/assert"
 )
 
