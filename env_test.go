@@ -296,7 +296,7 @@ func TestCustomParserError(t *testing.T) {
 }
 
 func TestCustomParserBasicType(t *testing.T) {
-	type ConstT int
+	type ConstT int32
 
 	type config struct {
 		Const ConstT `env:"CONST_VAL"`
@@ -324,7 +324,7 @@ func TestCustomParserBasicType(t *testing.T) {
 }
 
 func TypeCustomParserBasicInvalid(t *testing.T) {
-	type ConstT int
+	type ConstT int32
 
 	type config struct {
 		Const ConstT `env:"CONST_VAL"`
@@ -355,7 +355,7 @@ func TypeCustomParserBasicInvalid(t *testing.T) {
 }
 
 func TestCustomParserBasicUnsupported(t *testing.T) {
-	type ConstT int
+	type ConstT int32
 
 	type config struct {
 		Const ConstT `env:"CONST_VAL"`
@@ -365,9 +365,9 @@ func TestCustomParserBasicUnsupported(t *testing.T) {
 	os.Setenv("CONST_VAL", fmt.Sprintf("%d", exp))
 
 	cfg := &config{}
-	err := env.ParseWithFuncs(cfg, map[reflect.Type]env.ParserFunc{})
+	err := env.Parse(cfg)
 
-	assert.Empty(t, cfg.Const)
+	assert.Zero(t, cfg.Const)
 	assert.Error(t, err)
 	assert.Equal(t, env.ErrUnsupportedType, err)
 }
