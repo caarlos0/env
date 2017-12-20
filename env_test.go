@@ -361,7 +361,7 @@ func TestCustomParserBasicUnsupported(t *testing.T) {
 		Const ConstT `env:"CONST_VAL"`
 	}
 
-	set := ConstT(123)
+	exp := ConstT(123)
 	os.Setenv("CONST_VAL", fmt.Sprintf("%d", exp))
 
 	cfg := &config{}
