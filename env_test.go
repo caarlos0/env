@@ -323,6 +323,55 @@ func TestCustomParserBasicType(t *testing.T) {
 	assert.Equal(t, exp, cfg.Const)
 }
 
+func TypeCustomParserBasicInvalid(t *testing.T) {
+	type ConstT int
+
+	type config struct {
+		Const ConstT `env:"CONST_VAL"`
+	}
+
+	envVal := "invalid"
+
+	_, expErr := strconv.Atoi(envVal)
+	os.Setenv("CONST_VAL", envVal)
+
+	customParserFunc := func(v string) (interface{}, error) {
+		i, err := strconv.Atoi(v)
+		if err != nil {
+			return nil, err
+		}
+		r := ConstT(i)
+		return r, nil
+	}
+
+	cfg := &config{}
+	err := env.ParseWithFuncs(cfg, map[reflect.Type]env.ParserFunc{
+		reflect.TypeOf(ConstT(0)): customParserFunc,
+	})
+
+	assert.Empty(t, cfg.Const)
+	assert.Error(t, err)
+	assert.Equal(t, expErr.Error(), err.Error())
+}
+
+func TestCustomParserBasicUnsupported(t *testing.T) {
+	type ConstT int
+
+	type config struct {
+		Const ConstT `env:"CONST_VAL"`
+	}
+
+	set := ConstT(123)
+	os.Setenv("CONST_VAL", fmt.Sprintf("%d", exp))
+
+	cfg := &config{}
+	err := env.ParseWithFuncs(cfg, map[reflect.Type]env.ParserFunc{})
+
+	assert.Empty(t, cfg.Const)
+	assert.Error(t, err)
+	assert.Equal(t, env.ErrUnsupportedType, err)
+}
+
 func TestUnsupportedStructType(t *testing.T) {
 	type config struct {
 		Foo http.Client `env:"FOO"`
@@ -336,6 +385,7 @@ func TestUnsupportedStructType(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, env.ErrUnsupportedType, err)
 }
+
 func TestEmptyOption(t *testing.T) {
 	type config struct {
 		Var string `env:"VAR,"`
