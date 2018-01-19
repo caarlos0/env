@@ -25,6 +25,7 @@ type Config struct {
 	SepStrings  []string        `env:"SEPSTRINGS" envSeparator:":"`
 	Numbers     []int           `env:"NUMBERS"`
 	Numbers64   []int64         `env:"NUMBERS64"`
+	UNumbers64  []uint64        `env:"UNUMBERS64"`
 	Bools       []bool          `env:"BOOLS"`
 	Duration    time.Duration   `env:"DURATION"`
 	Float32     float32         `env:"FLOAT32"`
@@ -52,6 +53,7 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("SEPSTRINGS", "string1:string2:string3")
 	os.Setenv("NUMBERS", "1,2,3,4")
 	os.Setenv("NUMBERS64", "1,2,2147483640,-2147483640")
+	os.Setenv("UNUMBERS64", "1,2,214748364011,9147483641")
 	os.Setenv("BOOLS", "t,TRUE,0,1")
 	os.Setenv("DURATION", "1s")
 	os.Setenv("FLOAT32", "3.40282346638528859811704183484516925440e+38")
@@ -75,6 +77,7 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.SepStrings)
 	assert.Equal(t, []int{1, 2, 3, 4}, cfg.Numbers)
 	assert.Equal(t, []int64{1, 2, 2147483640, -2147483640}, cfg.Numbers64)
+	assert.Equal(t, []uint64{1, 2, 214748364011, 9147483641}, cfg.UNumbers64)
 	assert.Equal(t, []bool{true, true, false, true}, cfg.Bools)
 	d1, _ := time.ParseDuration("1s")
 	assert.Equal(t, d1, cfg.Duration)
