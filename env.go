@@ -194,6 +194,12 @@ func set(field reflect.Value, refType reflect.StructField, value string, funcMap
 			}
 			field.SetInt(intValue)
 		}
+	case reflect.Uint64:
+		uintValue, err := strconv.ParseUint(value, 10, 64)
+		if err != nil {
+			return err
+		}
+		field.SetUint(uintValue)
 	case reflect.Struct:
 		return handleStruct(field, refType, value, funcMap)
 	default:

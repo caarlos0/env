@@ -18,6 +18,7 @@ type Config struct {
 	Other       bool   `env:"othervar"`
 	Port        int    `env:"PORT"`
 	UintVal     uint   `env:"UINTVAL"`
+	Uint64Val   uint64 `env:"UINT64VAL"`
 	NotAnEnv    string
 	DatabaseURL string          `env:"DATABASE_URL" envDefault:"postgres://localhost:5432/db"`
 	Strings     []string        `env:"STRINGS"`
@@ -58,6 +59,7 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("FLOAT32S", "1.0,2.0,3.0")
 	os.Setenv("FLOAT64S", "1.0,2.0,3.0")
 	os.Setenv("UINTVAL", "44")
+	os.Setenv("UINT64VAL", "6464")
 	os.Setenv("DURATIONS", "1s,2s,3s")
 
 	defer os.Clearenv()
@@ -68,6 +70,7 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, true, cfg.Other)
 	assert.Equal(t, 8080, cfg.Port)
 	assert.Equal(t, uint(44), cfg.UintVal)
+	assert.Equal(t, uint64(6464), cfg.Uint64Val)
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.Strings)
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.SepStrings)
 	assert.Equal(t, []int{1, 2, 3, 4}, cfg.Numbers)
@@ -111,6 +114,7 @@ func TestEmptyVars(t *testing.T) {
 	assert.Equal(t, false, cfg.Other)
 	assert.Equal(t, 0, cfg.Port)
 	assert.Equal(t, uint(0), cfg.UintVal)
+	assert.Equal(t, uint64(0), cfg.Uint64Val)
 	assert.Equal(t, 0, len(cfg.Strings))
 	assert.Equal(t, 0, len(cfg.SepStrings))
 	assert.Equal(t, 0, len(cfg.Numbers))
