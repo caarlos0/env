@@ -66,12 +66,13 @@ The library has built-in support for the following types:
 * `bool`
 * `float32`
 * `float64`
+* `time.Duration`
 * `[]string`
 * `[]int`
 * `[]bool`
 * `[]float32`
 * `[]float64`
-* `time.Duration`
+* `[]time.Duration`
 * .. or use/define a [custom parser func](#custom-parser-funcs) for any other type
 
 If you set the `envDefault` tag for something, this value will be used in the
