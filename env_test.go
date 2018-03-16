@@ -17,6 +17,7 @@ type Config struct {
 	Some        string `env:"somevar"`
 	Other       bool   `env:"othervar"`
 	Port        int    `env:"PORT"`
+	Int64Val    int64  `env:"INT64VAL"`
 	UintVal     uint   `env:"UINTVAL"`
 	Uint64Val   uint64 `env:"UINT64VAL"`
 	NotAnEnv    string
@@ -62,6 +63,7 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("FLOAT64S", "1.0,2.0,3.0")
 	os.Setenv("UINTVAL", "44")
 	os.Setenv("UINT64VAL", "6464")
+	os.Setenv("INT64VAL", "-7575")
 	os.Setenv("DURATIONS", "1s,2s,3s")
 
 	defer os.Clearenv()
@@ -72,6 +74,7 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, true, cfg.Other)
 	assert.Equal(t, 8080, cfg.Port)
 	assert.Equal(t, uint(44), cfg.UintVal)
+	assert.Equal(t, int64(-7575), cfg.Int64Val)
 	assert.Equal(t, uint64(6464), cfg.Uint64Val)
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.Strings)
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.SepStrings)
@@ -118,6 +121,7 @@ func TestEmptyVars(t *testing.T) {
 	assert.Equal(t, 0, cfg.Port)
 	assert.Equal(t, uint(0), cfg.UintVal)
 	assert.Equal(t, uint64(0), cfg.Uint64Val)
+	assert.Equal(t, int64(0), cfg.Int64Val)
 	assert.Equal(t, 0, len(cfg.Strings))
 	assert.Equal(t, 0, len(cfg.SepStrings))
 	assert.Equal(t, 0, len(cfg.Numbers))
@@ -176,6 +180,14 @@ func TestInvalidFloat64(t *testing.T) {
 
 func TestInvalidUint64(t *testing.T) {
 	os.Setenv("UINT64VAL", "AAA")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.Error(t, env.Parse(&cfg))
+}
+
+func TestInvalidInt64(t *testing.T) {
+	os.Setenv("INT64VAL", "AAA")
 	defer os.Clearenv()
 
 	cfg := Config{}
