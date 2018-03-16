@@ -21,6 +21,7 @@ var (
 	// Friendly names for reflect types
 	sliceOfInts      = reflect.TypeOf([]int(nil))
 	sliceOfInt64s    = reflect.TypeOf([]int64(nil))
+	sliceOfUint64s   = reflect.TypeOf([]uint64(nil))
 	sliceOfStrings   = reflect.TypeOf([]string(nil))
 	sliceOfBools     = reflect.TypeOf([]bool(nil))
 	sliceOfFloat32s  = reflect.TypeOf([]float32(nil))
@@ -194,6 +195,12 @@ func set(field reflect.Value, refType reflect.StructField, value string, funcMap
 			}
 			field.SetInt(intValue)
 		}
+	case reflect.Uint64:
+		uintValue, err := strconv.ParseUint(value, 10, 64)
+		if err != nil {
+			return err
+		}
+		field.SetUint(uintValue)
 	case reflect.Struct:
 		return handleStruct(field, refType, value, funcMap)
 	default:
@@ -245,7 +252,12 @@ func handleSlice(field reflect.Value, value, separator string) error {
 			return err
 		}
 		field.Set(reflect.ValueOf(int64Data))
-
+	case sliceOfUint64s:
+		uint64Data, err := parseUint64s(splitData)
+		if err != nil {
+			return err
+		}
+		field.Set(reflect.ValueOf(uint64Data))
 	case sliceOfFloat32s:
 		data, err := parseFloat32s(splitData)
 		if err != nil {
@@ -300,6 +312,19 @@ func parseInt64s(data []string) ([]int64, error) {
 		intSlice = append(intSlice, int64(intValue))
 	}
 	return intSlice, nil
+}
+
+func parseUint64s(data []string) ([]uint64, error) {
+	var uintSlice []uint64
+
+	for _, v := range data {
+		uintValue, err := strconv.ParseUint(v, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		uintSlice = append(uintSlice, uint64(uintValue))
+	}
+	return uintSlice, nil
 }
 
 func parseFloat32s(data []string) ([]float32, error) {
