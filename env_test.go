@@ -158,6 +158,70 @@ func TestInvalidUint(t *testing.T) {
 	assert.Error(t, env.Parse(&cfg))
 }
 
+func TestInvalidFloat32(t *testing.T) {
+	os.Setenv("FLOAT32", "AAA")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.Error(t, env.Parse(&cfg))
+}
+
+func TestInvalidFloat64(t *testing.T) {
+	os.Setenv("FLOAT64", "AAA")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.Error(t, env.Parse(&cfg))
+}
+
+func TestInvalidUint64(t *testing.T) {
+	os.Setenv("UINT64VAL", "AAA")
+	defer os.Clearenv()
+
+	cfg := Config{}
+	assert.Error(t, env.Parse(&cfg))
+}
+
+func TestInvalidInt64Slice(t *testing.T) {
+	type config struct {
+		BadFloats []int64 `env:"BADINTS"`
+	}
+
+	os.Setenv("BADINTS", "A,2,3")
+	cfg := &config{}
+	assert.Error(t, env.Parse(cfg))
+}
+
+func TestInvalidUInt64Slice(t *testing.T) {
+	type config struct {
+		BadFloats []uint64 `env:"BADINTS"`
+	}
+
+	os.Setenv("BADFLOATS", "A,2,3")
+	cfg := &config{}
+	assert.Error(t, env.Parse(cfg))
+}
+
+func TestInvalidFloat32Slice(t *testing.T) {
+	type config struct {
+		BadFloats []float32 `env:"BADFLOATS"`
+	}
+
+	os.Setenv("BADFLOATS", "A,2.0,3.0")
+	cfg := &config{}
+	assert.Error(t, env.Parse(cfg))
+}
+
+func TestInvalidFloat64Slice(t *testing.T) {
+	type config struct {
+		BadFloats []float64 `env:"BADFLOATS"`
+	}
+
+	os.Setenv("BADFLOATS", "A,2.0,3.0")
+	cfg := &config{}
+	assert.Error(t, env.Parse(cfg))
+}
+
 func TestInvalidBoolsSlice(t *testing.T) {
 	type config struct {
 		BadBools []bool `env:"BADBOOLS"`
