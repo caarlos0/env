@@ -44,6 +44,7 @@ type ParentStruct struct {
 
 type InnerStruct struct {
 	Inner string `env:"innervar"`
+	Number uint  `env:"innernum"`
 }
 
 func TestParsesEnv(t *testing.T) {
@@ -111,6 +112,15 @@ func TestParsesEnvInnerNil(t *testing.T) {
 	defer os.Clearenv()
 	cfg := ParentStruct{}
 	assert.NoError(t, env.Parse(&cfg))
+}
+
+func TestParsesEnvInnerInvalid(t *testing.T) {
+	os.Setenv("innernum", "-547")
+	defer os.Clearenv()
+	cfg := ParentStruct{
+		InnerStruct: &InnerStruct{},
+	}
+	assert.Error(t, env.Parse(&cfg))
 }
 
 func TestEmptyVars(t *testing.T) {
