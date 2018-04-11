@@ -18,6 +18,9 @@ var (
 	ErrUnsupportedType = errors.New("Type is not supported")
 	// ErrUnsupportedSliceType if the slice element type is not supported by env
 	ErrUnsupportedSliceType = errors.New("Unsupported slice type")
+	// OnEnvVarSet is an optional convenience callback, such as for logging purposes.
+	// If not nil, it's called after successfully setting the given field from the given value.
+	OnEnvVarSet func(reflect.StructField, string)
 	// Friendly names for reflect types
 	sliceOfInts      = reflect.TypeOf([]int(nil))
 	sliceOfInt64s    = reflect.TypeOf([]int64(nil))
@@ -88,6 +91,9 @@ func doParse(ref reflect.Value, funcMap CustomParsers) error {
 		if err := set(refField, refTypeField, value, funcMap); err != nil {
 			errorList = append(errorList, err.Error())
 			continue
+		}
+		if OnEnvVarSet != nil {
+			OnEnvVarSet(refTypeField, value)
 		}
 	}
 	if len(errorList) == 0 {
