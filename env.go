@@ -68,14 +68,16 @@ func doParse(ref reflect.Value, funcMap CustomParsers) error {
 	var errorList []string
 
 	for i := 0; i < refType.NumField(); i++ {
-		if reflect.Ptr == ref.Field(i).Kind() && !ref.Field(i).IsNil() && ref.Field(i).CanSet() {
-			err := Parse(ref.Field(i).Interface())
+		refField := ref.Field(i)
+		if reflect.Ptr == refField.Kind() && !refField.IsNil() && refField.CanSet() {
+			err := Parse(refField.Interface())
 			if nil != err {
 				return err
 			}
 			continue
 		}
-		value, err := get(refType.Field(i))
+		refTypeField := refType.Field(i)
+		value, err := get(refTypeField)
 		if err != nil {
 			errorList = append(errorList, err.Error())
 			continue
@@ -83,7 +85,7 @@ func doParse(ref reflect.Value, funcMap CustomParsers) error {
 		if value == "" {
 			continue
 		}
-		if err := set(ref.Field(i), refType.Field(i), value, funcMap); err != nil {
+		if err := set(refField, refTypeField, value, funcMap); err != nil {
 			errorList = append(errorList, err.Error())
 			continue
 		}
