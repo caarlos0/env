@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -400,6 +401,76 @@ func TestCustomParserError(t *testing.T) {
 	assert.Equal(t, err.Error(), "Custom parser error: something broke")
 }
 
+func TestCustomParserBasicType(t *testing.T) {
+	type ConstT int32
+
+	type config struct {
+		Const ConstT `env:"CONST_VAL"`
+	}
+
+	exp := ConstT(123)
+	os.Setenv("CONST_VAL", fmt.Sprintf("%d", exp))
+
+	customParserFunc := func(v string) (interface{}, error) {
+		i, err := strconv.Atoi(v)
+		if err != nil {
+			return nil, err
+		}
+		r := ConstT(i)
+		return r, nil
+	}
+
+	cfg := &config{}
+	err := env.ParseWithFuncs(cfg, map[reflect.Type]env.ParserFunc{
+		reflect.TypeOf(ConstT(0)): customParserFunc,
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, exp, cfg.Const)
+}
+
+func TypeCustomParserBasicInvalid(t *testing.T) {
+	type ConstT int32
+
+	type config struct {
+		Const ConstT `env:"CONST_VAL"`
+	}
+
+	os.Setenv("CONST_VAL", "foobar")
+
+	expErr := errors.New("Random error")
+	customParserFunc := func(_ string) (interface{}, error) {
+		return nil, expErr
+	}
+
+	cfg := &config{}
+	err := env.ParseWithFuncs(cfg, map[reflect.Type]env.ParserFunc{
+		reflect.TypeOf(ConstT(0)): customParserFunc,
+	})
+
+	assert.Empty(t, cfg.Const)
+	assert.Error(t, err)
+	assert.Equal(t, expErr, err)
+}
+
+func TestCustomParserBasicUnsupported(t *testing.T) {
+	type ConstT int32
+
+	type config struct {
+		Const ConstT `env:"CONST_VAL"`
+	}
+
+	exp := ConstT(123)
+	os.Setenv("CONST_VAL", fmt.Sprintf("%d", exp))
+
+	cfg := &config{}
+	err := env.Parse(cfg)
+
+	assert.Zero(t, cfg.Const)
+	assert.Error(t, err)
+	assert.Equal(t, env.ErrUnsupportedType, err)
+}
+
 func TestUnsupportedStructType(t *testing.T) {
 	type config struct {
 		Foo http.Client `env:"FOO"`
@@ -413,6 +484,7 @@ func TestUnsupportedStructType(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, env.ErrUnsupportedType, err)
 }
+
 func TestEmptyOption(t *testing.T) {
 	type config struct {
 		Var string `env:"VAR,"`
