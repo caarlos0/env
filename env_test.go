@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -453,6 +454,38 @@ func TestCustomParserBasicType(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, exp, cfg.Const)
+}
+
+func TestCustomParserUint64Alias(t *testing.T) {
+	type T uint64
+
+	var one T = 1
+
+	type config struct {
+		Val T `env:"VAL" envDefault:"1x"`
+	}
+
+	parserCalled := false
+
+	tParser := func(value string) (interface{}, error) {
+		parserCalled = true
+		trimmed := strings.TrimSuffix(value, "x")
+		i, err := strconv.Atoi(trimmed)
+		if err != nil {
+			return nil, err
+		}
+		return T(i), nil
+	}
+
+	cfg := config{}
+
+	err := env.ParseWithFuncs(&cfg, env.CustomParsers{
+		reflect.TypeOf(one): tParser,
+	})
+
+	assert.True(t, parserCalled, "tParser should have been called")
+	assert.NoError(t, err)
+	assert.Equal(t, T(1), cfg.Val)
 }
 
 func TypeCustomParserBasicInvalid(t *testing.T) {
