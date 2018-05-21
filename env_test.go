@@ -512,6 +512,34 @@ func TypeCustomParserBasicInvalid(t *testing.T) {
 	assert.Equal(t, expErr, err)
 }
 
+func TestCustomParserNotCalledForNonAlias(t *testing.T) {
+	type T uint64
+	type U uint64
+
+	type config struct {
+		Val   uint64 `env:"VAL" envDefault:"33"`
+		Other U      `env:"OTHER" envDefault:"44"`
+	}
+
+	tParserCalled := false
+
+	tParser := func(value string) (interface{}, error) {
+		tParserCalled = true
+		return T(99), nil
+	}
+
+	cfg := config{}
+
+	err := env.ParseWithFuncs(&cfg, env.CustomParsers{
+		reflect.TypeOf(T(0)): tParser,
+	})
+
+	assert.False(t, tParserCalled, "tParser should not have been called")
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(33), cfg.Val)
+	assert.Equal(t, U(44), cfg.Other)
+}
+
 func TestCustomParserBasicUnsupported(t *testing.T) {
 	type ConstT int32
 
