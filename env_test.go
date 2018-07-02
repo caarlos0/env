@@ -14,27 +14,45 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type unmarshaler struct {
+	time.Duration
+}
+
+// TextUnmarshaler implements encoding.TextUnmarshaler
+func (d *unmarshaler) UnmarshalText(data []byte) (err error) {
+	if len(data) != 0 {
+		d.Duration, err = time.ParseDuration(string(data))
+	} else {
+		d.Duration = 0
+	}
+	return err
+}
+
 type Config struct {
-	Some        string `env:"somevar"`
-	Other       bool   `env:"othervar"`
-	Port        int    `env:"PORT"`
-	Int64Val    int64  `env:"INT64VAL"`
-	UintVal     uint   `env:"UINTVAL"`
-	Uint64Val   uint64 `env:"UINT64VAL"`
-	NotAnEnv    string
-	DatabaseURL string          `env:"DATABASE_URL" envDefault:"postgres://localhost:5432/db"`
-	Strings     []string        `env:"STRINGS"`
-	SepStrings  []string        `env:"SEPSTRINGS" envSeparator:":"`
-	Numbers     []int           `env:"NUMBERS"`
-	Numbers64   []int64         `env:"NUMBERS64"`
-	UNumbers64  []uint64        `env:"UNUMBERS64"`
-	Bools       []bool          `env:"BOOLS"`
-	Duration    time.Duration   `env:"DURATION"`
-	Float32     float32         `env:"FLOAT32"`
-	Float64     float64         `env:"FLOAT64"`
-	Float32s    []float32       `env:"FLOAT32S"`
-	Float64s    []float64       `env:"FLOAT64S"`
-	Durations   []time.Duration `env:"DURATIONS"`
+	Some            string `env:"somevar"`
+	Other           bool   `env:"othervar"`
+	Port            int    `env:"PORT"`
+	Int64Val        int64  `env:"INT64VAL"`
+	UintVal         uint   `env:"UINTVAL"`
+	Uint64Val       uint64 `env:"UINT64VAL"`
+	NotAnEnv        string
+	DatabaseURL     string          `env:"DATABASE_URL" envDefault:"postgres://localhost:5432/db"`
+	Strings         []string        `env:"STRINGS"`
+	SepStrings      []string        `env:"SEPSTRINGS" envSeparator:":"`
+	Numbers         []int           `env:"NUMBERS"`
+	Numbers64       []int64         `env:"NUMBERS64"`
+	UNumbers64      []uint64        `env:"UNUMBERS64"`
+	Bools           []bool          `env:"BOOLS"`
+	Duration        time.Duration   `env:"DURATION"`
+	Float32         float32         `env:"FLOAT32"`
+	Float64         float64         `env:"FLOAT64"`
+	Float32s        []float32       `env:"FLOAT32S"`
+	Float64s        []float64       `env:"FLOAT64S"`
+	Durations       []time.Duration `env:"DURATIONS"`
+	Unmarshaler     unmarshaler     `env:"UNMARSHALER"`
+	UnmarshalerPtr  *unmarshaler    `env:"UNMARSHALER_PTR"`
+	Unmarshalers    []unmarshaler   `env:"UNMARSHALERS"`
+	UnmarshalerPtrs []*unmarshaler  `env:"UNMARSHALER_PTRS"`
 }
 
 type ParentStruct struct {
@@ -44,8 +62,8 @@ type ParentStruct struct {
 }
 
 type InnerStruct struct {
-	Inner string `env:"innervar"`
-	Number uint  `env:"innernum"`
+	Inner  string `env:"innervar"`
+	Number uint   `env:"innernum"`
 }
 
 func TestParsesEnv(t *testing.T) {
@@ -67,6 +85,10 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("UINT64VAL", "6464")
 	os.Setenv("INT64VAL", "-7575")
 	os.Setenv("DURATIONS", "1s,2s,3s")
+	os.Setenv("UNMARSHALER", "1s")
+	os.Setenv("UNMARSHALER_PTR", "1m")
+	os.Setenv("UNMARSHALERS", "2m,3m")
+	os.Setenv("UNMARSHALER_PTRS", "2m,3m")
 
 	defer os.Clearenv()
 
@@ -95,6 +117,10 @@ func TestParsesEnv(t *testing.T) {
 	d2, _ := time.ParseDuration("2s")
 	d3, _ := time.ParseDuration("3s")
 	assert.Equal(t, []time.Duration{d1, d2, d3}, cfg.Durations)
+	assert.Equal(t, time.Second, cfg.Unmarshaler.Duration)
+	assert.Equal(t, time.Minute, cfg.UnmarshalerPtr.Duration)
+	assert.Equal(t, []unmarshaler{unmarshaler{time.Minute * 2}, unmarshaler{time.Minute * 3}}, cfg.Unmarshalers)
+	assert.Equal(t, []*unmarshaler{&unmarshaler{time.Minute * 2}, &unmarshaler{time.Minute * 3}}, cfg.UnmarshalerPtrs)
 }
 
 func TestParsesEnvInner(t *testing.T) {
@@ -398,7 +424,7 @@ func TestCustomParserError(t *testing.T) {
 
 	assert.Empty(t, cfg.Var.name, "Var.name should not be filled out when parse errors")
 	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "Custom parser error: something broke")
+	assert.Equal(t, err.Error(), "custom parser: something broke")
 }
 
 func TestCustomParserBasicType(t *testing.T) {
@@ -508,6 +534,15 @@ func TestErrorOptionNotRecognized(t *testing.T) {
 
 }
 
+func TestTextUnmarshalerError(t *testing.T) {
+	type config struct {
+		Unmarshaler unmarshaler `env:"UNMARSHALER"`
+	}
+	os.Setenv("UNMARSHALER", "invalid")
+	cfg := &config{}
+	assert.Error(t, env.Parse(cfg))
+}
+
 func ExampleParse() {
 	type config struct {
 		Home         string `env:"HOME"`
@@ -532,7 +567,7 @@ func ExampleParseRequiredField() {
 	cfg := config{}
 	err := env.Parse(&cfg)
 	fmt.Println(err)
-	// Output: Required environment variable SECRET_KEY is not set
+	// Output: required environment variable "SECRET_KEY" is not set
 }
 
 func ExampleParseMultipleOptions() {
@@ -546,5 +581,5 @@ func ExampleParseMultipleOptions() {
 	cfg := config{}
 	err := env.Parse(&cfg)
 	fmt.Println(err)
-	// Output: Env tag option option1 not supported.
+	// Output: env tag option "option1" not supported
 }

@@ -1,6 +1,7 @@
 package env
 
 import (
+	"encoding"
 	"errors"
 	"fmt"
 	"os"
@@ -122,7 +123,7 @@ func get(field reflect.StructField) (string, error) {
 			case "required":
 				val, err = getRequired(key)
 			default:
-				err = errors.New("Env tag option " + opt + " not supported.")
+				err = fmt.Errorf("env tag option %q not supported", opt)
 			}
 		}
 	}
@@ -140,8 +141,7 @@ func getRequired(key string) (string, error) {
 	if value, ok := os.LookupEnv(key); ok {
 		return value, nil
 	}
-	// We do not use fmt.Errorf to avoid another import.
-	return "", errors.New("Required environment variable " + key + " is not set")
+	return "", fmt.Errorf("required environment variable %q is not set", key)
 }
 
 func getOr(key, defaultValue string) string {
@@ -209,40 +209,17 @@ func set(field reflect.Value, refType reflect.StructField, value string, funcMap
 			return err
 		}
 		field.SetUint(uintValue)
-	case reflect.Struct:
-		return handleStruct(field, refType, value, funcMap)
 	default:
 		parserFunc, ok := funcMap[refType.Type]
 		if !ok {
-			return ErrUnsupportedType
+			return handleTextUnmarshaler(field, value)
 		}
 		val, err := parserFunc(value)
 		if err != nil {
-			return err
+			return fmt.Errorf("custom parser: %v", err)
 		}
 		field.Set(reflect.ValueOf(val))
 	}
-	return nil
-}
-
-func handleStruct(field reflect.Value, refType reflect.StructField, value string, funcMap CustomParsers) error {
-	// Does the custom parser func map contain this type?
-	parserFunc, ok := funcMap[field.Type()]
-	if !ok {
-		// Map does not contain a custom parser for this type
-		return ErrUnsupportedType
-	}
-
-	// Call on the custom parser func
-	data, err := parserFunc(value)
-	if err != nil {
-		return fmt.Errorf("Custom parser error: %v", err)
-	}
-
-	// Set the field to the data returned by the customer parser func
-	rv := reflect.ValueOf(data)
-	field.Set(rv)
-
 	return nil
 }
 
@@ -299,9 +276,35 @@ func handleSlice(field reflect.Value, value, separator string) error {
 		}
 		field.Set(reflect.ValueOf(durationData))
 	default:
-		return ErrUnsupportedSliceType
+		elemType := field.Type().Elem()
+		// Ensure we test *type as we can always address elements in a slice.
+		if elemType.Kind() == reflect.Ptr {
+			elemType = elemType.Elem()
+		}
+		if _, ok := reflect.New(elemType).Interface().(encoding.TextUnmarshaler); !ok {
+			return ErrUnsupportedSliceType
+		}
+		return parseTextUnmarshalers(field, splitData)
+
 	}
 	return nil
+}
+
+func handleTextUnmarshaler(field reflect.Value, value string) error {
+	if reflect.Ptr == field.Kind() {
+		if field.IsNil() {
+			field.Set(reflect.New(field.Type().Elem()))
+		}
+	} else if field.CanAddr() {
+		field = field.Addr()
+	}
+
+	tm, ok := field.Interface().(encoding.TextUnmarshaler)
+	if !ok {
+		return ErrUnsupportedType
+	}
+
+	return tm.UnmarshalText([]byte(value))
 }
 
 func parseInts(data []string) ([]int, error) {
@@ -395,4 +398,30 @@ func parseDurations(data []string) ([]time.Duration, error) {
 		durationSlice = append(durationSlice, dvalue)
 	}
 	return durationSlice, nil
+}
+
+func parseTextUnmarshalers(field reflect.Value, data []string) error {
+	s := len(data)
+	elemType := field.Type().Elem()
+	slice := reflect.MakeSlice(reflect.SliceOf(elemType), s, s)
+	for i, v := range data {
+		sv := slice.Index(i)
+		kind := sv.Kind()
+		if kind == reflect.Ptr {
+			sv = reflect.New(elemType.Elem())
+		} else {
+			sv = sv.Addr()
+		}
+		tm := sv.Interface().(encoding.TextUnmarshaler)
+		if err := tm.UnmarshalText([]byte(v)); err != nil {
+			return err
+		}
+		if kind == reflect.Ptr {
+			slice.Index(i).Set(sv)
+		}
+	}
+
+	field.Set(slice)
+
+	return nil
 }
