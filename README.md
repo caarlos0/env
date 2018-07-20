@@ -30,29 +30,37 @@ import (
 	"github.com/caarlos0/env"
 )
 
+type dbConfig struct {
+	Host string `env:"HOST"`
+	Port uint `env:"PORT"`
+}
+type innerConfig struct{
+	Home string `env:"HOME"`
+}
 type config struct {
-	Home         string        `env:"HOME"`
 	Port         int           `env:"PORT" envDefault:"3000"`
 	IsProduction bool          `env:"PRODUCTION"`
 	Hosts        []string      `env:"HOSTS" envSeparator:":"`
 	Duration     time.Duration `env:"DURATION"`
+	Database *dbConfig `env:"DB"`
+	Inner *innerConfig
 }
 
 func main() {
-	cfg := config{}
-	err := env.Parse(&cfg)
+	cfg := config{Database:&dbConfig{},Inner:&innerConfig{}}
+	err := env.Parse(&cfg, "PREFIX")
 	if err != nil {
 		fmt.Printf("%+v\n", err)
 	}
-	fmt.Printf("%+v\n", cfg)
+	fmt.Printf("%+v\n%+v\n%+v\n", cfg,cfg.Database,cfg.Inner)
 }
 ```
 
 You can run it like this:
 
 ```sh
-$ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s go run examples/first.go
-{Home:/your/home Port:3000 IsProduction:true Hosts:[host1 host2 host3] Duration:1s}
+$ PRODUCTION=true PREFIX_HOSTS="host1:host2:host3" PREFIX_DURATION=1s PREFIX_DB_HOST=localhost PREFIX_DB_PORT=5432 go run examples/first.go
+{Port:3000 IsProduction:true Hosts:[host1 host2 host3] Duration:1s}&{Host:localhost Port:5432}&{Home:/your/home}
 ```
 
 ## Supported types and defaults

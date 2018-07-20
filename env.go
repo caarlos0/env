@@ -41,7 +41,7 @@ type ParserFunc func(v string) (interface{}, error)
 
 // Parse parses a struct containing `env` tags and loads its values from
 // environment variables.
-func Parse(v interface{}) error {
+func Parse(v interface{}, prefixes ... string) error {
 	ptrRef := reflect.ValueOf(v)
 	if ptrRef.Kind() != reflect.Ptr {
 		return ErrNotAStructPtr
@@ -50,12 +50,12 @@ func Parse(v interface{}) error {
 	if ref.Kind() != reflect.Struct {
 		return ErrNotAStructPtr
 	}
-	return doParse(ref, make(map[reflect.Type]ParserFunc, 0))
+	return doParse(ref, make(map[reflect.Type]ParserFunc, 0), prefixes...)
 }
 
 // ParseWithFuncs is the same as `Parse` except it also allows the user to pass
 // in custom parsers.
-func ParseWithFuncs(v interface{}, funcMap CustomParsers) error {
+func ParseWithFuncs(v interface{}, funcMap CustomParsers, prefixes ... string) error {
 	ptrRef := reflect.ValueOf(v)
 	if ptrRef.Kind() != reflect.Ptr {
 		return ErrNotAStructPtr
@@ -64,24 +64,31 @@ func ParseWithFuncs(v interface{}, funcMap CustomParsers) error {
 	if ref.Kind() != reflect.Struct {
 		return ErrNotAStructPtr
 	}
-	return doParse(ref, funcMap)
+	return doParse(ref, funcMap, prefixes...)
 }
 
-func doParse(ref reflect.Value, funcMap CustomParsers) error {
+func joinTag(field reflect.StructField, prefixes []string) []string {
+	key, _ := parseKeyForOption(field.Tag.Get("env"))
+	if key != "" {
+		prefixes = append(prefixes, key)
+	}
+	return prefixes
+}
+
+func doParse(ref reflect.Value, funcMap CustomParsers, prefixes ... string) error {
 	refType := ref.Type()
 	var errorList []string
 
 	for i := 0; i < refType.NumField(); i++ {
 		refField := ref.Field(i)
-		if reflect.Ptr == refField.Kind() && !refField.IsNil() && refField.CanSet() {
-			err := Parse(refField.Interface())
-			if nil != err {
+		if refField.Kind() == reflect.Ptr && !refField.IsNil() && refField.CanSet() {
+			if err := ParseWithFuncs(refField.Interface(), funcMap, joinTag(refType.Field(i), prefixes)...); err != nil {
 				return err
 			}
 			continue
 		}
 		refTypeField := refType.Field(i)
-		value, err := get(refTypeField)
+		value, err := get(refTypeField, prefixes...)
 		if err != nil {
 			errorList = append(errorList, err.Error())
 			continue
@@ -102,15 +109,17 @@ func doParse(ref reflect.Value, funcMap CustomParsers) error {
 	}
 	return errors.New(strings.Join(errorList, ". "))
 }
+func getKey() {
 
-func get(field reflect.StructField) (string, error) {
+}
+func get(field reflect.StructField, prefixes ... string) (string, error) {
 	var (
 		val string
 		err error
 	)
 
 	key, opts := parseKeyForOption(field.Tag.Get("env"))
-
+	key = strings.Join(append(prefixes, key), "_")
 	defaultValue := field.Tag.Get("envDefault")
 	val = getOr(key, defaultValue)
 
