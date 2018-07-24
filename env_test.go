@@ -309,6 +309,34 @@ func TestParseStructWithoutEnvTag(t *testing.T) {
 	assert.Empty(t, cfg.NotAnEnv)
 }
 
+func TestParsesDefaultConfigSetEmpty(t *testing.T) {
+	os.Setenv("PORT", "")
+	defer os.Clearenv()
+
+	type config struct {
+		Port int `env:"PORT" envDefault:"3000"`
+	}
+
+	cfg := &config{}
+
+	assert.NoError(t, env.Parse(cfg))
+	assert.Equal(t, 3000, cfg.Port)
+}
+
+func TestParsesDefaultConfigSetNotEmpty(t *testing.T) {
+	os.Setenv("PORT", "3001")
+	defer os.Clearenv()
+
+	type config struct {
+		Port int `env:"PORT" envDefault:"3000"`
+	}
+
+	cfg := &config{}
+
+	assert.NoError(t, env.Parse(cfg))
+	assert.Equal(t, 3001, cfg.Port)
+}
+
 func TestParseStructWithInvalidFieldKind(t *testing.T) {
 	type config struct {
 		WontWorkByte byte `env:"BLAH"`
@@ -362,6 +390,29 @@ func TestErrorRequiredNotSet(t *testing.T) {
 
 	cfg := &config{}
 	assert.Error(t, env.Parse(cfg))
+}
+
+func TestErrorRequiredSetEmpty(t *testing.T) {
+	os.Setenv("PORT", "")
+	defer os.Clearenv()
+
+	type config struct {
+		Port int `env:"PORT,required"`
+	}
+	cfg := &config{}
+	assert.Error(t, env.Parse(cfg))
+}
+
+func TestErrorRequiredSetNotEmpty(t *testing.T) {
+	os.Setenv("PORT", "3001")
+	defer os.Clearenv()
+
+	type config struct {
+		Port int `env:"PORT,required"`
+	}
+	cfg := &config{}
+	assert.NoError(t, env.Parse(cfg))
+	assert.Equal(t, 3001, cfg.Port)
 }
 
 func TestCustomParser(t *testing.T) {
