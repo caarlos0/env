@@ -138,15 +138,14 @@ func parseKeyForOption(key string) (string, []string) {
 }
 
 func getRequired(key string) (string, error) {
-	if value, ok := os.LookupEnv(key); ok {
+	if value, ok := os.LookupEnv(key); ok && len(value) > 0 {
 		return value, nil
 	}
 	return "", fmt.Errorf("required environment variable %q is not set", key)
 }
 
 func getOr(key, defaultValue string) string {
-	value, ok := os.LookupEnv(key)
-	if ok {
+	if value, ok := os.LookupEnv(key); ok && len(value) > 0 {
 		return value
 	}
 	return defaultValue
