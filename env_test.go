@@ -303,6 +303,20 @@ func TestParsesDefaultConfig(t *testing.T) {
 	assert.Equal(t, "postgres://localhost:5432/db", cfg.DatabaseURL)
 }
 
+func TestParsesDefaultConfigSetEmpty(t *testing.T) {
+	os.Setenv("PORT", "")
+	defer os.Clearenv()
+
+	type config struct {
+		Port int `env:"PORT" envDefault:"3000"`
+	}
+
+	cfg := &config{}
+
+	assert.NoError(t, env.Parse(cfg))
+	assert.Equal(t, 3000, cfg.Port)
+}
+
 func TestParseStructWithoutEnvTag(t *testing.T) {
 	cfg := Config{}
 	assert.NoError(t, env.Parse(&cfg))
@@ -360,6 +374,17 @@ func TestErrorRequiredNotSet(t *testing.T) {
 		IsRequired string `env:"IS_REQUIRED,required"`
 	}
 
+	cfg := &config{}
+	assert.Error(t, env.Parse(cfg))
+}
+
+func TestErrorRequiredSetEmpty(t *testing.T) {
+	os.Setenv("PORT", "")
+	defer os.Clearenv()
+
+	type config struct {
+		Port int `env:"PORT,required"`
+	}
 	cfg := &config{}
 	assert.Error(t, env.Parse(cfg))
 }
