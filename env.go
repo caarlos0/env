@@ -114,6 +114,11 @@ func get(field reflect.StructField) (string, error) {
 	defaultValue := field.Tag.Get("envDefault")
 	val = getOr(key, defaultValue)
 
+	expandVar := field.Tag.Get("envExpand")
+	if strings.ToLower(expandVar) == "true" {
+		val = os.ExpandEnv(val)
+	}
+
 	if len(opts) > 0 {
 		for _, opt := range opts {
 			// The only option supported is "required".

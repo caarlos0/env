@@ -364,6 +364,34 @@ func TestErrorRequiredNotSet(t *testing.T) {
 	assert.Error(t, env.Parse(cfg))
 }
 
+func TestParseExpandOption(t *testing.T) {
+	type config struct {
+		Host        string `env:"HOST" envDefault:"localhost"`
+		Port        int    `env:"PORT" envDefault:"3000" envExpand:"True"`
+		SecretKey   string `env:"SECRET_KEY" envExpand:"True"`
+		ExpandKey   string `env:"EXPAND_KEY"`
+		CompoundKey string `env:"HOST_PORT" envDefault:"${HOST}:${PORT}" envExpand:"True"`
+		Default     string `env:"DEFAULT" envDefault:"def1"  envExpand:"True"`
+	}
+	defer os.Clearenv()
+
+	os.Setenv("HOST", "localhost")
+	os.Setenv("PORT", "3000")
+	os.Setenv("EXPAND_KEY", "qwerty12345")
+	os.Setenv("SECRET_KEY", "${EXPAND_KEY}")
+
+	cfg := config{}
+	err := env.Parse(&cfg)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "localhost", cfg.Host)
+	assert.Equal(t, 3000, cfg.Port)
+	assert.Equal(t, "qwerty12345", cfg.SecretKey)
+	assert.Equal(t, "qwerty12345", cfg.ExpandKey)
+	assert.Equal(t, "localhost:3000", cfg.CompoundKey)
+	assert.Equal(t, "def1", cfg.Default)
+}
+
 func TestCustomParser(t *testing.T) {
 	type foo struct {
 		name string
