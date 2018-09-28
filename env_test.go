@@ -452,7 +452,7 @@ func TestCustomParserError(t *testing.T) {
 
 	assert.Empty(t, cfg.Var.name, "Var.name should not be filled out when parse errors")
 	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "custom parser: something broke")
+	assert.Equal(t, err.Error(), "VAR: custom parser: something broke")
 }
 
 func TestCustomParserBasicType(t *testing.T) {
@@ -522,7 +522,7 @@ func TestCustomParserBasicUnsupported(t *testing.T) {
 
 	assert.Zero(t, cfg.Const)
 	assert.Error(t, err)
-	assert.Equal(t, env.ErrUnsupportedType, err)
+	assert.Equal(t, errors.New("CONST_VAL: " + env.ErrUnsupportedType.Error()), err)
 }
 
 func TestUnsupportedStructType(t *testing.T) {
@@ -536,7 +536,7 @@ func TestUnsupportedStructType(t *testing.T) {
 	err := env.Parse(cfg)
 
 	assert.Error(t, err)
-	assert.Equal(t, env.ErrUnsupportedType, err)
+	assert.Equal(t, errors.New("FOO: " + env.ErrUnsupportedType.Error()), err)
 }
 
 func TestEmptyOption(t *testing.T) {
@@ -569,6 +569,82 @@ func TestTextUnmarshalerError(t *testing.T) {
 	os.Setenv("UNMARSHALER", "invalid")
 	cfg := &config{}
 	assert.Error(t, env.Parse(cfg))
+}
+
+func TestMinMaxBorders(t *testing.T) {
+	type config struct {
+		СoordinateX         int     `env:"СOORDINATE_X" envMinValue:"-40" envMaxValue:"60"`
+		СoordinateZ         uint    `env:"СOORDINATE_Z" envMinValue:"33" envMaxValue:"167"`
+		Altitude            int64   `env:"ALTITUDE" envMinValue:"-10994" envMaxValue:"8848"`
+		ServerPort          uint64  `env:"SERVER_PORT" envMaxValue:"1023"`
+		MercuryTemperature  float32 `env:"MERCURY_TEMPERATURE" envMinValue:"-38.83" envMaxValue:"356.73"`
+		NitrogenTemperature float64 `env:"NITROGEN_TEMPERATURE" envMinValue:"-209.86" envMaxValue:"-195.75"`
+		Scores              []int64 `env:"SCORES" envMinValue:"-300" envMaxValue:"300"`
+	}
+
+	initVars := func() {
+		os.Setenv("СOORDINATE_X", "-14")
+		os.Setenv("СOORDINATE_Z", "122")
+		os.Setenv("ALTITUDE", "300")
+		os.Setenv("SERVER_PORT", "88")
+		os.Setenv("MERCURY_TEMPERATURE", "20.2")
+		os.Setenv("NITROGEN_TEMPERATURE", "-200.5")
+		os.Setenv("SCORES", "-300,-200,100,250")
+	}
+
+	cfg := &config{}
+	initVars()
+	err := env.Parse(cfg)
+	assert.NoError(t, err)
+
+	initVars()
+	os.Setenv("СOORDINATE_X", "-44")
+
+	err = env.Parse(cfg)
+	assert.Error(t, err)
+	assert.Equal(t, errors.New("СOORDINATE_X: integer value -44 less than -40"), err)
+
+	initVars()
+	os.Setenv("СOORDINATE_Z", "667")
+
+	err = env.Parse(cfg)
+	assert.Error(t, err)
+	assert.Equal(t, errors.New("СOORDINATE_Z: integer value 667 great than 167"), err)
+
+	initVars()
+	os.Setenv("ALTITUDE", "10000")
+
+	err = env.Parse(cfg)
+	assert.Error(t, err)
+	assert.Equal(t, errors.New("ALTITUDE: integer value 10000 great than 8848"), err)
+
+	initVars()
+	os.Setenv("SERVER_PORT", "8080")
+
+	err = env.Parse(cfg)
+	assert.Error(t, err)
+	assert.Equal(t, errors.New("SERVER_PORT: integer value 8080 great than 1023"), err)
+
+	initVars()
+	os.Setenv("MERCURY_TEMPERATURE", "-55.5")
+
+	err = env.Parse(cfg)
+	assert.Error(t, err)
+	assert.Equal(t, errors.New("MERCURY_TEMPERATURE: float value -55.5 less than -38.83"), err)
+
+	initVars()
+	os.Setenv("NITROGEN_TEMPERATURE", "-0.5")
+
+	err = env.Parse(cfg)
+	assert.Error(t, err)
+	assert.Equal(t, errors.New("NITROGEN_TEMPERATURE: float value -0.5 great than -195.75"), err)
+
+	initVars()
+	os.Setenv("SCORES", "-250,350,250,0")
+
+	err = env.Parse(cfg)
+	assert.Error(t, err)
+	assert.Equal(t, errors.New("SCORES: integer value 350 great than 300"), err)
 }
 
 func ExampleParse() {

@@ -117,3 +117,19 @@ type config struct {
     SecretKey    string   `env:"SECRET_KEY,required"`
 }
 ```
+
+## Control minimum (maximum) allowable value
+
+You can control minimum (maximum) allowable value by setting the `envMinValue` (`envMaxValue`) tag.
+
+```go
+type config struct {
+    СoordinateX         int     `env:"СOORDINATE_X" envMinValue:"-40" envMaxValue:"60"`
+    СoordinateZ         uint    `env:"СOORDINATE_Z" envMinValue:"33" envMaxValue:"167"`
+    Altitude            int64   `env:"ALTITUDE" envMinValue:"-10994" envMaxValue:"8848"`
+    ServerPort          uint64  `env:"SERVER_PORT" envMaxValue:"1023"`
+    MercuryTemperature  float32 `env:"MERCURY_TEMPERATURE" envMinValue:"-38.83" envMaxValue:"356.73"`
+    NitrogenTemperature float64 `env:"NITROGEN_TEMPERATURE" envMinValue:"-209.86" envMaxValue:"-195.75"`
+    Scores              []int64 `env:"SCORES" envMinValue:"-300" envMaxValue:"300"`
+}
+```

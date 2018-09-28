@@ -157,11 +157,21 @@ func getOr(key, defaultValue string) string {
 	return defaultValue
 }
 
-func set(field reflect.Value, refType reflect.StructField, value string, funcMap CustomParsers) error {
+func set(field reflect.Value, refType reflect.StructField, value string, funcMap CustomParsers) (err error) {
+	defer func() {
+		if err != nil {
+			key, _ := parseKeyForOption(refType.Tag.Get("env"))
+			err = errors.New(key + ": " + err.Error())
+		}
+	}()
+
+	minValue := refType.Tag.Get("envMinValue")
+	maxValue := refType.Tag.Get("envMaxValue")
+
 	switch field.Kind() {
 	case reflect.Slice:
 		separator := refType.Tag.Get("envSeparator")
-		return handleSlice(field, value, separator)
+		return handleSlice(field, value, separator, minValue, maxValue)
 	case reflect.String:
 		field.SetString(value)
 	case reflect.Bool:
@@ -171,25 +181,25 @@ func set(field reflect.Value, refType reflect.StructField, value string, funcMap
 		}
 		field.SetBool(bvalue)
 	case reflect.Int:
-		intValue, err := strconv.ParseInt(value, 10, 32)
+		intValue, err := parseIntWithCheckBounds(value, minValue, maxValue)
 		if err != nil {
 			return err
 		}
 		field.SetInt(intValue)
 	case reflect.Uint:
-		uintValue, err := strconv.ParseUint(value, 10, 32)
+		uintValue, err := parseUintWithCheckBounds(value, minValue, maxValue)
 		if err != nil {
 			return err
 		}
 		field.SetUint(uintValue)
 	case reflect.Float32:
-		v, err := strconv.ParseFloat(value, 32)
+		v, err := parseFloat32WithCheckBounds(value, minValue, maxValue)
 		if err != nil {
 			return err
 		}
 		field.SetFloat(v)
 	case reflect.Float64:
-		v, err := strconv.ParseFloat(value, 64)
+		v, err := parseFloat64WithCheckBounds(value, minValue, maxValue)
 		if err != nil {
 			return err
 		}
@@ -202,14 +212,14 @@ func set(field reflect.Value, refType reflect.StructField, value string, funcMap
 			}
 			field.Set(reflect.ValueOf(dValue))
 		} else {
-			intValue, err := strconv.ParseInt(value, 10, 64)
+			intValue, err := parseInt64WithCheckBounds(value, minValue, maxValue)
 			if err != nil {
 				return err
 			}
 			field.SetInt(intValue)
 		}
 	case reflect.Uint64:
-		uintValue, err := strconv.ParseUint(value, 10, 64)
+		uintValue, err := parseUint64WithCheckBounds(value, minValue, maxValue)
 		if err != nil {
 			return err
 		}
@@ -228,7 +238,7 @@ func set(field reflect.Value, refType reflect.StructField, value string, funcMap
 	return nil
 }
 
-func handleSlice(field reflect.Value, value, separator string) error {
+func handleSlice(field reflect.Value, value, separator, minValue, maxValue string) error {
 	if separator == "" {
 		separator = ","
 	}
@@ -239,31 +249,31 @@ func handleSlice(field reflect.Value, value, separator string) error {
 	case sliceOfStrings:
 		field.Set(reflect.ValueOf(splitData))
 	case sliceOfInts:
-		intData, err := parseInts(splitData)
+		intData, err := parseInts(splitData, minValue, maxValue)
 		if err != nil {
 			return err
 		}
 		field.Set(reflect.ValueOf(intData))
 	case sliceOfInt64s:
-		int64Data, err := parseInt64s(splitData)
+		int64Data, err := parseInt64s(splitData, minValue, maxValue)
 		if err != nil {
 			return err
 		}
 		field.Set(reflect.ValueOf(int64Data))
 	case sliceOfUint64s:
-		uint64Data, err := parseUint64s(splitData)
+		uint64Data, err := parseUint64s(splitData, minValue, maxValue)
 		if err != nil {
 			return err
 		}
 		field.Set(reflect.ValueOf(uint64Data))
 	case sliceOfFloat32s:
-		data, err := parseFloat32s(splitData)
+		data, err := parseFloat32s(splitData, minValue, maxValue)
 		if err != nil {
 			return err
 		}
 		field.Set(reflect.ValueOf(data))
 	case sliceOfFloat64s:
-		data, err := parseFloat64s(splitData)
+		data, err := parseFloat64s(splitData, minValue, maxValue)
 		if err != nil {
 			return err
 		}
@@ -312,11 +322,11 @@ func handleTextUnmarshaler(field reflect.Value, value string) error {
 	return tm.UnmarshalText([]byte(value))
 }
 
-func parseInts(data []string) ([]int, error) {
+func parseInts(data []string, minValue, maxValue string) ([]int, error) {
 	intSlice := make([]int, 0, len(data))
 
 	for _, v := range data {
-		intValue, err := strconv.ParseInt(v, 10, 32)
+		intValue, err := parseIntWithCheckBounds(v, minValue, maxValue)
 		if err != nil {
 			return nil, err
 		}
@@ -325,11 +335,11 @@ func parseInts(data []string) ([]int, error) {
 	return intSlice, nil
 }
 
-func parseInt64s(data []string) ([]int64, error) {
+func parseInt64s(data []string, minValue, maxValue string) ([]int64, error) {
 	intSlice := make([]int64, 0, len(data))
 
 	for _, v := range data {
-		intValue, err := strconv.ParseInt(v, 10, 64)
+		intValue, err := parseInt64WithCheckBounds(v, minValue, maxValue)
 		if err != nil {
 			return nil, err
 		}
@@ -338,11 +348,11 @@ func parseInt64s(data []string) ([]int64, error) {
 	return intSlice, nil
 }
 
-func parseUint64s(data []string) ([]uint64, error) {
+func parseUint64s(data []string, minValue, maxValue string) ([]uint64, error) {
 	var uintSlice []uint64
 
 	for _, v := range data {
-		uintValue, err := strconv.ParseUint(v, 10, 64)
+		uintValue, err := parseUint64WithCheckBounds(v, minValue, maxValue)
 		if err != nil {
 			return nil, err
 		}
@@ -351,11 +361,11 @@ func parseUint64s(data []string) ([]uint64, error) {
 	return uintSlice, nil
 }
 
-func parseFloat32s(data []string) ([]float32, error) {
+func parseFloat32s(data []string, minValue, maxValue string) ([]float32, error) {
 	float32Slice := make([]float32, 0, len(data))
 
 	for _, v := range data {
-		data, err := strconv.ParseFloat(v, 32)
+		data, err := parseFloat32WithCheckBounds(v, minValue, maxValue)
 		if err != nil {
 			return nil, err
 		}
@@ -364,11 +374,11 @@ func parseFloat32s(data []string) ([]float32, error) {
 	return float32Slice, nil
 }
 
-func parseFloat64s(data []string) ([]float64, error) {
+func parseFloat64s(data []string, minValue, maxValue string) ([]float64, error) {
 	float64Slice := make([]float64, 0, len(data))
 
 	for _, v := range data {
-		data, err := strconv.ParseFloat(v, 64)
+		data, err := parseFloat64WithCheckBounds(v, minValue, maxValue)
 		if err != nil {
 			return nil, err
 		}
@@ -429,4 +439,177 @@ func parseTextUnmarshalers(field reflect.Value, data []string) error {
 	field.Set(slice)
 
 	return nil
+}
+
+func parseIntWithCheckBounds(valueString, minValueString, maxValueString string) (int64, error) {
+	value, err := strconv.ParseInt(valueString, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(minValueString) != 0 {
+		minValue, err := strconv.ParseInt(minValueString, 10, 32)
+		if err != nil {
+			return 0, err
+		}
+		if value < minValue {
+			return 0, errors.New("integer value " + valueString + " less than " + minValueString)
+		}
+	}
+
+	if len(maxValueString) != 0 {
+		maxValue, err := strconv.ParseInt(maxValueString, 10, 32)
+		if err != nil {
+			return 0, err
+		}
+		if value > maxValue {
+			return 0, errors.New("integer value " + valueString + " great than " + maxValueString)
+		}
+	}
+
+	return value, nil
+}
+
+func parseUintWithCheckBounds(valueString, minValueString, maxValueString string) (uint64, error) {
+	value, err := strconv.ParseUint(valueString, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(minValueString) != 0 {
+		minValue, err := strconv.ParseUint(minValueString, 10, 32)
+		if err != nil {
+			return 0, err
+		}
+		if value < minValue {
+			return 0, errors.New("integer value " + valueString + " less than " + minValueString)
+		}
+	}
+
+	if len(maxValueString) != 0 {
+		maxValue, err := strconv.ParseUint(maxValueString, 10, 32)
+		if err != nil {
+			return 0, err
+		}
+		if value > maxValue {
+			return 0, errors.New("integer value " + valueString + " great than " + maxValueString)
+		}
+	}
+
+	return value, nil
+}
+
+func parseInt64WithCheckBounds(valueString, minValueString, maxValueString string) (int64, error) {
+	value, err := strconv.ParseInt(valueString, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(minValueString) != 0 {
+		minValue, err := strconv.ParseInt(minValueString, 10, 64)
+		if err != nil {
+			return 0, err
+		}
+		if value < minValue {
+			return 0, errors.New("integer value " + valueString + " less than " + minValueString)
+		}
+	}
+
+	if len(maxValueString) != 0 {
+		maxValue, err := strconv.ParseInt(maxValueString, 10, 64)
+		if err != nil {
+			return 0, err
+		}
+		if value > maxValue {
+			return 0, errors.New("integer value " + valueString + " great than " + maxValueString)
+		}
+	}
+	return value, nil
+}
+
+func parseUint64WithCheckBounds(valueString, minValueString, maxValueString string) (uint64, error) {
+	value, err := strconv.ParseUint(valueString, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(minValueString) != 0 {
+		minValue, err := strconv.ParseUint(minValueString, 10, 64)
+		if err != nil {
+			return 0, err
+		}
+		if value < minValue {
+			return 0, errors.New("integer value " + valueString + " less than " + minValueString)
+		}
+	}
+
+	if len(maxValueString) != 0 {
+		maxValue, err := strconv.ParseUint(maxValueString, 10, 64)
+		if err != nil {
+			return 0, err
+		}
+		if value > maxValue {
+			return 0, errors.New("integer value " + valueString + " great than " + maxValueString)
+		}
+	}
+
+	return value, nil
+}
+
+func parseFloat32WithCheckBounds(valueString, minValueString, maxValueString string) (float64, error) {
+	value, err := strconv.ParseFloat(valueString, 32)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(minValueString) != 0 {
+		minValue, err := strconv.ParseFloat(minValueString, 32)
+		if err != nil {
+			return 0, err
+		}
+		if value < minValue {
+			return 0, errors.New("float value " + valueString + " less than " + minValueString)
+		}
+	}
+
+	if len(maxValueString) != 0 {
+		maxValue, err := strconv.ParseFloat(maxValueString, 32)
+		if err != nil {
+			return 0, err
+		}
+		if value > maxValue {
+			return 0, errors.New("float value " + valueString + " great than " + maxValueString)
+		}
+	}
+
+	return value, nil
+}
+
+func parseFloat64WithCheckBounds(valueString, minValueString, maxValueString string) (float64, error) {
+	value, err := strconv.ParseFloat(valueString, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(minValueString) != 0 {
+		minValue, err := strconv.ParseFloat(minValueString, 64)
+		if err != nil {
+			return 0, err
+		}
+		if value < minValue {
+			return 0, errors.New("float value " + valueString + " less than " + minValueString)
+		}
+	}
+
+	if len(maxValueString) != 0 {
+		maxValue, err := strconv.ParseFloat(maxValueString, 64)
+		if err != nil {
+			return 0, err
+		}
+		if value > maxValue {
+			return 0, errors.New("float value " + valueString + " great than " + maxValueString)
+		}
+	}
+
+	return value, nil
 }
