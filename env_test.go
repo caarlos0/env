@@ -647,6 +647,108 @@ func TestMinMaxBorders(t *testing.T) {
 	assert.Equal(t, errors.New("SCORES: integer value 350 great than 300"), err)
 }
 
+func TestMinMaxBordersWithOtherTags(t *testing.T) {
+	type config struct {
+		LostNumbers []int `env:"LOST_NUMBERS" envSeparator:" " envDefault:"4 8 15 16 23 42" envMinValue:"4"`
+		JimNumber   []int `env:"JIM_NUMBER" envSeparator:"+" envMaxValue:"23"`
+		Port1       uint  `env:"PORT_1" envExpand:"True" envMinValue:"80"`
+		Port2       uint  `env:"PORT_2" envDefault:"3000" envExpand:"True" envMaxValue:"8000"`
+		Port3       uint  `env:"PORT_3" envDefault:"${VALUE_3}" envExpand:"True" envMinValue:"80" envMaxValue:"8000"`
+	}
+
+	cfg := &config{}
+	err := env.Parse(cfg)
+	assert.NoError(t, err)
+
+	//--------------------------------------------------------------
+
+	os.Clearenv()
+	os.Setenv("LOST_NUMBERS", "4 1 5 1 9 1 2")
+
+	err = env.Parse(cfg)
+	assert.Error(t, err)
+	assert.Equal(t, errors.New("LOST_NUMBERS: integer value 1 less than 4"), err)
+
+	//--------------------------------------------------------------
+
+	os.Clearenv()
+	os.Setenv("JIM_NUMBER", "4+1+5+1+9+1+2")
+
+	err = env.Parse(cfg)
+	assert.NoError(t, err)
+
+	os.Clearenv()
+	os.Setenv("JIM_NUMBER", "4+8+15+16+23+42")
+
+	err = env.Parse(cfg)
+	assert.Error(t, err)
+	assert.Equal(t, errors.New("JIM_NUMBER: integer value 42 great than 23"), err)
+
+	//--------------------------------------------------------------
+
+	os.Clearenv()
+	os.Setenv("PORT_1", "21")
+
+	err = env.Parse(cfg)
+	assert.Error(t, err)
+	assert.Equal(t, errors.New("PORT_1: integer value 21 less than 80"), err)
+
+	os.Clearenv()
+	os.Setenv("VALUE_1", "22")
+	os.Setenv("PORT_1", "${VALUE_1}")
+
+	err = env.Parse(cfg)
+	assert.Error(t, err)
+	assert.Equal(t, errors.New("PORT_1: integer value 22 less than 80"), err)
+
+	//--------------------------------------------------------------
+
+	os.Clearenv()
+	os.Setenv("PORT_2", "8888")
+
+	err = env.Parse(cfg)
+	assert.Error(t, err)
+	assert.Equal(t, errors.New("PORT_2: integer value 8888 great than 8000"), err)
+
+	os.Clearenv()
+	os.Setenv("VALUE_2", "9000")
+	os.Setenv("PORT_2", "${VALUE_2}")
+
+	err = env.Parse(cfg)
+	assert.Error(t, err)
+	assert.Equal(t, errors.New("PORT_2: integer value 9000 great than 8000"), err)
+
+	//--------------------------------------------------------------
+
+	os.Clearenv()
+	os.Setenv("PORT_3", "3306")
+
+	err = env.Parse(cfg)
+	assert.NoError(t, err)
+
+	os.Clearenv()
+	os.Setenv("VALUE_3", "5432")
+
+	err = env.Parse(cfg)
+	assert.NoError(t, err)
+
+	os.Clearenv()
+	os.Setenv("PORT_3", "23")
+
+	err = env.Parse(cfg)
+	assert.Error(t, err)
+	assert.Equal(t, errors.New("PORT_3: integer value 23 less than 80"), err)
+
+	os.Clearenv()
+	os.Setenv("VALUE_3", "9999")
+	os.Setenv("NEW_VALUE_3", "8100")
+	os.Setenv("PORT_3", "${NEW_VALUE_3}")
+
+	err = env.Parse(cfg)
+	assert.Error(t, err)
+	assert.Equal(t, errors.New("PORT_3: integer value 8100 great than 8000"), err)
+}
+
 func ExampleParse() {
 	type config struct {
 		Home         string `env:"HOME"`
