@@ -571,6 +571,23 @@ func TestTextUnmarshalerError(t *testing.T) {
 	assert.Error(t, env.Parse(cfg))
 }
 
+func TestAutoName(t *testing.T) {
+	type config struct {
+		Named   int `env:"NAMED"`
+		Unnamed int
+	}
+	cfg := &config{}
+	os.Setenv("NAMED", "10")
+	os.Setenv("UNNAMED", "20")
+
+	env.AutoExportFields = true
+	assert.NoError(t, env.Parse(cfg))
+	assert.Equal(t, cfg.Named, 10)
+	assert.Equal(t, cfg.Unnamed, 20)
+
+	env.AutoExportFields = false
+}
+
 func ExampleParse() {
 	type config struct {
 		Home         string `env:"HOME"`

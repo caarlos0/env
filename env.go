@@ -31,6 +31,8 @@ var (
 	sliceOfFloat32s  = reflect.TypeOf([]float32(nil))
 	sliceOfFloat64s  = reflect.TypeOf([]float64(nil))
 	sliceOfDurations = reflect.TypeOf([]time.Duration(nil))
+	// AutoExportFields turns Field into FIELD, no env needed.
+	AutoExportFields bool
 )
 
 // CustomParsers is a friendly name for the type that `ParseWithFuncs()` accepts
@@ -110,6 +112,10 @@ func get(field reflect.StructField) (string, error) {
 	)
 
 	key, opts := parseKeyForOption(field.Tag.Get("env"))
+
+	if AutoExportFields && key == "" {
+		key = strings.ToUpper(field.Name)
+	}
 
 	defaultValue := field.Tag.Get("envDefault")
 	val = getOr(key, defaultValue)
