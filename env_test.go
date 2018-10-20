@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -452,7 +453,7 @@ func TestCustomParserError(t *testing.T) {
 
 	assert.Empty(t, cfg.Var.name, "Var.name should not be filled out when parse errors")
 	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "custom parser: something broke")
+	assert.Equal(t, "Custom parser error: something broke", err.Error())
 }
 
 func TestCustomParserBasicType(t *testing.T) {
@@ -483,6 +484,38 @@ func TestCustomParserBasicType(t *testing.T) {
 	assert.Equal(t, exp, cfg.Const)
 }
 
+func TestCustomParserUint64Alias(t *testing.T) {
+	type T uint64
+
+	var one T = 1
+
+	type config struct {
+		Val T `env:"VAL" envDefault:"1x"`
+	}
+
+	parserCalled := false
+
+	tParser := func(value string) (interface{}, error) {
+		parserCalled = true
+		trimmed := strings.TrimSuffix(value, "x")
+		i, err := strconv.Atoi(trimmed)
+		if err != nil {
+			return nil, err
+		}
+		return T(i), nil
+	}
+
+	cfg := config{}
+
+	err := env.ParseWithFuncs(&cfg, env.CustomParsers{
+		reflect.TypeOf(one): tParser,
+	})
+
+	assert.True(t, parserCalled, "tParser should have been called")
+	assert.NoError(t, err)
+	assert.Equal(t, T(1), cfg.Val)
+}
+
 func TypeCustomParserBasicInvalid(t *testing.T) {
 	type ConstT int32
 
@@ -505,6 +538,34 @@ func TypeCustomParserBasicInvalid(t *testing.T) {
 	assert.Empty(t, cfg.Const)
 	assert.Error(t, err)
 	assert.Equal(t, expErr, err)
+}
+
+func TestCustomParserNotCalledForNonAlias(t *testing.T) {
+	type T uint64
+	type U uint64
+
+	type config struct {
+		Val   uint64 `env:"VAL" envDefault:"33"`
+		Other U      `env:"OTHER" envDefault:"44"`
+	}
+
+	tParserCalled := false
+
+	tParser := func(value string) (interface{}, error) {
+		tParserCalled = true
+		return T(99), nil
+	}
+
+	cfg := config{}
+
+	err := env.ParseWithFuncs(&cfg, env.CustomParsers{
+		reflect.TypeOf(T(0)): tParser,
+	})
+
+	assert.False(t, tParserCalled, "tParser should not have been called")
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(33), cfg.Val)
+	assert.Equal(t, U(44), cfg.Other)
 }
 
 func TestCustomParserBasicUnsupported(t *testing.T) {
