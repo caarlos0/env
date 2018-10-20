@@ -571,6 +571,27 @@ func TestTextUnmarshalerError(t *testing.T) {
 	assert.Error(t, env.Parse(cfg))
 }
 
+func TestParseEnvPrefix(t *testing.T) {
+	type config struct {
+		Foo int `env:"FOO"`
+	}
+
+	cfg := config{}
+
+	env.EnvPrefix = "PREFIX_"
+
+	os.Setenv("PREFIX_FOO", "10")
+	assert.NoError(t, env.Parse(&cfg))
+	assert.Equal(t, 10, cfg.Foo)
+
+	cfg.Foo = 0
+	env.EnvPrefix = ""
+
+	os.Setenv("FOO", "10")
+	assert.NoError(t, env.Parse(&cfg))
+	assert.Equal(t, 10, cfg.Foo)
+}
+
 func ExampleParse() {
 	type config struct {
 		Home         string `env:"HOME"`

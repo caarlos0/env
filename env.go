@@ -31,6 +31,9 @@ var (
 	sliceOfFloat32s  = reflect.TypeOf([]float32(nil))
 	sliceOfFloat64s  = reflect.TypeOf([]float64(nil))
 	sliceOfDurations = reflect.TypeOf([]time.Duration(nil))
+
+	// EnvPrefix should be set to the environment prefix, i.e. PREFIX_
+	EnvPrefix = ""
 )
 
 // CustomParsers is a friendly name for the type that `ParseWithFuncs()` accepts
@@ -143,14 +146,14 @@ func parseKeyForOption(key string) (string, []string) {
 }
 
 func getRequired(key string) (string, error) {
-	if value, ok := os.LookupEnv(key); ok {
+	if value, ok := os.LookupEnv(EnvPrefix + key); ok {
 		return value, nil
 	}
 	return "", fmt.Errorf("required environment variable %q is not set", key)
 }
 
 func getOr(key, defaultValue string) string {
-	value, ok := os.LookupEnv(key)
+	value, ok := os.LookupEnv(EnvPrefix + key)
 	if ok {
 		return value
 	}
