@@ -32,6 +32,8 @@ import (
 
 type config struct {
 	Home         string        `env:"HOME"`
+	Domain       string        `env:"ENV" cases:"prod,dev" prod:"prod.com" dev:"dev.com"`
+	Index        int           `env:"ENV" cases:"prod,dev" prod:"1" dev:"2"`
 	Port         int           `env:"PORT" envDefault:"3000"`
 	IsProduction bool          `env:"PRODUCTION"`
 	Hosts        []string      `env:"HOSTS" envSeparator:":"`
@@ -52,8 +54,8 @@ func main() {
 You can run it like this:
 
 ```sh
-$ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s go run examples/first.go
-{Home:/your/home Port:3000 IsProduction:true Hosts:[host1 host2 host3] Duration:1s}
+$ PRODUCTION=true ENV=prod HOSTS="host1:host2:host3" DURATION=1s go run examples/first.go
+{Home:/your/home Domain:prod.com Index:1 Port:3000 IsProduction:true Hosts:[host1 host2 host3] Duration:1s}
 ```
 
 ## Supported types and defaults

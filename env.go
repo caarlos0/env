@@ -111,6 +111,10 @@ func get(field reflect.StructField) (string, error) {
 
 	key, opts := parseKeyForOption(field.Tag.Get("env"))
 
+	cases := []string{}
+	if casesStr, ok := field.Tag.Lookup("cases"); ok {
+		cases = strings.Split(casesStr, ",")
+	}
 	defaultValue := field.Tag.Get("envDefault")
 	val = getOr(key, defaultValue)
 
@@ -129,6 +133,17 @@ func get(field reflect.StructField) (string, error) {
 				val, err = getRequired(key)
 			default:
 				err = fmt.Errorf("env tag option %q not supported", opt)
+			}
+		}
+	}
+
+	if len(cases) > 0 {
+		if !contains(cases, val) {
+			err = fmt.Errorf("env var `$%s` (value: %s) not present in `cases`", key, val)
+		}
+		for _, c := range cases {
+			if c == val {
+				val = field.Tag.Get(c)
 			}
 		}
 	}
@@ -155,6 +170,15 @@ func getOr(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
 
 func set(field reflect.Value, refType reflect.StructField, value string, funcMap CustomParsers) error {

@@ -11,6 +11,8 @@ import (
 
 type config struct {
 	Home         string        `env:"HOME"`
+	Domain       string        `env:"ENV" cases:"prod,dev" prod:"prod.com" dev:"dev.com"`
+	Index        int           `env:"ENV" cases:"prod,dev" prod:"1" dev:"2"`
 	Port         int           `env:"PORT" envDefault:"3000"`
 	IsProduction bool          `env:"PRODUCTION"`
 	Hosts        []string      `env:"HOSTS" envSeparator:":"`
