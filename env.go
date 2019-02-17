@@ -194,8 +194,64 @@ func set(field reflect.Value, refType reflect.StructField, value string, funcMap
 			return err
 		}
 		field.SetInt(intValue)
+	case reflect.Int8:
+		intValue, err := strconv.ParseInt(value, 10, 8)
+		if err != nil {
+			return err
+		}
+		field.SetInt(intValue)
+	case reflect.Int16:
+		intValue, err := strconv.ParseInt(value, 10, 16)
+		if err != nil {
+			return err
+		}
+		field.SetInt(intValue)
+	case reflect.Int32:
+		intValue, err := strconv.ParseInt(value, 10, 32)
+		if err != nil {
+			return err
+		}
+		field.SetInt(intValue)
+	case reflect.Int64:
+		if refType.Type.String() == "time.Duration" {
+			dValue, err := time.ParseDuration(value)
+			if err != nil {
+				return err
+			}
+			field.Set(reflect.ValueOf(dValue))
+		} else {
+			intValue, err := strconv.ParseInt(value, 10, 64)
+			if err != nil {
+				return err
+			}
+			field.SetInt(intValue)
+		}
 	case reflect.Uint:
 		uintValue, err := strconv.ParseUint(value, 10, 32)
+		if err != nil {
+			return err
+		}
+		field.SetUint(uintValue)
+	case reflect.Uint8:
+		uintValue, err := strconv.ParseUint(value, 10, 8)
+		if err != nil {
+			return err
+		}
+		field.SetUint(uintValue)
+	case reflect.Uint16:
+		uintValue, err := strconv.ParseUint(value, 10, 16)
+		if err != nil {
+			return err
+		}
+		field.SetUint(uintValue)
+	case reflect.Uint32:
+		uintValue, err := strconv.ParseUint(value, 10, 32)
+		if err != nil {
+			return err
+		}
+		field.SetUint(uintValue)
+	case reflect.Uint64:
+		uintValue, err := strconv.ParseUint(value, 10, 64)
 		if err != nil {
 			return err
 		}
@@ -212,26 +268,6 @@ func set(field reflect.Value, refType reflect.StructField, value string, funcMap
 			return err
 		}
 		field.Set(reflect.ValueOf(v))
-	case reflect.Int64:
-		if refType.Type.String() == "time.Duration" {
-			dValue, err := time.ParseDuration(value)
-			if err != nil {
-				return err
-			}
-			field.Set(reflect.ValueOf(dValue))
-		} else {
-			intValue, err := strconv.ParseInt(value, 10, 64)
-			if err != nil {
-				return err
-			}
-			field.SetInt(intValue)
-		}
-	case reflect.Uint64:
-		uintValue, err := strconv.ParseUint(value, 10, 64)
-		if err != nil {
-			return err
-		}
-		field.SetUint(uintValue)
 	default:
 		return handleTextUnmarshaler(field, value)
 	}

@@ -33,8 +33,14 @@ type Config struct {
 	Some            string `env:"somevar"`
 	Other           bool   `env:"othervar"`
 	Port            int    `env:"PORT"`
+	Int8Val         int8   `env:"INT8VAL"`
+	Int16Val        int16  `env:"INT16VAL"`
+	Int32Val        int32  `env:"INT32VAL"`
 	Int64Val        int64  `env:"INT64VAL"`
 	UintVal         uint   `env:"UINTVAL"`
+	Uint8Val        uint8  `env:"UINT8VAL"`
+	Uint16Val       uint16 `env:"UINT16VAL"`
+	Uint32Val       uint32 `env:"UINT32VAL"`
 	Uint64Val       uint64 `env:"UINT64VAL"`
 	NotAnEnv        string
 	DatabaseURL     string          `env:"DATABASE_URL" envDefault:"postgres://localhost:5432/db"`
@@ -90,7 +96,13 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("FLOAT32S", "1.0,2.0,3.0")
 	os.Setenv("FLOAT64S", "1.0,2.0,3.0")
 	os.Setenv("UINTVAL", "44")
+	os.Setenv("UINT8VAL", "88")
+	os.Setenv("UINT16VAL", "1616")
+	os.Setenv("UINT32VAL", "3232")
 	os.Setenv("UINT64VAL", "6464")
+	os.Setenv("INT8VAL", "-88")
+	os.Setenv("INT16VAL", "-1616")
+	os.Setenv("INT32VAL", "-3232")
 	os.Setenv("INT64VAL", "-7575")
 	os.Setenv("DURATIONS", "1s,2s,3s")
 	os.Setenv("UNMARSHALER", "1s")
@@ -106,8 +118,14 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, true, cfg.Other)
 	assert.Equal(t, 8080, cfg.Port)
 	assert.Equal(t, uint(44), cfg.UintVal)
-	assert.Equal(t, int64(-7575), cfg.Int64Val)
+	assert.Equal(t, uint8(88), cfg.Uint8Val)
+	assert.Equal(t, uint16(1616), cfg.Uint16Val)
+	assert.Equal(t, uint32(3232), cfg.Uint32Val)
 	assert.Equal(t, uint64(6464), cfg.Uint64Val)
+	assert.Equal(t, int8(-88), cfg.Int8Val)
+	assert.Equal(t, int16(-1616), cfg.Int16Val)
+	assert.Equal(t, int32(-3232), cfg.Int32Val)
+	assert.Equal(t, int64(-7575), cfg.Int64Val)
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.Strings)
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.SepStrings)
 	assert.Equal(t, []int{1, 2, 3, 4}, cfg.Numbers)
@@ -584,14 +602,15 @@ func TestCustomParserNotCalledForNonAlias(t *testing.T) {
 }
 
 func TestCustomParserBasicUnsupported(t *testing.T) {
-	type ConstT int32
+	type ConstT struct{
+		A int
+	}
 
 	type config struct {
 		Const ConstT `env:"CONST_VAL"`
 	}
 
-	exp := ConstT(123)
-	os.Setenv("CONST_VAL", fmt.Sprintf("%d", exp))
+	os.Setenv("CONST_VAL", "42")
 
 	cfg := &config{}
 	err := env.Parse(cfg)
