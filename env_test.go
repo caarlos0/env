@@ -67,6 +67,13 @@ type InnerStruct struct {
 	Number uint   `env:"innernum"`
 }
 
+type ForNestedStruct struct {
+	NestedStruct
+}
+type NestedStruct struct {
+	NestedVar string `env:"nestedvar"`
+}
+
 func TestParsesEnv(t *testing.T) {
 	os.Setenv("somevar", "somevalue")
 	os.Setenv("othervar", "true")
@@ -149,6 +156,14 @@ func TestParsesEnvInnerInvalid(t *testing.T) {
 		InnerStruct: &InnerStruct{},
 	}
 	assert.Error(t, env.Parse(&cfg))
+}
+
+func TestParsesEnvNested(t *testing.T) {
+	os.Setenv("nestedvar", "somenestedvalue")
+	defer os.Clearenv()
+	var cfg ForNestedStruct
+	assert.NoError(t, env.Parse(&cfg))
+	assert.Equal(t, "somenestedvalue", cfg.NestedVar)
 }
 
 func TestEmptyVars(t *testing.T) {
