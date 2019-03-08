@@ -31,6 +31,7 @@ func (d *unmarshaler) UnmarshalText(data []byte) (err error) {
 	return err
 }
 
+// nolint: maligned
 type Config struct {
 	Some            string `env:"somevar"`
 	Other           bool   `env:"othervar"`
