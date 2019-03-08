@@ -80,13 +80,6 @@ func doParse(ref reflect.Value, funcMap CustomParsers) error {
 			}
 			continue
 		}
-		if reflect.Struct == refField.Kind() {
-			err := doParse(refField, funcMap)
-			if nil != err {
-				errorList = append(errorList, err.Error())
-			}
-			continue
-		}
 		refTypeField := refType.Field(i)
 		value, err := get(refTypeField)
 		if err != nil {
@@ -94,6 +87,12 @@ func doParse(ref reflect.Value, funcMap CustomParsers) error {
 			continue
 		}
 		if value == "" {
+			if reflect.Struct == refField.Kind() {
+				err := doParse(refField, funcMap)
+				if nil != err {
+					errorList = append(errorList, err.Error())
+				}
+			}
 			continue
 		}
 		if err := set(refField, refTypeField, value, funcMap); err != nil {
