@@ -164,6 +164,8 @@ func getOr(key, defaultValue string) string {
 	return defaultValue
 }
 
+// TODO: need to improve this method...
+// nolint: gocyclo
 func set(field reflect.Value, refType reflect.StructField, value string, funcMap CustomParsers) error {
 	// use custom parser if configured for this type
 	parserFunc, ok := funcMap[refType.Type]
