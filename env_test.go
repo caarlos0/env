@@ -147,8 +147,8 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, []time.Duration{d1, d2, d3}, cfg.Durations)
 	assert.Equal(t, time.Second, cfg.Unmarshaler.Duration)
 	assert.Equal(t, time.Minute, cfg.UnmarshalerPtr.Duration)
-	assert.Equal(t, []unmarshaler{unmarshaler{time.Minute * 2}, unmarshaler{time.Minute * 3}}, cfg.Unmarshalers)
-	assert.Equal(t, []*unmarshaler{&unmarshaler{time.Minute * 2}, &unmarshaler{time.Minute * 3}}, cfg.UnmarshalerPtrs)
+	assert.Equal(t, []unmarshaler{{time.Minute * 2}, {time.Minute * 3}}, cfg.Unmarshalers)
+	assert.Equal(t, []*unmarshaler{{time.Minute * 2}, {time.Minute * 3}}, cfg.UnmarshalerPtrs)
 }
 
 func TestParsesEnvInner(t *testing.T) {
@@ -488,7 +488,7 @@ func TestCustomParserError(t *testing.T) {
 
 	assert.Empty(t, cfg.Var.name, "Var.name should not be filled out when parse errors")
 	assert.Error(t, err)
-	assert.Equal(t, "Custom parser error: something broke", err.Error())
+	assert.Equal(t, "custom parser error: something broke", err.Error())
 }
 
 func TestCustomParserBasicType(t *testing.T) {
@@ -551,30 +551,6 @@ func TestCustomParserUint64Alias(t *testing.T) {
 	assert.Equal(t, T(1), cfg.Val)
 }
 
-func TypeCustomParserBasicInvalid(t *testing.T) {
-	type ConstT int32
-
-	type config struct {
-		Const ConstT `env:"CONST_VAL"`
-	}
-
-	os.Setenv("CONST_VAL", "foobar")
-
-	expErr := errors.New("Random error")
-	customParserFunc := func(_ string) (interface{}, error) {
-		return nil, expErr
-	}
-
-	cfg := &config{}
-	err := env.ParseWithFuncs(cfg, map[reflect.Type]env.ParserFunc{
-		reflect.TypeOf(ConstT(0)): customParserFunc,
-	})
-
-	assert.Empty(t, cfg.Const)
-	assert.Error(t, err)
-	assert.Equal(t, expErr, err)
-}
-
 func TestCustomParserNotCalledForNonAlias(t *testing.T) {
 	type T uint64
 	type U uint64
@@ -604,7 +580,7 @@ func TestCustomParserNotCalledForNonAlias(t *testing.T) {
 }
 
 func TestCustomParserBasicUnsupported(t *testing.T) {
-	type ConstT struct{
+	type ConstT struct {
 		A int
 	}
 
@@ -679,7 +655,9 @@ func ExampleParse() {
 	}
 	os.Setenv("HOME", "/tmp/fakehome")
 	var cfg config
-	env.Parse(&cfg)
+	if err := env.Parse(&cfg); err != nil {
+		fmt.Println("failed:", err)
+	}
 	fmt.Printf("%+v", cfg)
 	// Output: {Home:/tmp/fakehome Port:3000 IsProduction:false Inner:{Foo:foobar}}
 }
@@ -689,9 +667,11 @@ func ExampleParseWithFuncs() {
 		ExampleURL url.URL `env:"EXAMPLE_URL" envDefault:"https://google.com"`
 	}
 	var cfg config
-	env.ParseWithFuncs(&cfg, env.CustomParsers{
+	if err := env.ParseWithFuncs(&cfg, env.CustomParsers{
 		parsers.URLType: parsers.URLFunc,
-	})
+	}); err != nil {
+		fmt.Println("failed:", err)
+	}
 	fmt.Printf("%+v - %s", cfg, cfg.ExampleURL.String())
 	// Output: {ExampleURL:{Scheme:https Opaque: User: Host:google.com Path: RawPath: ForceQuery:false RawQuery: Fragment:}} - https://google.com
 }

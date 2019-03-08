@@ -11,14 +11,15 @@ import (
 	"time"
 )
 
+// nolint: gochecknoglobals
 var (
 	// ErrNotAStructPtr is returned if you pass something that is not a pointer to a
 	// Struct to Parse
-	ErrNotAStructPtr = errors.New("Expected a pointer to a Struct")
+	ErrNotAStructPtr = errors.New("expected a pointer to a Struct")
 	// ErrUnsupportedType if the struct field type is not supported by env
-	ErrUnsupportedType = errors.New("Type is not supported")
+	ErrUnsupportedType = errors.New("type is not supported")
 	// ErrUnsupportedSliceType if the slice element type is not supported by env
-	ErrUnsupportedSliceType = errors.New("Unsupported slice type")
+	ErrUnsupportedSliceType = errors.New("unsupported slice type")
 	// OnEnvVarSet is an optional convenience callback, such as for logging purposes.
 	// If not nil, it's called after successfully setting the given field from the given value.
 	OnEnvVarSet func(reflect.StructField, string)
@@ -50,7 +51,7 @@ func Parse(v interface{}) error {
 	if ref.Kind() != reflect.Struct {
 		return ErrNotAStructPtr
 	}
-	return doParse(ref, make(map[reflect.Type]ParserFunc, 0))
+	return doParse(ref, make(map[reflect.Type]ParserFunc))
 }
 
 // ParseWithFuncs is the same as `Parse` except it also allows the user to pass
@@ -169,7 +170,7 @@ func set(field reflect.Value, refType reflect.StructField, value string, funcMap
 	if ok {
 		val, err := parserFunc(value)
 		if err != nil {
-			return fmt.Errorf("Custom parser error: %v", err)
+			return fmt.Errorf("custom parser error: %v", err)
 		}
 		field.Set(reflect.ValueOf(val))
 		return nil
@@ -379,20 +380,20 @@ func parseInt64s(data []string) ([]int64, error) {
 		if err != nil {
 			return nil, err
 		}
-		intSlice = append(intSlice, int64(intValue))
+		intSlice = append(intSlice, intValue)
 	}
 	return intSlice, nil
 }
 
 func parseUint64s(data []string) ([]uint64, error) {
-	var uintSlice []uint64
+	var uintSlice = make([]uint64, 0, len(data))
 
 	for _, v := range data {
 		uintValue, err := strconv.ParseUint(v, 10, 64)
 		if err != nil {
 			return nil, err
 		}
-		uintSlice = append(uintSlice, uint64(uintValue))
+		uintSlice = append(uintSlice, uintValue)
 	}
 	return uintSlice, nil
 }
@@ -418,7 +419,7 @@ func parseFloat64s(data []string) ([]float64, error) {
 		if err != nil {
 			return nil, err
 		}
-		float64Slice = append(float64Slice, float64(data))
+		float64Slice = append(float64Slice, data)
 	}
 	return float64Slice, nil
 }

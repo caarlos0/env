@@ -7,6 +7,7 @@ import (
 	"reflect"
 )
 
+// nolint: gochecknoglobals
 var (
 	// URLType is a helper var that represents the `reflect.Type`` of `url.URL`
 	URLType = reflect.TypeOf(url.URL{})
@@ -16,7 +17,7 @@ var (
 func URLFunc(v string) (interface{}, error) {
 	u, err := url.Parse(v)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to complete URL parse: %v", err)
+		return nil, fmt.Errorf("unable to complete URL parse: %v", err)
 	}
 
 	return *u, nil
