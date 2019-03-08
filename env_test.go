@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"reflect"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/caarlos0/env"
+	"github.com/caarlos0/env/parsers"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -654,7 +656,6 @@ func TestErrorOptionNotRecognized(t *testing.T) {
 
 	cfg := &config{}
 	assert.Error(t, env.Parse(cfg))
-
 }
 
 func TestTextUnmarshalerError(t *testing.T) {
@@ -667,42 +668,30 @@ func TestTextUnmarshalerError(t *testing.T) {
 }
 
 func ExampleParse() {
+	type inner struct {
+		Foo string `env:"FOO" envDefault:"foobar"`
+	}
 	type config struct {
-		Home         string `env:"HOME"`
+		Home         string `env:"HOME,required"`
 		Port         int    `env:"PORT" envDefault:"3000"`
 		IsProduction bool   `env:"PRODUCTION"`
+		Inner        inner
 	}
 	os.Setenv("HOME", "/tmp/fakehome")
-	cfg := config{}
+	var cfg config
 	env.Parse(&cfg)
-	fmt.Println(cfg)
-	// Output: {/tmp/fakehome 3000 false}
+	fmt.Printf("%+v", cfg)
+	// Output: {Home:/tmp/fakehome Port:3000 IsProduction:false Inner:{Foo:foobar}}
 }
 
-func ExampleParseRequiredField() {
+func ExampleParseWithFuncs() {
 	type config struct {
-		Home         string `env:"HOME"`
-		Port         int    `env:"PORT" envDefault:"3000"`
-		IsProduction bool   `env:"PRODUCTION"`
-		SecretKey    string `env:"SECRET_KEY,required"`
+		ExampleURL url.URL `env:"EXAMPLE_URL" envDefault:"https://google.com"`
 	}
-	os.Setenv("HOME", "/tmp/fakehome")
-	cfg := config{}
-	err := env.Parse(&cfg)
-	fmt.Println(err)
-	// Output: required environment variable "SECRET_KEY" is not set
-}
-
-func ExampleParseMultipleOptions() {
-	type config struct {
-		Home         string `env:"HOME"`
-		Port         int    `env:"PORT" envDefault:"3000"`
-		IsProduction bool   `env:"PRODUCTION"`
-		SecretKey    string `env:"SECRET_KEY,required,option1"`
-	}
-	os.Setenv("HOME", "/tmp/fakehome")
-	cfg := config{}
-	err := env.Parse(&cfg)
-	fmt.Println(err)
-	// Output: env tag option "option1" not supported
+	var cfg config
+	env.ParseWithFuncs(&cfg, env.CustomParsers{
+		parsers.URLType: parsers.URLFunc,
+	})
+	fmt.Printf("%+v - %s", cfg, cfg.ExampleURL.String())
+	// Output: {ExampleURL:{Scheme:https Opaque: User: Host:google.com Path: RawPath: ForceQuery:false RawQuery: Fragment:}} - https://google.com
 }

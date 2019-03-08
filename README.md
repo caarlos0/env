@@ -2,20 +2,6 @@
 
 A KISS way to deal with environment variables in Go.
 
-## Why
-
-At first, it was boring for me to write down an entire function just to
-get some `var` from the environment and default to another in case it's missing.
-
-For that manner, I wrote a `GetOr` function in the
-[go-idioms](https://github.com/caarlos0/go-idioms) project.
-
-Then, I got pissed about writing `os.Getenv`, `os.Setenv`, `os.Unsetenv`...
-it kind of make more sense to me write it as `env.Get`, `env.Set`, `env.Unset`.
-So I did.
-
-Then I got a better idea: to use `struct` tags to do all that work for me.
-
 ## Example
 
 A very basic example (check the `examples` folder):
@@ -58,45 +44,35 @@ $ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s go run examples/first.go
 
 ## Supported types and defaults
 
-The library has built-in support for the following types:
-
-* `string`
-* `int`
-* `uint`
-* `int64`
-* `bool`
-* `float32`
-* `float64`
-* `time.Duration`
-* `[]string`
-* `[]int`
-* `[]bool`
-* `[]float32`
-* `[]float64`
-* `[]time.Duration`
-* .. or use/define a [custom parser func](#custom-parser-funcs) for any other type
+The library has built-in support for most types and their respectives slices,
+but you can also use/define a [custom parser func](#custom-parser-funcs) for any
+other type you want.
 
 If you set the `envDefault` tag for something, this value will be used in the
 case of absence of it in the environment. If you don't do that AND the
 environment variable is also not set, the zero-value
-of the type will be used: empty for `string`s, `false` for `bool`s
-and `0` for `int`s.
+of the type will be used: empty for `string`s, `false` for `bool`s,
+`0` for `int`s and so forth.
 
-By default, slice types will split the environment value on `,`; you can change this behavior by setting the `envSeparator` tag.
+By default, slice types will split the environment value on `,`; you can change
+this behavior by setting the `envSeparator` tag.
 
-If you set the `envExpand` tag, environment variables (either in `${var}` or `$var` format)
-in the string will be replaced according with the actual value of the variable.
+If you set the `envExpand` tag, environment variables (either in `${var}` or
+`$var` format) in the string will be replaced according with the actual value
+of the variable.
 
 ## Custom Parser Funcs
 
 If you have a type that is not supported out of the box by the lib, you are able
-to use (or define) and pass custom parsers (and their associated `reflect.Type`) to the
-`env.ParseWithFuncs()` function.
+to use (or define) and pass custom parsers (and their associated `reflect.Type`)
+to the `env.ParseWithFuncs()` function.
 
-In addition to accepting a struct pointer (same as `Parse()`), this function also
-accepts a `env.CustomParsers` arg that under the covers is a `map[reflect.Type]env.ParserFunc`.
+In addition to accepting a struct pointer (same as `Parse()`), this function
+also accepts a `env.CustomParsers` arg that under the covers is a
+`map[reflect.Type]env.ParserFunc`.
 
-To see what this looks like in practice, take a look at the [commented block in the example](https://github.com/caarlos0/env/blob/master/examples/first.go#L35-L39).
+To see what this looks like in practice, take a look at the
+[commented block in the example](https://github.com/caarlos0/env/blob/master/examples/first.go#L35-L39).
 
 `env` also ships with some pre-built custom parser funcs for common types. You
 can check them out [here](parsers/).
