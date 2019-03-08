@@ -551,6 +551,29 @@ func TestCustomParserUint64Alias(t *testing.T) {
 	assert.Equal(t, T(1), cfg.Val)
 }
 
+func TestTypeCustomParserBasicInvalid(t *testing.T) {
+	type ConstT int32
+
+	type config struct {
+		Const ConstT `env:"CONST_VAL"`
+	}
+
+	os.Setenv("CONST_VAL", "foobar")
+
+	customParserFunc := func(_ string) (interface{}, error) {
+		return nil, errors.New("random error")
+	}
+
+	cfg := &config{}
+	err := env.ParseWithFuncs(cfg, map[reflect.Type]env.ParserFunc{
+		reflect.TypeOf(ConstT(0)): customParserFunc,
+	})
+
+	assert.Empty(t, cfg.Const)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "custom parser error: random error")
+}
+
 func TestCustomParserNotCalledForNonAlias(t *testing.T) {
 	type T uint64
 	type U uint64
@@ -672,6 +695,6 @@ func ExampleParseWithFuncs() {
 	}); err != nil {
 		fmt.Println("failed:", err)
 	}
-	fmt.Printf("%+v - %s", cfg, cfg.ExampleURL.String())
-	// Output: {ExampleURL:{Scheme:https Opaque: User: Host:google.com Path: RawPath: ForceQuery:false RawQuery: Fragment:}} - https://google.com
+	fmt.Println(cfg.ExampleURL.String())
+	// Output: https://google.com
 }
