@@ -7,7 +7,7 @@ go:
   - 1.9
   - '1.10.x'
   - '1.11.x'
-  - tip
+  - '1.12.x'
 before_install:
   - go get github.com/axw/gocov/gocov
   - go get github.com/mattn/goveralls
