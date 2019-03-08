@@ -97,7 +97,7 @@ type ParserFunc func(v string) (interface{}, error)
 // Parse parses a struct containing `env` tags and loads its values from
 // environment variables.
 func Parse(v interface{}) error {
-	return ParseWithFuncs(v, defaultCustomParsers())
+	return ParseWithFuncs(v, CustomParsers{})
 }
 
 // ParseWithFuncs is the same as `Parse` except it also allows the user to pass
@@ -111,7 +111,11 @@ func ParseWithFuncs(v interface{}, funcMap CustomParsers) error {
 	if ref.Kind() != reflect.Struct {
 		return ErrNotAStructPtr
 	}
-	return doParse(ref, funcMap)
+	var parsers = defaultCustomParsers()
+	for k, v := range funcMap {
+		parsers[k] = v
+	}
+	return doParse(ref, parsers)
 }
 
 func doParse(ref reflect.Value, funcMap CustomParsers) error {
