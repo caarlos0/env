@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/caarlos0/env/parsers"
 )
 
 // nolint: gochecknoglobals
@@ -32,7 +34,59 @@ var (
 	sliceOfFloat32s  = reflect.TypeOf([]float32(nil))
 	sliceOfFloat64s  = reflect.TypeOf([]float64(nil))
 	sliceOfDurations = reflect.TypeOf([]time.Duration(nil))
+
+	defaultBuiltInParsers = map[reflect.Kind]ParserFunc{
+		reflect.Bool: func(v string) (interface{}, error) {
+			return strconv.ParseBool(v)
+		},
+		reflect.String: func(v string) (interface{}, error) {
+			return v, nil
+		},
+		reflect.Int: func(v string) (interface{}, error) {
+			return strconv.ParseInt(v, 10, 32)
+		},
+		reflect.Int16: func(v string) (interface{}, error) {
+			return strconv.ParseInt(v, 10, 16)
+		},
+		reflect.Int32: func(v string) (interface{}, error) {
+			return strconv.ParseInt(v, 10, 32)
+		},
+		reflect.Int64: func(v string) (interface{}, error) {
+			return strconv.ParseInt(v, 10, 64)
+		},
+		reflect.Int8: func(v string) (interface{}, error) {
+			return strconv.ParseInt(v, 10, 8)
+		},
+		reflect.Uint: func(v string) (interface{}, error) {
+			return strconv.ParseUint(v, 10, 32)
+		},
+		reflect.Uint16: func(v string) (interface{}, error) {
+			return strconv.ParseUint(v, 10, 16)
+		},
+		reflect.Uint32: func(v string) (interface{}, error) {
+			return strconv.ParseUint(v, 10, 32)
+		},
+		reflect.Uint64: func(v string) (interface{}, error) {
+			return strconv.ParseUint(v, 10, 64)
+		},
+		reflect.Uint8: func(v string) (interface{}, error) {
+			return strconv.ParseUint(v, 10, 8)
+		},
+		reflect.Float64: func(v string) (interface{}, error) {
+			return strconv.ParseFloat(v, 64)
+		},
+		reflect.Float32: func(v string) (interface{}, error) {
+			return strconv.ParseFloat(v, 32)
+		},
+	}
 )
+
+func defaultCustomParsers() CustomParsers {
+	return CustomParsers{
+		parsers.URLType:      parsers.URLFunc,
+		parsers.DurationType: parsers.DurationFunc,
+	}
+}
 
 // CustomParsers is a friendly name for the type that `ParseWithFuncs()` accepts
 type CustomParsers map[reflect.Type]ParserFunc
@@ -43,15 +97,7 @@ type ParserFunc func(v string) (interface{}, error)
 // Parse parses a struct containing `env` tags and loads its values from
 // environment variables.
 func Parse(v interface{}) error {
-	ptrRef := reflect.ValueOf(v)
-	if ptrRef.Kind() != reflect.Ptr {
-		return ErrNotAStructPtr
-	}
-	ref := ptrRef.Elem()
-	if ref.Kind() != reflect.Struct {
-		return ErrNotAStructPtr
-	}
-	return doParse(ref, make(map[reflect.Type]ParserFunc))
+	return ParseWithFuncs(v, defaultCustomParsers())
 }
 
 // ParseWithFuncs is the same as `Parse` except it also allows the user to pass
@@ -164,8 +210,6 @@ func getOr(key, defaultValue string) string {
 	return defaultValue
 }
 
-// TODO: need to improve this method...
-// nolint: gocyclo
 func set(field reflect.Value, refType reflect.StructField, value string, funcMap CustomParsers) error {
 	// use custom parser if configured for this type
 	parserFunc, ok := funcMap[refType.Type]
@@ -178,103 +222,55 @@ func set(field reflect.Value, refType reflect.StructField, value string, funcMap
 		return nil
 	}
 
-	// fall back to built-in parsers
+	parserFunc, ok = defaultBuiltInParsers[field.Kind()]
+	if ok {
+		val, err := parserFunc(value)
+		if err != nil {
+			return fmt.Errorf("parser error: %v", err)
+		}
+		doSet(field, val)
+		return nil
+	}
+
+	// other parsers
 	switch field.Kind() {
 	case reflect.Slice:
 		separator := refType.Tag.Get("envSeparator")
 		return handleSlice(field, value, separator)
-	case reflect.String:
-		field.SetString(value)
-	case reflect.Bool:
-		bvalue, err := strconv.ParseBool(value)
-		if err != nil {
-			return err
-		}
-		field.SetBool(bvalue)
-	case reflect.Int:
-		intValue, err := strconv.ParseInt(value, 10, 32)
-		if err != nil {
-			return err
-		}
-		field.SetInt(intValue)
-	case reflect.Int8:
-		intValue, err := strconv.ParseInt(value, 10, 8)
-		if err != nil {
-			return err
-		}
-		field.SetInt(intValue)
-	case reflect.Int16:
-		intValue, err := strconv.ParseInt(value, 10, 16)
-		if err != nil {
-			return err
-		}
-		field.SetInt(intValue)
-	case reflect.Int32:
-		intValue, err := strconv.ParseInt(value, 10, 32)
-		if err != nil {
-			return err
-		}
-		field.SetInt(intValue)
-	case reflect.Int64:
-		if refType.Type.String() == "time.Duration" {
-			dValue, err := time.ParseDuration(value)
-			if err != nil {
-				return err
-			}
-			field.Set(reflect.ValueOf(dValue))
-		} else {
-			intValue, err := strconv.ParseInt(value, 10, 64)
-			if err != nil {
-				return err
-			}
-			field.SetInt(intValue)
-		}
-	case reflect.Uint:
-		uintValue, err := strconv.ParseUint(value, 10, 32)
-		if err != nil {
-			return err
-		}
-		field.SetUint(uintValue)
-	case reflect.Uint8:
-		uintValue, err := strconv.ParseUint(value, 10, 8)
-		if err != nil {
-			return err
-		}
-		field.SetUint(uintValue)
-	case reflect.Uint16:
-		uintValue, err := strconv.ParseUint(value, 10, 16)
-		if err != nil {
-			return err
-		}
-		field.SetUint(uintValue)
-	case reflect.Uint32:
-		uintValue, err := strconv.ParseUint(value, 10, 32)
-		if err != nil {
-			return err
-		}
-		field.SetUint(uintValue)
-	case reflect.Uint64:
-		uintValue, err := strconv.ParseUint(value, 10, 64)
-		if err != nil {
-			return err
-		}
-		field.SetUint(uintValue)
-	case reflect.Float32:
-		v, err := strconv.ParseFloat(value, 32)
-		if err != nil {
-			return err
-		}
-		field.SetFloat(v)
-	case reflect.Float64:
-		v, err := strconv.ParseFloat(value, 64)
-		if err != nil {
-			return err
-		}
-		field.Set(reflect.ValueOf(v))
 	default:
 		return handleTextUnmarshaler(field, value)
 	}
-	return nil
+}
+
+func doSet(field reflect.Value, val interface{}) {
+	switch field.Kind() {
+	case reflect.Int:
+		fallthrough
+	case reflect.Int8:
+		fallthrough
+	case reflect.Int16:
+		fallthrough
+	case reflect.Int32:
+		fallthrough
+	case reflect.Int64:
+		field.SetInt(val.(int64))
+	case reflect.Uint:
+		fallthrough
+	case reflect.Uint8:
+		fallthrough
+	case reflect.Uint16:
+		fallthrough
+	case reflect.Uint32:
+		fallthrough
+	case reflect.Uint64:
+		field.SetUint(val.(uint64))
+	case reflect.Float32:
+		fallthrough
+	case reflect.Float64:
+		field.SetFloat(val.(float64))
+	default:
+		field.Set(reflect.ValueOf(val))
+	}
 }
 
 func handleSlice(field reflect.Value, value, separator string) error {
