@@ -489,7 +489,7 @@ func TestCustomParserError(t *testing.T) {
 
 	assert.Empty(t, cfg.Var.name, "Var.name should not be filled out when parse errors")
 	assert.Error(t, err)
-	assert.Equal(t, "custom parser error: something broke", err.Error())
+	assert.Equal(t, "env: parse error on field \"Var\" of type \"env_test.foo\": something broke", err.Error())
 }
 
 func TestCustomParserBasicType(t *testing.T) {
@@ -572,7 +572,7 @@ func TestTypeCustomParserBasicInvalid(t *testing.T) {
 
 	assert.Empty(t, cfg.Const)
 	assert.Error(t, err)
-	assert.EqualError(t, err, "custom parser error: random error")
+	assert.EqualError(t, err, "env: parse error on field \"Const\" of type \"env_test.ConstT\": random error")
 }
 
 // TODO: this is the only test failing right now, fix it.
@@ -620,7 +620,7 @@ func TestCustomParserBasicUnsupported(t *testing.T) {
 
 	assert.Zero(t, cfg.Const)
 	assert.Error(t, err)
-	assert.Equal(t, env.ErrUnsupportedType, err)
+	assert.EqualError(t, err, "env: no parser found for field \"Const\" of type \"env_test.ConstT\"")
 }
 
 func TestUnsupportedStructType(t *testing.T) {
@@ -634,7 +634,7 @@ func TestUnsupportedStructType(t *testing.T) {
 	err := env.Parse(cfg)
 
 	assert.Error(t, err)
-	assert.Equal(t, env.ErrUnsupportedType, err)
+	assert.EqualError(t, err, "env: no parser found for field \"Foo\" of type \"http.Client\"")
 }
 
 func TestEmptyOption(t *testing.T) {
