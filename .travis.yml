@@ -1,17 +1,10 @@
 language: go
 go:
-  - '1.10.x'
   - '1.11.x'
   - '1.12.x'
-before_install:
-  - go get ./...
-  - go get github.com/axw/gocov/gocov
-  - go get github.com/mattn/goveralls
-  - go get golang.org/x/tools/cmd/cover
-script:
-  - go test -v -cover -race -coverprofile=coverage.out
-after_script:
-  - go get github.com/mattn/goveralls
-  - goveralls -coverprofile=coverage.out -service=travis-ci -repotoken='eCcizKmTdSaJCz8Ih33WDppdqb9kioYwi'
+install: make setup
+script: make ci
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
 notifications:
   email: false
