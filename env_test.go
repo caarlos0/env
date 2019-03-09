@@ -575,6 +575,7 @@ func TestTypeCustomParserBasicInvalid(t *testing.T) {
 	assert.EqualError(t, err, "custom parser error: random error")
 }
 
+// TODO: this is the only test failing right now, fix it.
 func TestCustomParserNotCalledForNonAlias(t *testing.T) {
 	type T uint64
 	type U uint64
