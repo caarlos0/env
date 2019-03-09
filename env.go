@@ -235,7 +235,7 @@ func set(field reflect.Value, refType reflect.StructField, value string, funcMap
 		if err != nil {
 			return fmt.Errorf("parser error: %v", err)
 		}
-		field.Set(reflect.ValueOf(val))
+		field.Set(reflect.ValueOf(val).Convert(field.Type()))
 		return nil
 	}
 
