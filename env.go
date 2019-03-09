@@ -65,7 +65,7 @@ var (
 		},
 		reflect.Uint64: func(v string) (interface{}, error) {
 			i, err := strconv.ParseUint(v, 10, 64)
-			return uint64(i), err
+			return i, err
 		},
 		reflect.Uint8: func(v string) (interface{}, error) {
 			i, err := strconv.ParseUint(v, 10, 8)
@@ -246,17 +246,26 @@ func handleSlice(field reflect.Value, value, separator string, funcMap CustomPar
 	if separator == "" {
 		separator = ","
 	}
-	parts := strings.Split(value, separator)
-	result := reflect.MakeSlice(field.Type(), 0, len(parts))
+	var parts = strings.Split(value, separator)
 
-	parserFunc, ok := funcMap[field.Type().Elem()]
+	var elemType = field.Type().Elem()
+	if elemType.Kind() == reflect.Ptr {
+		elemType = elemType.Elem()
+	}
+
+	if _, ok := reflect.New(elemType).Interface().(encoding.TextUnmarshaler); ok {
+		return parseTextUnmarshalers(field, parts)
+	}
+
+	parserFunc, ok := funcMap[elemType]
 	if !ok {
-		parserFunc, ok = defaultBuiltInParsers[field.Type().Elem().Kind()]
+		parserFunc, ok = defaultBuiltInParsers[elemType.Kind()]
 		if !ok {
-			return fmt.Errorf("no parser for slice of %s", field.Type().Elem().Kind().String())
+			return fmt.Errorf("no parser for slice of %s", elemType.Kind().String())
 		}
 	}
 
+	var result = reflect.MakeSlice(field.Type(), 0, len(parts))
 	for _, part := range parts {
 		r, err := parserFunc(part)
 		if err != nil {
@@ -284,4 +293,30 @@ func handleTextUnmarshaler(field reflect.Value, value string) error {
 	}
 
 	return tm.UnmarshalText([]byte(value))
+}
+
+func parseTextUnmarshalers(field reflect.Value, data []string) error {
+	s := len(data)
+	elemType := field.Type().Elem()
+	slice := reflect.MakeSlice(reflect.SliceOf(elemType), s, s)
+	for i, v := range data {
+		sv := slice.Index(i)
+		kind := sv.Kind()
+		if kind == reflect.Ptr {
+			sv = reflect.New(elemType.Elem())
+		} else {
+			sv = sv.Addr()
+		}
+		tm := sv.Interface().(encoding.TextUnmarshaler)
+		if err := tm.UnmarshalText([]byte(v)); err != nil {
+			return err
+		}
+		if kind == reflect.Ptr {
+			slice.Index(i).Set(sv)
+		}
+	}
+
+	field.Set(slice)
+
+	return nil
 }
