@@ -245,7 +245,7 @@ func handleSlice(field reflect.Value, value string, sf reflect.StructField, func
 	}
 
 	if _, ok := reflect.New(elemType).Interface().(encoding.TextUnmarshaler); ok {
-		return parseTextUnmarshalers(field, parts)
+		return parseTextUnmarshalers(field, parts, sf)
 	}
 
 	parserFunc, ok := funcMap[elemType]
@@ -287,11 +287,11 @@ func handleTextUnmarshaler(field reflect.Value, value string, sf reflect.StructF
 	if !ok {
 		return newNoParserError(sf)
 	}
-
-	return tm.UnmarshalText([]byte(value))
+	var err = tm.UnmarshalText([]byte(value))
+	return newParseError(sf, err)
 }
 
-func parseTextUnmarshalers(field reflect.Value, data []string) error {
+func parseTextUnmarshalers(field reflect.Value, data []string, sf reflect.StructField) error {
 	s := len(data)
 	elemType := field.Type().Elem()
 	slice := reflect.MakeSlice(reflect.SliceOf(elemType), s, s)
@@ -305,7 +305,7 @@ func parseTextUnmarshalers(field reflect.Value, data []string) error {
 		}
 		tm := sv.Interface().(encoding.TextUnmarshaler)
 		if err := tm.UnmarshalText([]byte(v)); err != nil {
-			return err
+			return newParseError(sf, err)
 		}
 		if kind == reflect.Ptr {
 			slice.Index(i).Set(sv)
@@ -318,6 +318,9 @@ func parseTextUnmarshalers(field reflect.Value, data []string) error {
 }
 
 func newParseError(sf reflect.StructField, err error) error {
+	if err == nil {
+		return nil
+	}
 	return parseError{
 		sf:  sf,
 		err: err,
