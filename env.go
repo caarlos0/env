@@ -16,11 +16,7 @@ import (
 var (
 	// ErrNotAStructPtr is returned if you pass something that is not a pointer to a
 	// Struct to Parse
-	ErrNotAStructPtr = errors.New("expected a pointer to a Struct")
-	// ErrUnsupportedType if the struct field type is not supported by env
-	ErrUnsupportedType = errors.New("type is not supported")
-	// ErrUnsupportedSliceType if the slice element type is not supported by env
-	ErrUnsupportedSliceType = errors.New("unsupported slice type")
+	ErrNotAStructPtr = errors.New("env: expected a pointer to a Struct")
 	// OnEnvVarSet is an optional convenience callback, such as for logging purposes.
 	// If not nil, it's called after successfully setting the given field from the given value.
 	OnEnvVarSet func(reflect.StructField, string)
@@ -120,7 +116,6 @@ func ParseWithFuncs(v interface{}, funcMap CustomParsers) error {
 
 func doParse(ref reflect.Value, funcMap CustomParsers) error {
 	refType := ref.Type()
-	var errorList []string
 
 	for i := 0; i < refType.NumField(); i++ {
 		refField := ref.Field(i)
@@ -134,30 +129,25 @@ func doParse(ref reflect.Value, funcMap CustomParsers) error {
 		refTypeField := refType.Field(i)
 		value, err := get(refTypeField)
 		if err != nil {
-			errorList = append(errorList, err.Error())
-			continue
+			return err
 		}
 		if value == "" {
 			if reflect.Struct == refField.Kind() {
 				if err := doParse(refField, funcMap); err != nil {
-					errorList = append(errorList, err.Error())
+					return err
 				}
 			}
 			continue
 		}
 		if err := set(refField, refTypeField, value, funcMap); err != nil {
-			errorList = append(errorList, err.Error())
-			continue
+			return err
 		}
 		// TODO: change this to a param instead of global
 		if OnEnvVarSet != nil {
 			OnEnvVarSet(refTypeField, value)
 		}
 	}
-	if len(errorList) == 0 {
-		return nil
-	}
-	return errors.New(strings.Join(errorList, ". "))
+	return nil
 }
 
 func get(field reflect.StructField) (string, error) {
@@ -185,7 +175,7 @@ func get(field reflect.StructField) (string, error) {
 			case "required":
 				val, err = getRequired(key)
 			default:
-				err = fmt.Errorf("env tag option %q not supported", opt)
+				err = fmt.Errorf("env: tag option %q not supported", opt)
 			}
 		}
 	}
@@ -203,7 +193,7 @@ func getRequired(key string) (string, error) {
 	if value, ok := os.LookupEnv(key); ok {
 		return value, nil
 	}
-	return "", fmt.Errorf("required environment variable %q is not set", key)
+	return "", fmt.Errorf(`env: required environment variable "%q" is not set`, key)
 }
 
 func getOr(key, defaultValue string) string {
@@ -214,41 +204,42 @@ func getOr(key, defaultValue string) string {
 	return defaultValue
 }
 
-func set(field reflect.Value, refType reflect.StructField, value string, funcMap CustomParsers) error {
+func set(field reflect.Value, sf reflect.StructField, value string, funcMap CustomParsers) error {
 	if field.Kind() == reflect.Slice {
-		return handleSlice(field, value, refType.Tag.Get("envSeparator"), funcMap)
+		return handleSlice(field, value, sf, funcMap)
 	}
 
-	parserFunc, ok := funcMap[refType.Type]
+	parserFunc, ok := funcMap[sf.Type]
 	if ok {
 		val, err := parserFunc(value)
 		if err != nil {
-			return fmt.Errorf("custom parser error: %v", err)
+			return newParseError(sf, err)
 		}
 		field.Set(reflect.ValueOf(val))
 		return nil
 	}
 
-	parserFunc, ok = defaultBuiltInParsers[field.Kind()]
+	parserFunc, ok = defaultBuiltInParsers[sf.Type.Kind()]
 	if ok {
 		val, err := parserFunc(value)
 		if err != nil {
-			return fmt.Errorf("parser error: %v", err)
+			return newParseError(sf, err)
 		}
-		field.Set(reflect.ValueOf(val).Convert(field.Type()))
+		field.Set(reflect.ValueOf(val).Convert(sf.Type))
 		return nil
 	}
 
-	return handleTextUnmarshaler(field, value)
+	return handleTextUnmarshaler(field, value, sf)
 }
 
-func handleSlice(field reflect.Value, value, separator string, funcMap CustomParsers) error {
+func handleSlice(field reflect.Value, value string, sf reflect.StructField, funcMap CustomParsers) error {
+	var separator = sf.Tag.Get("envSeparator")
 	if separator == "" {
 		separator = ","
 	}
 	var parts = strings.Split(value, separator)
 
-	var elemType = field.Type().Elem()
+	var elemType = sf.Type.Elem()
 	if elemType.Kind() == reflect.Ptr {
 		elemType = elemType.Elem()
 	}
@@ -261,24 +252,29 @@ func handleSlice(field reflect.Value, value, separator string, funcMap CustomPar
 	if !ok {
 		parserFunc, ok = defaultBuiltInParsers[elemType.Kind()]
 		if !ok {
-			return fmt.Errorf("no parser for slice of %s", elemType.Kind().String())
+			return newNoParserError(sf)
 		}
 	}
 
-	var result = reflect.MakeSlice(field.Type(), 0, len(parts))
+	var result = reflect.MakeSlice(sf.Type, 0, len(parts))
 	for _, part := range parts {
 		r, err := parserFunc(part)
 		if err != nil {
-			return fmt.Errorf("parser error: %v", err)
+			return newParseError(sf, err)
 		}
-		result = reflect.Append(result, reflect.ValueOf(r))
+		var v = reflect.ValueOf(r).Convert(elemType)
+		if sf.Type.Elem().Kind() == reflect.Ptr {
+			// TODO: add this!
+			return fmt.Errorf("env: point slices of built-in and aliased types are not supported: %s %s", sf.Name, sf.Type)
+		}
+		result = reflect.Append(result, v)
 	}
 
 	field.Set(result)
 	return nil
 }
 
-func handleTextUnmarshaler(field reflect.Value, value string) error {
+func handleTextUnmarshaler(field reflect.Value, value string, sf reflect.StructField) error {
 	if reflect.Ptr == field.Kind() {
 		if field.IsNil() {
 			field.Set(reflect.New(field.Type().Elem()))
@@ -289,7 +285,7 @@ func handleTextUnmarshaler(field reflect.Value, value string) error {
 
 	tm, ok := field.Interface().(encoding.TextUnmarshaler)
 	if !ok {
-		return ErrUnsupportedType
+		return newNoParserError(sf)
 	}
 
 	return tm.UnmarshalText([]byte(value))
@@ -319,4 +315,24 @@ func parseTextUnmarshalers(field reflect.Value, data []string) error {
 	field.Set(slice)
 
 	return nil
+}
+
+func newParseError(sf reflect.StructField, err error) error {
+	return parseError{
+		sf:  sf,
+		err: err,
+	}
+}
+
+type parseError struct {
+	sf  reflect.StructField
+	err error
+}
+
+func (e parseError) Error() string {
+	return fmt.Sprintf(`env: parse error on field "%s" of type "%s": %v`, e.sf.Name, e.sf.Type, e.err)
+}
+
+func newNoParserError(sf reflect.StructField) error {
+	return fmt.Errorf(`env: no parser found for field "%s" of type "%s"`, sf.Name, sf.Type)
 }
