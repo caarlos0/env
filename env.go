@@ -139,8 +139,7 @@ func doParse(ref reflect.Value, funcMap CustomParsers) error {
 		}
 		if value == "" {
 			if reflect.Struct == refField.Kind() {
-				err := doParse(refField, funcMap)
-				if nil != err {
+				if err := doParse(refField, funcMap); err != nil {
 					errorList = append(errorList, err.Error())
 				}
 			}
@@ -150,6 +149,7 @@ func doParse(ref reflect.Value, funcMap CustomParsers) error {
 			errorList = append(errorList, err.Error())
 			continue
 		}
+		// TODO: change this to a param instead of global
 		if OnEnvVarSet != nil {
 			OnEnvVarSet(refTypeField, value)
 		}
@@ -215,6 +215,10 @@ func getOr(key, defaultValue string) string {
 }
 
 func set(field reflect.Value, refType reflect.StructField, value string, funcMap CustomParsers) error {
+	if field.Kind() == reflect.Slice {
+		return handleSlice(field, value, refType.Tag.Get("envSeparator"), funcMap)
+	}
+
 	parserFunc, ok := funcMap[refType.Type]
 	if ok {
 		val, err := parserFunc(value)
@@ -233,10 +237,6 @@ func set(field reflect.Value, refType reflect.StructField, value string, funcMap
 		}
 		field.Set(reflect.ValueOf(val))
 		return nil
-	}
-
-	if field.Kind() == reflect.Slice {
-		return handleSlice(field, value, refType.Tag.Get("envSeparator"), funcMap)
 	}
 
 	return handleTextUnmarshaler(field, value)
