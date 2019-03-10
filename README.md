@@ -1,10 +1,19 @@
-# env [![Build Status](https://travis-ci.org/caarlos0/env.svg?branch=master)](https://travis-ci.org/caarlos0/env) [![Coverage Status](https://coveralls.io/repos/caarlos0/env/badge.svg?branch=master&service=github)](https://coveralls.io/github/caarlos0/env?branch=master) [![](https://godoc.org/github.com/caarlos0/env?status.svg)](http://godoc.org/github.com/caarlos0/env) [![](http://goreportcard.com/badge/caarlos0/env)](http://goreportcard.com/report/caarlos0/env) [![SayThanks.io](https://img.shields.io/badge/SayThanks.io-%E2%98%BC-1EAEDB.svg?style=flat-square)](https://saythanks.io/to/caarlos0) [![Reviewed by Hound](https://img.shields.io/badge/Reviewed_by-Hound-8E64B0.svg)](https://houndci.com)
+# env
+[![Build Status](https://img.shields.io/travis/caarlos0/env.svg?logo=travis&style=for-the-badge)](https://travis-ci.org/caarlos0/env)
+[![Coverage Status](https://img.shields.io/codecov/c/gh/caarlos0/env.svg?logo=codecov&style=for-the-badge)](https://codecov.io/gh/caarlos0/env)
+[![](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](http://godoc.org/github.com/caarlos0/env)
 
 A KISS way to deal with environment variables in Go.
 
+## ⚠ Attention ⚠
+
+Current master will be the next v5.0.0 version.
+If you find a bug on v4 or earlier, open an issue first.
+New features will only be added to v5.
+
 ## Example
 
-A very basic example (check the `examples` folder):
+A very basic example:
 
 ```go
 package main
@@ -38,7 +47,7 @@ func main() {
 You can run it like this:
 
 ```sh
-$ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s go run examples/first.go
+$ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s go run main.go
 {Home:/your/home Port:3000 IsProduction:true Hosts:[host1 host2 host3] Duration:1s}
 ```
 
@@ -70,9 +79,6 @@ to the `env.ParseWithFuncs()` function.
 In addition to accepting a struct pointer (same as `Parse()`), this function
 also accepts a `env.CustomParsers` arg that under the covers is a
 `map[reflect.Type]env.ParserFunc`.
-
-To see what this looks like in practice, take a look at the
-[commented block in the example](https://github.com/caarlos0/env/blob/master/examples/first.go#L35-L39).
 
 `env` also ships with some pre-built custom parser funcs for common types. You
 can check them out [here](parsers/).
