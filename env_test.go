@@ -587,7 +587,6 @@ func TestTypeCustomParserBasicInvalid(t *testing.T) {
 	assert.EqualError(t, err, "env: parse error on field \"Const\" of type \"env_test.ConstT\": random error")
 }
 
-// TODO: this is the only test failing right now, fix it.
 func TestCustomParserNotCalledForNonAlias(t *testing.T) {
 	type T uint64
 	type U uint64
