@@ -21,9 +21,8 @@ var (
 func URLFunc(v string) (interface{}, error) {
 	u, err := url.Parse(v)
 	if err != nil {
-		return nil, fmt.Errorf("unable to complete URL parse: %v", err)
+		return nil, fmt.Errorf("unable parse URL: %v", err)
 	}
-
 	return *u, nil
 }
 

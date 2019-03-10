@@ -678,6 +678,24 @@ func TestTextUnmarshalerError(t *testing.T) {
 	assert.EqualError(t, env.Parse(cfg), "env: parse error on field \"Unmarshaler\" of type \"env_test.unmarshaler\": time: invalid duration invalid")
 }
 
+func TestParseURL(t *testing.T) {
+	type config struct {
+		ExampleURL url.URL `env:"EXAMPLE_URL" envDefault:"https://google.com"`
+	}
+	var cfg config
+	assert.NoError(t, env.Parse(&cfg))
+	assert.Equal(t, "https://google.com", cfg.ExampleURL.String())
+}
+
+func TestParseInvalidURL(t *testing.T) {
+	type config struct {
+		ExampleURL url.URL `env:"EXAMPLE_URL_2"`
+	}
+	var cfg config
+	os.Setenv("EXAMPLE_URL_2", "nope://s s/")
+	assert.EqualError(t, env.Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable parse URL: parse nope://s s/: invalid character \" \" in host name")
+}
+
 func ExampleParse() {
 	type inner struct {
 		Foo string `env:"FOO" envDefault:"foobar"`
