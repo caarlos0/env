@@ -706,8 +706,8 @@ func TestFrom(t *testing.T) {
 	type config struct {
 		Foo     string `env:"JPD_FOO"`
 		Another string `env:"ANOTHER"`
-		Space string `env:"WITH_SPACE"`
-		Equals string `env:"WITH_EQUALS"`
+		Space   string `env:"WITH_SPACE"`
+		Equals  string `env:"WITH_EQUALS"`
 	}
 
 	var cfg config

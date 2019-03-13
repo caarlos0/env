@@ -362,7 +362,7 @@ func ParseFrom(reader io.Reader, v interface{}) error {
 			}
 			key := strings.TrimSpace(split[0])
 			value := strings.TrimSpace(split[1])
-			err := os.Setenv(key,  value)
+			err := os.Setenv(key, value)
 			if err != nil {
 				return err
 			}
