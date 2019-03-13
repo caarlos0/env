@@ -729,6 +729,23 @@ func TestFrom(t *testing.T) {
 	var cfg2 config
 	err = env.ParseFrom(r, &cfg2)
 	assert.EqualError(t, err, `env: parse error from reader "Only"`)
+
+	// Fails reading
+	var cfg3 config
+	err = env.ParseFrom(&failing{}, &cfg3)
+	assert.NotNil(t, err)
+
+	r = strings.NewReader("=")
+	var cfg4 config
+	err = env.ParseFrom(r, &cfg4)
+	assert.EqualError(t, err, "setenv: invalid argument")
+}
+
+type failing struct {
+}
+
+func (f *failing) Read([]byte) (int, error) {
+	return 0, fmt.Errorf("failed properly")
 }
 
 func ExampleParse() {
