@@ -1,9 +1,11 @@
 package env
 
 import (
+	"bufio"
 	"encoding"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"reflect"
 	"strconv"
@@ -338,4 +340,38 @@ func (e parseError) Error() string {
 
 func newNoParserError(sf reflect.StructField) error {
 	return fmt.Errorf(`env: no parser found for field "%s" of type "%s"`, sf.Name, sf.Type)
+}
+
+// ParseFrom is a convenience method that loads the content of reader into
+// environment variables. Useful for using a configuration file in one environment
+// and environment variable in another.
+// Each variable entry has the form VAR=value
+// Upon successful loading, ParseFrom invokes Parse.
+// If no reader, invoke Parse.
+func ParseFrom(reader io.Reader, v interface{}) error {
+	if reader != nil {
+		sc := bufio.NewScanner(reader)
+		for sc.Scan() {
+			line := sc.Text()
+			if strings.TrimSpace(line) == "" {
+				continue
+			}
+			split := strings.SplitN(line, "=", 2)
+			if len(split) != 2 {
+				return fmt.Errorf(`env: parse error from reader "%s"`, strings.TrimSpace(line))
+			}
+			key := strings.TrimSpace(split[0])
+			value := strings.TrimSpace(split[1])
+			err := os.Setenv(key, value)
+			if err != nil {
+				return err
+			}
+		}
+
+		if err := sc.Err(); err != nil {
+			return err
+		}
+	}
+
+	return Parse(v)
 }
