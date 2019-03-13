@@ -342,11 +342,11 @@ func newNoParserError(sf reflect.StructField) error {
 	return fmt.Errorf(`env: no parser found for field "%s" of type "%s"`, sf.Name, sf.Type)
 }
 
-// From is a convenience method that loads the content of reader into
+// ParseFrom is a convenience method that loads the content of reader into
 // environment variables. Useful for using a configuration file in one environment
 // and environment variable in another.
 // Each variable entry has the form VAR=value
-// Upon successful loading, From invokes Parse.
+// Upon successful loading, ParseFrom invokes Parse.
 // If no reader, invoke Parse.
 func ParseFrom(reader io.Reader, v interface{}) error {
 	if reader != nil {
@@ -358,7 +358,7 @@ func ParseFrom(reader io.Reader, v interface{}) error {
 			}
 			split := strings.SplitN(line, "=", 2)
 			if len(split) != 2 {
-				return fmt.Errorf(`env: parse error from reader "%s"`, line)
+				return fmt.Errorf(`env: parse error from reader "%s"`, strings.TrimSpace(line))
 			}
 			key := strings.TrimSpace(split[0])
 			value := strings.TrimSpace(split[1])

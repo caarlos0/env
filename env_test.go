@@ -711,8 +711,9 @@ func TestFrom(t *testing.T) {
 	}
 
 	var cfg config
-	env.ParseFrom(r, &cfg)
+	err := env.ParseFrom(r, &cfg)
 
+	assert.NoError(t, err)
 	assert.Equal(t, "bar.now", cfg.Foo)
 	assert.Equal(t, "brick in the wall", cfg.Another)
 	assert.Equal(t, "this is a long string", cfg.Space)
@@ -721,6 +722,13 @@ func TestFrom(t *testing.T) {
 	// Reset the config.
 	cfg = config{}
 	env.ParseFrom(nil, &cfg)
+
+	// Should error with partial env setting
+	record = record + "Only"
+	r = strings.NewReader(record)
+	var cfg2 config
+	err = env.ParseFrom(r, &cfg2)
+	assert.EqualError(t, err, `env: parse error from reader "Only"`)
 }
 
 func ExampleParse() {
