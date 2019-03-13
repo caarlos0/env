@@ -711,12 +711,16 @@ func TestFrom(t *testing.T) {
 	}
 
 	var cfg config
-	env.From(r, &cfg)
+	env.ParseFrom(r, &cfg)
 
 	assert.Equal(t, "bar.now", cfg.Foo)
 	assert.Equal(t, "brick in the wall", cfg.Another)
 	assert.Equal(t, "this is a long string", cfg.Space)
 	assert.Equal(t, `like@=Pass""`, cfg.Equals)
+
+	// Reset the config.
+	cfg = config{}
+	env.ParseFrom(nil, &cfg)
 }
 
 func ExampleParse() {
