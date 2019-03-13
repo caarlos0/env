@@ -695,6 +695,30 @@ func TestParseInvalidURL(t *testing.T) {
 	assert.EqualError(t, env.Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable parse URL: parse nope://s s/: invalid character \" \" in host name")
 }
 
+func TestFrom(t *testing.T) {
+	record := `JPD_FOO=bar.now
+	ANOTHER=brick in the wall
+	WITH_SPACE=this is a long string
+	WITH_EQUALS=like@=Pass""
+	`
+	r := strings.NewReader(record)
+
+	type config struct {
+		Foo     string `env:"JPD_FOO"`
+		Another string `env:"ANOTHER"`
+		Space string `env:"WITH_SPACE"`
+		Equals string `env:"WITH_EQUALS"`
+	}
+
+	var cfg config
+	env.From(r, &cfg)
+
+	assert.Equal(t, "bar.now", cfg.Foo)
+	assert.Equal(t, "brick in the wall", cfg.Another)
+	assert.Equal(t, "this is a long string", cfg.Space)
+	assert.Equal(t, `like@=Pass""`, cfg.Equals)
+}
+
 func ExampleParse() {
 	type inner struct {
 		Foo string `env:"FOO" envDefault:"foobar"`
