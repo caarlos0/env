@@ -398,7 +398,7 @@ func TestErrorRequiredNotSet(t *testing.T) {
 	}
 
 	cfg := &config{}
-	assert.EqualError(t, env.Parse(cfg), "env: required environment variable \"\"IS_REQUIRED\"\" is not set")
+	assert.EqualError(t, env.Parse(cfg), "env: required environment variable \"IS_REQUIRED\" is not set")
 }
 
 func TestParseExpandOption(t *testing.T) {

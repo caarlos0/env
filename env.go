@@ -193,7 +193,7 @@ func getRequired(key string) (string, error) {
 	if value, ok := os.LookupEnv(key); ok {
 		return value, nil
 	}
-	return "", fmt.Errorf(`env: required environment variable "%q" is not set`, key)
+	return "", fmt.Errorf(`env: required environment variable %q is not set`, key)
 }
 
 func getOr(key, defaultValue string) string {
