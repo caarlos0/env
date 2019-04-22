@@ -265,7 +265,7 @@ func handleSlice(field reflect.Value, value string, sf reflect.StructField, func
 		var v = reflect.ValueOf(r).Convert(elemType)
 		if sf.Type.Elem().Kind() == reflect.Ptr {
 			// TODO: add this!
-			return fmt.Errorf("env: point slices of built-in and aliased types are not supported: %s %s", sf.Name, sf.Type)
+			return fmt.Errorf("env: pointer slices of built-in and aliased types are not supported: %s %s", sf.Name, sf.Type)
 		}
 		result = reflect.Append(result, v)
 	}
