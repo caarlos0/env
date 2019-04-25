@@ -17,9 +17,6 @@ var (
 	// ErrNotAStructPtr is returned if you pass something that is not a pointer to a
 	// Struct to Parse
 	ErrNotAStructPtr = errors.New("env: expected a pointer to a Struct")
-	// OnEnvVarSet is an optional convenience callback, such as for logging purposes.
-	// If not nil, it's called after successfully setting the given field from the given value.
-	OnEnvVarSet func(reflect.StructField, string)
 
 	defaultBuiltInParsers = map[reflect.Kind]ParserFunc{
 		reflect.Bool: func(v string) (interface{}, error) {
@@ -141,10 +138,6 @@ func doParse(ref reflect.Value, funcMap CustomParsers) error {
 		}
 		if err := set(refField, refTypeField, value, funcMap); err != nil {
 			return err
-		}
-		// TODO: change this to a param instead of global
-		if OnEnvVarSet != nil {
-			OnEnvVarSet(refTypeField, value)
 		}
 	}
 	return nil
