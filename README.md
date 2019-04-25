@@ -3,7 +3,7 @@
 [![Coverage Status](https://img.shields.io/codecov/c/gh/caarlos0/env.svg?logo=codecov&style=for-the-badge)](https://codecov.io/gh/caarlos0/env)
 [![](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](http://godoc.org/github.com/caarlos0/env)
 
-A KISS way to deal with environment variables in Go.
+Simple lib to parse envs to structs in Go.
 
 ## Example
 
