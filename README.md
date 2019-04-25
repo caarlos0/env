@@ -5,12 +5,6 @@
 
 A KISS way to deal with environment variables in Go.
 
-## ⚠ Attention ⚠
-
-Current master will be the next v5.0.0 version.
-If you find a bug on v4 or earlier, open an issue first.
-New features will only be added to v5.
-
 ## Example
 
 A very basic example:
@@ -39,7 +33,7 @@ func main() {
 	if err := env.Parse(&cfg); err != nil {
 		fmt.Printf("%+v\n", err)
 	}
-	
+
 	fmt.Printf("%+v\n", cfg)
 }
 ```
