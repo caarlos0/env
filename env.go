@@ -116,7 +116,10 @@ func doParse(ref reflect.Value, funcMap CustomParsers) error {
 
 	for i := 0; i < refType.NumField(); i++ {
 		refField := ref.Field(i)
-		if reflect.Ptr == refField.Kind() && !refField.IsNil() && refField.CanSet() {
+		if !refField.CanSet() {
+			continue
+		}
+		if reflect.Ptr == refField.Kind() && !refField.IsNil() {
 			err := Parse(refField.Interface())
 			if nil != err {
 				return err
@@ -262,7 +265,6 @@ func handleSlice(field reflect.Value, value string, sf reflect.StructField, func
 		}
 		result = reflect.Append(result, v)
 	}
-
 	field.Set(result)
 	return nil
 }
