@@ -45,6 +45,18 @@ $ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s go run main.go
 {Home:/your/home Port:3000 IsProduction:true Hosts:[host1 host2 host3] Duration:1s}
 ```
 
+## Go modules
+
+If you're using go modules, you can update to v5 by issuing the following
+command:
+
+```sh
+go get -u github.com/caarlos0/env/v5
+```
+
+Then, on your code, use `github.com/caarlos0/env/v5` instead of
+`github.com/caarlos0/env` as the import path.
+
 ## Supported types and defaults
 
 The library has built-in support for most types and their respectives slices,
