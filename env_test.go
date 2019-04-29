@@ -727,3 +727,14 @@ func ExampleParseWithFuncs() {
 	fmt.Println(cfg.ExampleURL.String())
 	// Output: https://google.com
 }
+
+func TestUnexported(t *testing.T) {
+	type unexportedConfig struct {
+		home string `env:"HOME"`
+	}
+	cfg := unexportedConfig{}
+
+	os.Setenv("HOME", "/tmp/fakehome")
+	assert.NoError(t, env.Parse(&cfg))
+	assert.Empty(t, cfg.home)
+}
