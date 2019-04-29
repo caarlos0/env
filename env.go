@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/caarlos0/env/parsers"
+	"github.com/caarlos0/env/v5/parsers"
 )
 
 // nolint: gochecknoglobals
