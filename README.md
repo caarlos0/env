@@ -59,8 +59,62 @@ Then, on your code, use `github.com/caarlos0/env/v5` instead of
 
 ## Supported types and defaults
 
-The library has built-in support for most types and their respectives slices,
-but you can also use/define a [custom parser func](#custom-parser-funcs) for any
+The following types are supported out of the box:
+
+- `string`
+- `*string`
+- `[]string`
+- `bool`
+- `*bool`
+- `[]bool`
+- `int`
+- `*int`
+- `[]int`
+- `int8`
+- `*int8`
+- `[]int8`
+- `int16`
+- `[]int16`
+- `*int16`
+- `int32`
+- `[]int32`
+- `*int32`
+- `int64`
+- `[]int64`
+- `*int64`
+- `uint`
+- `[]uint`
+- `*uint`
+- `uint8`
+- `[]uint8`
+- `*uint8`
+- `uint16`
+- `[]uint16`
+- `*uint16`
+- `uint32`
+- `[]uint32`
+- `*uint32`
+- `uint64`
+- `[]uint64`
+- `*uint64`
+- `float32`
+- `*float32`
+- `[]float32`
+- `float64`
+- `*float64`
+- `[]float64`
+- `string`
+- `[]string`
+- `time.Duration`
+- `[]time.Duration`
+- `encoding.TextUnmarshaler`
+- `*encoding.TextUnmarshaler`
+- `[]encoding.TextUnmarshaler`
+- `[]*encoding.TextUnmarshaler`
+- `url.URL`
+- `[]url.URL`
+
+You can also use/define a [custom parser func](#custom-parser-funcs) for any
 other type you want.
 
 If you set the `envDefault` tag for something, this value will be used in the
@@ -75,6 +129,8 @@ this behavior by setting the `envSeparator` tag.
 If you set the `envExpand` tag, environment variables (either in `${var}` or
 `$var` format) in the string will be replaced according with the actual value
 of the variable.
+
+Unexported fields are ignored.
 
 ## Custom Parser Funcs
 

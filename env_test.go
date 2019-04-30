@@ -32,36 +32,61 @@ func (d *unmarshaler) UnmarshalText(data []byte) (err error) {
 
 // nolint: maligned
 type Config struct {
-	Some            string `env:"somevar"`
-	Other           bool   `env:"othervar"`
-	Port            int    `env:"PORT"`
-	Int8Val         int8   `env:"INT8VAL"`
-	Int16Val        int16  `env:"INT16VAL"`
-	Int32Val        int32  `env:"INT32VAL"`
-	Int64Val        int64  `env:"INT64VAL"`
-	UintVal         uint   `env:"UINTVAL"`
-	Uint8Val        uint8  `env:"UINT8VAL"`
-	Uint16Val       uint16 `env:"UINT16VAL"`
-	Uint32Val       uint32 `env:"UINT32VAL"`
-	Uint64Val       uint64 `env:"UINT64VAL"`
-	NotAnEnv        string
-	DatabaseURL     string          `env:"DATABASE_URL" envDefault:"postgres://localhost:5432/db"`
+	String          string          `env:"STRING"`
+	StringPtr       *string         `env:"STRING_PTR"`
 	Strings         []string        `env:"STRINGS"`
-	SepStrings      []string        `env:"SEPSTRINGS" envSeparator:":"`
-	Numbers         []int           `env:"NUMBERS"`
-	Numbers64       []int64         `env:"NUMBERS64"`
-	UNumbers64      []uint64        `env:"UNUMBERS64"`
+	Bool            bool            `env:"BOOL"`
+	BoolPtr         *bool           `env:"BOOL_PTR"`
 	Bools           []bool          `env:"BOOLS"`
-	Duration        time.Duration   `env:"DURATION"`
+	Int             int             `env:"INT"`
+	IntPtr          *int            `env:"INT_PTR"`
+	Ints            []int           `env:"INTS"`
+	Int8            int8            `env:"INT8"`
+	Int8Ptr         *int8           `env:"INT8_PTR"`
+	Int8s           []int8          `env:"INT8S"`
+	Int16           int16           `env:"INT16"`
+	Int16s          []int16         `env:"INT16S"`
+	Int16Ptr        *int16          `env:"INT16_PTR"`
+	Int32           int32           `env:"INT32"`
+	Int32s          []int32         `env:"INT32S"`
+	Int32Ptr        *int32          `env:"INT32_PTR"`
+	Int64           int64           `env:"INT64"`
+	Int64s          []int64         `env:"INT64S"`
+	Int64Ptr        *int64          `env:"INT64_PTR"`
+	Uint            uint            `env:"UINT"`
+	Uints           []uint          `env:"UINTS"`
+	UintPtr         *uint           `env:"UINT_PTR"`
+	Uint8           uint8           `env:"UINT8"`
+	Uint8s          []uint8         `env:"UINT8S"`
+	Uint8Ptr        *uint8          `env:"UINT8_PTR"`
+	Uint16          uint16          `env:"UINT16"`
+	Uint16s         []uint16        `env:"UINT16S"`
+	Uint16Ptr       *uint16         `env:"UINT16_PTR"`
+	Uint32          uint32          `env:"UINT32"`
+	Uint32s         []uint32        `env:"UINT32S"`
+	Uint32Ptr       *uint32         `env:"UINT32_PTR"`
+	Uint64          uint64          `env:"UINT64"`
+	Uint64s         []uint64        `env:"UINT64S"`
+	Uint64Ptr       *uint64         `env:"UINT64_PTR"`
 	Float32         float32         `env:"FLOAT32"`
-	Float64         float64         `env:"FLOAT64"`
+	Float32Ptr      *float32        `env:"FLOAT32_PTR"`
 	Float32s        []float32       `env:"FLOAT32S"`
+	Float64         float64         `env:"FLOAT64"`
+	Float64Ptr      *float64        `env:"FLOAT64_PTR"`
 	Float64s        []float64       `env:"FLOAT64S"`
+	DatabaseURL     string          `env:"DATABASE_URL" envDefault:"postgres://localhost:5432/db"`
+	SepStrings      []string        `env:"SEPSTRINGS" envSeparator:":"`
+	Duration        time.Duration   `env:"DURATION"`
 	Durations       []time.Duration `env:"DURATIONS"`
 	Unmarshaler     unmarshaler     `env:"UNMARSHALER"`
 	UnmarshalerPtr  *unmarshaler    `env:"UNMARSHALER_PTR"`
 	Unmarshalers    []unmarshaler   `env:"UNMARSHALERS"`
 	UnmarshalerPtrs []*unmarshaler  `env:"UNMARSHALER_PTRS"`
+	URL             url.URL         `env:"URL"`
+	URLs            []url.URL       `env:"URLS"`
+
+	NotAnEnv   string
+	unexported string `env:"FOO"`
 }
 
 type ParentStruct struct {
@@ -83,56 +108,59 @@ type NestedStruct struct {
 }
 
 func TestParsesEnv(t *testing.T) {
-	os.Setenv("somevar", "somevalue")
-	os.Setenv("othervar", "true")
-	os.Setenv("PORT", "8080")
+	os.Setenv("STRING", "somevalue")
+	os.Setenv("BOOL", "true")
+	os.Setenv("INT", "8080")
 	os.Setenv("STRINGS", "string1,string2,string3")
 	os.Setenv("SEPSTRINGS", "string1:string2:string3")
-	os.Setenv("NUMBERS", "1,2,3,4")
-	os.Setenv("NUMBERS64", "1,2,2147483640,-2147483640")
-	os.Setenv("UNUMBERS64", "1,2,214748364011,9147483641")
+	os.Setenv("INTS", "1,2,3,4")
+	os.Setenv("INT64S", "1,2,2147483640,-2147483640")
+	os.Setenv("UINT64S", "1,2,214748364011,9147483641")
 	os.Setenv("BOOLS", "t,TRUE,0,1")
 	os.Setenv("DURATION", "1s")
 	os.Setenv("FLOAT32", "3.40282346638528859811704183484516925440e+38")
 	os.Setenv("FLOAT64", "1.797693134862315708145274237317043567981e+308")
 	os.Setenv("FLOAT32S", "1.0,2.0,3.0")
 	os.Setenv("FLOAT64S", "1.0,2.0,3.0")
-	os.Setenv("UINTVAL", "44")
-	os.Setenv("UINT8VAL", "88")
-	os.Setenv("UINT16VAL", "1616")
-	os.Setenv("UINT32VAL", "3232")
-	os.Setenv("UINT64VAL", "6464")
-	os.Setenv("INT8VAL", "-88")
-	os.Setenv("INT16VAL", "-1616")
-	os.Setenv("INT32VAL", "-3232")
-	os.Setenv("INT64VAL", "-7575")
+	os.Setenv("UINT", "44")
+	os.Setenv("UINT8", "88")
+	os.Setenv("UINT16", "1616")
+	os.Setenv("UINT32", "3232")
+	os.Setenv("UINT64", "6464")
+	os.Setenv("INT8", "-88")
+	os.Setenv("INT16", "-1616")
+	os.Setenv("INT32", "-3232")
+	os.Setenv("INT64", "-7575")
+	os.Setenv("DURATION", "1s")
 	os.Setenv("DURATIONS", "1s,2s,3s")
 	os.Setenv("UNMARSHALER", "1s")
 	os.Setenv("UNMARSHALER_PTR", "1m")
 	os.Setenv("UNMARSHALERS", "2m,3m")
 	os.Setenv("UNMARSHALER_PTRS", "2m,3m")
+	os.Setenv("URL", "https://carlosbecker.dev")
+	os.Setenv("URLS", "https://carlosbecker.dev,https://carlosbecker.com")
 
 	defer os.Clearenv()
 
 	cfg := Config{}
 	assert.NoError(t, Parse(&cfg))
-	assert.Equal(t, "somevalue", cfg.Some)
-	assert.Equal(t, true, cfg.Other)
-	assert.Equal(t, 8080, cfg.Port)
-	assert.Equal(t, uint(44), cfg.UintVal)
-	assert.Equal(t, uint8(88), cfg.Uint8Val)
-	assert.Equal(t, uint16(1616), cfg.Uint16Val)
-	assert.Equal(t, uint32(3232), cfg.Uint32Val)
-	assert.Equal(t, uint64(6464), cfg.Uint64Val)
-	assert.Equal(t, int8(-88), cfg.Int8Val)
-	assert.Equal(t, int16(-1616), cfg.Int16Val)
-	assert.Equal(t, int32(-3232), cfg.Int32Val)
-	assert.Equal(t, int64(-7575), cfg.Int64Val)
+	assert.Equal(t, "somevalue", cfg.String)
+	assert.Equal(t, true, cfg.Bool)
+	assert.Equal(t, 8080, cfg.Int)
+	assert.Equal(t, uint(44), cfg.Uint)
+	assert.Equal(t, uint8(88), cfg.Uint8)
+	assert.Equal(t, uint16(1616), cfg.Uint16)
+	assert.Equal(t, uint32(3232), cfg.Uint32)
+	assert.Equal(t, uint64(6464), cfg.Uint64)
+	assert.Equal(t, int8(-88), cfg.Int8)
+	assert.Equal(t, int16(-1616), cfg.Int16)
+	assert.Equal(t, int32(-3232), cfg.Int32)
+	assert.Equal(t, int64(-7575), cfg.Int64)
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.Strings)
 	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.SepStrings)
-	assert.Equal(t, []int{1, 2, 3, 4}, cfg.Numbers)
-	assert.Equal(t, []int64{1, 2, 2147483640, -2147483640}, cfg.Numbers64)
-	assert.Equal(t, []uint64{1, 2, 214748364011, 9147483641}, cfg.UNumbers64)
+	assert.Equal(t, []int{1, 2, 3, 4}, cfg.Ints)
+	assert.Equal(t, []int64{1, 2, 2147483640, -2147483640}, cfg.Int64s)
+	assert.Equal(t, []uint64{1, 2, 214748364011, 9147483641}, cfg.Uint64s)
 	assert.Equal(t, []bool{true, true, false, true}, cfg.Bools)
 	d1, _ := time.ParseDuration("1s")
 	assert.Equal(t, d1, cfg.Duration)
@@ -149,6 +177,10 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, time.Minute, cfg.UnmarshalerPtr.Duration)
 	assert.Equal(t, []unmarshaler{{time.Minute * 2}, {time.Minute * 3}}, cfg.Unmarshalers)
 	assert.Equal(t, []*unmarshaler{{time.Minute * 2}, {time.Minute * 3}}, cfg.UnmarshalerPtrs)
+
+	assert.Equal(t, "https://carlosbecker.dev", cfg.URL.String())
+	assert.Equal(t, "https://carlosbecker.dev", cfg.URLs[0].String())
+	assert.Equal(t, "https://carlosbecker.com", cfg.URLs[1].String())
 }
 
 func TestParsesEnvInner(t *testing.T) {
@@ -189,15 +221,15 @@ func TestParsesEnvNested(t *testing.T) {
 func TestEmptyVars(t *testing.T) {
 	cfg := Config{}
 	assert.NoError(t, Parse(&cfg))
-	assert.Equal(t, "", cfg.Some)
-	assert.Equal(t, false, cfg.Other)
-	assert.Equal(t, 0, cfg.Port)
-	assert.Equal(t, uint(0), cfg.UintVal)
-	assert.Equal(t, uint64(0), cfg.Uint64Val)
-	assert.Equal(t, int64(0), cfg.Int64Val)
+	assert.Equal(t, "", cfg.String)
+	assert.Equal(t, false, cfg.Bool)
+	assert.Equal(t, 0, cfg.Int)
+	assert.Equal(t, uint(0), cfg.Uint)
+	assert.Equal(t, uint64(0), cfg.Uint64)
+	assert.Equal(t, int64(0), cfg.Int64)
 	assert.Equal(t, 0, len(cfg.Strings))
 	assert.Equal(t, 0, len(cfg.SepStrings))
-	assert.Equal(t, 0, len(cfg.Numbers))
+	assert.Equal(t, 0, len(cfg.Ints))
 	assert.Equal(t, 0, len(cfg.Bools))
 }
 
@@ -212,27 +244,27 @@ func TestPassReference(t *testing.T) {
 }
 
 func TestInvalidBool(t *testing.T) {
-	os.Setenv("othervar", "should-be-a-bool")
+	os.Setenv("BOOL", "should-be-a-bool")
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Other\" of type \"bool\": strconv.ParseBool: parsing \"should-be-a-bool\": invalid syntax")
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Bool\" of type \"bool\": strconv.ParseBool: parsing \"should-be-a-bool\": invalid syntax")
 }
 
 func TestInvalidInt(t *testing.T) {
-	os.Setenv("PORT", "should-be-an-int")
+	os.Setenv("INT", "should-be-an-int")
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Port\" of type \"int\": strconv.ParseInt: parsing \"should-be-an-int\": invalid syntax")
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Int\" of type \"int\": strconv.ParseInt: parsing \"should-be-an-int\": invalid syntax")
 }
 
 func TestInvalidUint(t *testing.T) {
-	os.Setenv("UINTVAL", "-44")
+	os.Setenv("UINT", "-44")
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"UintVal\" of type \"uint\": strconv.ParseUint: parsing \"-44\": invalid syntax")
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Uint\" of type \"uint\": strconv.ParseUint: parsing \"-44\": invalid syntax")
 }
 
 func TestInvalidFloat32(t *testing.T) {
@@ -252,19 +284,19 @@ func TestInvalidFloat64(t *testing.T) {
 }
 
 func TestInvalidUint64(t *testing.T) {
-	os.Setenv("UINT64VAL", "AAA")
+	os.Setenv("UINT64", "AAA")
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Uint64Val\" of type \"uint64\": strconv.ParseUint: parsing \"AAA\": invalid syntax")
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Uint64\" of type \"uint64\": strconv.ParseUint: parsing \"AAA\": invalid syntax")
 }
 
 func TestInvalidInt64(t *testing.T) {
-	os.Setenv("INT64VAL", "AAA")
+	os.Setenv("INT64", "AAA")
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Int64Val\" of type \"int64\": strconv.ParseInt: parsing \"AAA\": invalid syntax")
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Int64\" of type \"int64\": strconv.ParseInt: parsing \"AAA\": invalid syntax")
 }
 
 func TestInvalidInt64Slice(t *testing.T) {
@@ -385,10 +417,10 @@ func TestNoErrorRequiredSet(t *testing.T) {
 
 	cfg := &config{}
 
-	os.Setenv("IS_REQUIRED", "val")
+	os.Setenv("IS_REQUIRED", "")
 	defer os.Clearenv()
 	assert.NoError(t, Parse(cfg))
-	assert.Equal(t, "val", cfg.IsRequired)
+	assert.Equal(t, "", cfg.IsRequired)
 }
 
 func TestErrorRequiredNotSet(t *testing.T) {
@@ -508,11 +540,11 @@ func TestCustomParserBasicType(t *testing.T) {
 	type ConstT int32
 
 	type config struct {
-		Const ConstT `env:"CONST_VAL"`
+		Const ConstT `env:"CONST_"`
 	}
 
 	exp := ConstT(123)
-	os.Setenv("CONST_VAL", fmt.Sprintf("%d", exp))
+	os.Setenv("CONST_", fmt.Sprintf("%d", exp))
 
 	customParserFunc := func(v string) (interface{}, error) {
 		i, err := strconv.Atoi(v)
@@ -538,7 +570,7 @@ func TestCustomParserUint64Alias(t *testing.T) {
 	var one T = 1
 
 	type config struct {
-		Val T `env:"VAL" envDefault:"1x"`
+		Val T `env:"" envDefault:"1x"`
 	}
 
 	parserCalled := false
@@ -568,10 +600,10 @@ func TestTypeCustomParserBasicInvalid(t *testing.T) {
 	type ConstT int32
 
 	type config struct {
-		Const ConstT `env:"CONST_VAL"`
+		Const ConstT `env:"CONST_"`
 	}
 
-	os.Setenv("CONST_VAL", "foobar")
+	os.Setenv("CONST_", "foobar")
 
 	customParserFunc := func(_ string) (interface{}, error) {
 		return nil, errors.New("random error")
@@ -591,7 +623,7 @@ func TestCustomParserNotCalledForNonAlias(t *testing.T) {
 	type U uint64
 
 	type config struct {
-		Val   uint64 `env:"VAL" envDefault:"33"`
+		Val   uint64 `env:"" envDefault:"33"`
 		Other U      `env:"OTHER" envDefault:"44"`
 	}
 
@@ -620,10 +652,10 @@ func TestCustomParserBasicUnsupported(t *testing.T) {
 	}
 
 	type config struct {
-		Const ConstT `env:"CONST_VAL"`
+		Const ConstT `env:"CONST_"`
 	}
 
-	os.Setenv("CONST_VAL", "42")
+	os.Setenv("CONST_", "42")
 
 	cfg := &config{}
 	err := Parse(cfg)
@@ -652,10 +684,10 @@ func TestEmptyOption(t *testing.T) {
 
 	cfg := &config{}
 
-	os.Setenv("VAR", "val")
+	os.Setenv("VAR", "")
 	defer os.Clearenv()
 	assert.NoError(t, Parse(cfg))
-	assert.Equal(t, "val", cfg.Var)
+	assert.Equal(t, "", cfg.Var)
 }
 
 func TestErrorOptionNotRecognized(t *testing.T) {
