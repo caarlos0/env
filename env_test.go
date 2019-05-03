@@ -771,3 +771,41 @@ func TestIgnoresUnexported(t *testing.T) {
 	assert.Empty(t, cfg.home)
 	assert.Equal(t, "/tmp/fakehome", cfg.Home2)
 }
+
+type LogLevel int8
+
+func (l *LogLevel) UnmarshalText(text []byte) error {
+	txt := string(text)
+	switch txt {
+	case "debug":
+		*l = DebugLevel
+	case "info":
+		*l = InfoLevel
+	default:
+		return fmt.Errorf("unknown level: %q", txt)
+	}
+
+	return nil
+}
+
+const (
+	DebugLevel LogLevel = iota - 1
+	InfoLevel
+)
+
+func TestPrecedenceUnmarshalText(t *testing.T) {
+	os.Setenv("LOG_LEVEL", "debug")
+	os.Setenv("LOG_LEVELS", "debug,info")
+	defer os.Unsetenv("LOG_LEVEL")
+	defer os.Unsetenv("LOG_LEVELS")
+
+	type config struct {
+		LogLevel  LogLevel   `env:"LOG_LEVEL"`
+		LogLevels []LogLevel `env:"LOG_LEVELS"`
+	}
+	var cfg config
+
+	assert.NoError(t, Parse(&cfg))
+	assert.Equal(t, DebugLevel, cfg.LogLevel)
+	assert.Equal(t, []LogLevel{DebugLevel, InfoLevel}, cfg.LogLevels)
+}

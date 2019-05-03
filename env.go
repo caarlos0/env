@@ -205,6 +205,14 @@ func set(field reflect.Value, sf reflect.StructField, value string, funcMap Cust
 		return handleSlice(field, value, sf, funcMap)
 	}
 
+	set, err := handleTextUnmarshaler(field, value, sf)
+	if set {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
 	parserFunc, ok := funcMap[sf.Type]
 	if ok {
 		val, err := parserFunc(value)
@@ -225,7 +233,7 @@ func set(field reflect.Value, sf reflect.StructField, value string, funcMap Cust
 		return nil
 	}
 
-	return handleTextUnmarshaler(field, value, sf)
+	return newNoParserError(sf)
 }
 
 func handleSlice(field reflect.Value, value string, sf reflect.StructField, funcMap CustomParsers) error {
@@ -269,7 +277,7 @@ func handleSlice(field reflect.Value, value string, sf reflect.StructField, func
 	return nil
 }
 
-func handleTextUnmarshaler(field reflect.Value, value string, sf reflect.StructField) error {
+func handleTextUnmarshaler(field reflect.Value, value string, sf reflect.StructField) (bool, error) {
 	if reflect.Ptr == field.Kind() {
 		if field.IsNil() {
 			field.Set(reflect.New(field.Type().Elem()))
@@ -280,10 +288,10 @@ func handleTextUnmarshaler(field reflect.Value, value string, sf reflect.StructF
 
 	tm, ok := field.Interface().(encoding.TextUnmarshaler)
 	if !ok {
-		return newNoParserError(sf)
+		return false, nil
 	}
 	var err = tm.UnmarshalText([]byte(value))
-	return newParseError(sf, err)
+	return err == nil, newParseError(sf, err)
 }
 
 func parseTextUnmarshalers(field reflect.Value, data []string, sf reflect.StructField) error {
