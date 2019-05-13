@@ -103,6 +103,7 @@ The following types are supported out of the box:
 - `[]*encoding.TextUnmarshaler`
 - `url.URL`
 - `[]url.URL`
+- `*url.URL`
 
 You can also use/define a [custom parser func](#custom-parser-funcs) for any
 other type you want.
@@ -134,6 +135,9 @@ also accepts a `env.CustomParsers` arg that under the covers is a
 
 `env` also ships with some pre-built custom parser funcs for common types. You
 can check them out [here](parsers/).
+
+If you add a custom parser for, say `Foo`, it will also be used to parse
+`*Foo` and `[]Foo` types.
 
 ## Required fields
 
