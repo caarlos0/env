@@ -7,6 +7,8 @@ Simple lib to parse envs to structs in Go.
 
 ## Example
 
+> 🚨 `v5`+ only works with Go Modules and will always fail with `dep` and etc.
+
 A very basic example:
 
 ```go
@@ -16,7 +18,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/caarlos0/env"
+	"github.com/caarlos0/env/v5"
 )
 
 type config struct {
@@ -44,18 +46,6 @@ You can run it like this:
 $ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s go run main.go
 {Home:/your/home Port:3000 IsProduction:true Hosts:[host1 host2 host3] Duration:1s}
 ```
-
-## Go modules
-
-If you're using go modules, you can update to v5 by issuing the following
-command:
-
-```sh
-go get -u github.com/caarlos0/env/v5
-```
-
-Then, on your code, use `github.com/caarlos0/env/v5` instead of
-`github.com/caarlos0/env` as the import path.
 
 ## Supported types and defaults
 
