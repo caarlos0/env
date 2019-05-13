@@ -120,7 +120,7 @@ func doParse(ref reflect.Value, funcMap CustomParsers) error {
 			continue
 		}
 		if reflect.Ptr == refField.Kind() && !refField.IsNil() {
-			err := Parse(refField.Interface())
+			err := ParseWithFuncs(refField.Interface(), funcMap)
 			if nil != err {
 				return err
 			}
