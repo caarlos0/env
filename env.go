@@ -212,9 +212,12 @@ func set(field reflect.Value, sf reflect.StructField, value string, funcMap Cust
 	}
 
 	var typee = sf.Type
+	var fieldee = field
 	if typee.Kind() == reflect.Ptr {
 		typee = typee.Elem()
+		fieldee = field.Elem()
 	}
+
 	parserFunc, ok := funcMap[typee]
 	if ok {
 		val, err := parserFunc(value)
@@ -222,12 +225,7 @@ func set(field reflect.Value, sf reflect.StructField, value string, funcMap Cust
 			return newParseError(sf, err)
 		}
 
-		if sf.Type.Kind() == reflect.Ptr {
-			field.Elem().Set(reflect.ValueOf(val))
-		} else {
-			field.Set(reflect.ValueOf(val))
-		}
-
+		fieldee.Set(reflect.ValueOf(val))
 		return nil
 	}
 
