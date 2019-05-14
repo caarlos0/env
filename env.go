@@ -121,7 +121,7 @@ func doParse(ref reflect.Value, funcMap CustomParsers) error {
 		}
 		if reflect.Ptr == refField.Kind() && !refField.IsNil() {
 			err := ParseWithFuncs(refField.Interface(), funcMap)
-			if nil != err {
+			if err != nil {
 				return err
 			}
 			continue
@@ -211,13 +211,23 @@ func set(field reflect.Value, sf reflect.StructField, value string, funcMap Cust
 		return newParseError(sf, err)
 	}
 
-	parserFunc, ok := funcMap[sf.Type]
+	var typee = sf.Type
+	if typee.Kind() == reflect.Ptr {
+		typee = typee.Elem()
+	}
+	parserFunc, ok := funcMap[typee]
 	if ok {
 		val, err := parserFunc(value)
 		if err != nil {
 			return newParseError(sf, err)
 		}
-		field.Set(reflect.ValueOf(val))
+
+		if sf.Type.Kind() == reflect.Ptr {
+			field.Elem().Set(reflect.ValueOf(val))
+		} else {
+			field.Set(reflect.ValueOf(val))
+		}
+
 		return nil
 	}
 

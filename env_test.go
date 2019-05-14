@@ -78,12 +78,15 @@ type Config struct {
 	SepStrings      []string        `env:"SEPSTRINGS" envSeparator:":"`
 	Duration        time.Duration   `env:"DURATION"`
 	Durations       []time.Duration `env:"DURATIONS"`
+	DurationPtr     *time.Duration  `env:"DURATION_PTR"`
 	Unmarshaler     unmarshaler     `env:"UNMARSHALER"`
 	UnmarshalerPtr  *unmarshaler    `env:"UNMARSHALER_PTR"`
 	Unmarshalers    []unmarshaler   `env:"UNMARSHALERS"`
 	UnmarshalerPtrs []*unmarshaler  `env:"UNMARSHALER_PTRS"`
 	URL             url.URL         `env:"URL"`
+	URLPtr          *url.URL        `env:"URL_PTR"`
 	URLs            []url.URL       `env:"URLS"`
+	URLPtrs         []*url.URL      `env:"URL_PTRS"`
 
 	NotAnEnv   string
 	unexported string `env:"FOO"`
@@ -117,7 +120,6 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("INT64S", "1,2,2147483640,-2147483640")
 	os.Setenv("UINT64S", "1,2,214748364011,9147483641")
 	os.Setenv("BOOLS", "t,TRUE,0,1")
-	os.Setenv("DURATION", "1s")
 	os.Setenv("FLOAT32", "3.40282346638528859811704183484516925440e+38")
 	os.Setenv("FLOAT64", "1.797693134862315708145274237317043567981e+308")
 	os.Setenv("FLOAT32S", "1.0,2.0,3.0")
@@ -132,12 +134,14 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("INT32", "-3232")
 	os.Setenv("INT64", "-7575")
 	os.Setenv("DURATION", "1s")
+	os.Setenv("DURATION_PTR", "1s")
 	os.Setenv("DURATIONS", "1s,2s,3s")
 	os.Setenv("UNMARSHALER", "1s")
 	os.Setenv("UNMARSHALER_PTR", "1m")
 	os.Setenv("UNMARSHALERS", "2m,3m")
 	os.Setenv("UNMARSHALER_PTRS", "2m,3m")
 	os.Setenv("URL", "https://carlosbecker.dev")
+	os.Setenv("URL_PTR", "https://carlosbecker.dev/ptr")
 	os.Setenv("URLS", "https://carlosbecker.dev,https://carlosbecker.com")
 
 	defer os.Clearenv()
@@ -164,6 +168,7 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, []bool{true, true, false, true}, cfg.Bools)
 	d1, _ := time.ParseDuration("1s")
 	assert.Equal(t, d1, cfg.Duration)
+	assert.Equal(t, &d1, cfg.DurationPtr)
 	f32 := float32(3.40282346638528859811704183484516925440e+38)
 	assert.Equal(t, f32, cfg.Float32)
 	f64 := float64(1.797693134862315708145274237317043567981e+308)
@@ -179,6 +184,7 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, []*unmarshaler{{time.Minute * 2}, {time.Minute * 3}}, cfg.UnmarshalerPtrs)
 
 	assert.Equal(t, "https://carlosbecker.dev", cfg.URL.String())
+	assert.Equal(t, "https://carlosbecker.dev/ptr", cfg.URLPtr.String())
 	assert.Equal(t, "https://carlosbecker.dev", cfg.URLs[0].String())
 	assert.Equal(t, "https://carlosbecker.com", cfg.URLs[1].String())
 }
@@ -465,23 +471,38 @@ func TestCustomParser(t *testing.T) {
 		name string
 	}
 
+	type bar struct {
+		Name string `env:"OTHER"`
+		Foo  *foo   `env:"BLAH"`
+	}
+
 	type config struct {
-		Var foo `env:"VAR"`
+		Var   foo  `env:"VAR"`
+		Foo   *foo `env:"BLAH"`
+		Other *bar
 	}
 
 	os.Setenv("VAR", "test")
+	defer os.Unsetenv("VAR")
+	os.Setenv("OTHER", "test2")
+	defer os.Unsetenv("OTHER")
+	os.Setenv("BLAH", "test3")
+	defer os.Unsetenv("BLAH")
 
-	customParserFunc := func(v string) (interface{}, error) {
-		return foo{name: v}, nil
+	cfg := &config{
+		Other: &bar{},
 	}
-
-	cfg := &config{}
 	err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
-		reflect.TypeOf(foo{}): customParserFunc,
+		reflect.TypeOf(foo{}): func(v string) (interface{}, error) {
+			return foo{name: v}, nil
+		},
 	})
 
 	assert.NoError(t, err)
 	assert.Equal(t, cfg.Var.name, "test")
+	assert.Equal(t, cfg.Foo.name, "test3")
+	assert.Equal(t, cfg.Other.Name, "test2")
+	assert.Equal(t, cfg.Other.Foo.name, "test3")
 }
 
 func TestParseWithFuncsNoPtr(t *testing.T) {
