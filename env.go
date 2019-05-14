@@ -4,12 +4,12 @@ import (
 	"encoding"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
-
-	"github.com/caarlos0/env/v5/parsers"
+	"time"
 )
 
 // nolint: gochecknoglobals
@@ -76,8 +76,8 @@ var (
 
 func defaultCustomParsers() CustomParsers {
 	return CustomParsers{
-		parsers.URLType:      parsers.URLFunc,
-		parsers.DurationType: parsers.DurationFunc,
+		reflect.TypeOf(url.URL{}):       URLFunc,
+		reflect.TypeOf(time.Nanosecond): DurationFunc,
 	}
 }
 
@@ -346,4 +346,24 @@ func (e parseError) Error() string {
 
 func newNoParserError(sf reflect.StructField) error {
 	return fmt.Errorf(`env: no parser found for field "%s" of type "%s"`, sf.Name, sf.Type)
+}
+
+// Custom parsers
+
+// URLFunc is a basic parser for the url.URL type that should be used with `env.ParseWithFuncs()`
+func URLFunc(v string) (interface{}, error) {
+	u, err := url.Parse(v)
+	if err != nil {
+		return nil, fmt.Errorf("unable parse URL: %v", err)
+	}
+	return *u, nil
+}
+
+// DurationFunc is a basic parser for the time.Duration type that should be used with `env.ParseWithFuncs()`
+func DurationFunc(v string) (interface{}, error) {
+	s, err := time.ParseDuration(v)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parser duration: %v", err)
+	}
+	return s, err
 }

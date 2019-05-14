@@ -139,6 +139,12 @@ can check them out [here](parsers/).
 If you add a custom parser for, say `Foo`, it will also be used to parse
 `*Foo` and `[]Foo` types.
 
+This directory contains pre-built, custom parsers that can be used with `env.ParseWithFuncs`
+to facilitate the parsing of envs that are not basic types.
+
+Check the example in the [go doc](http://godoc.org/github.com/caarlos0/env)
+for more info.
+
 ## Required fields
 
 The `env` tag option `required` (e.g., `env:"tagKey,required"`) can be added
