@@ -51,70 +51,37 @@ $ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s go run main.go
 
 ## Supported types and defaults
 
-The following types are supported out of the box:
+Out of the box all built-in types are supported, plus a few others that
+are commonly used.
+
+Complete list:
 
 - `string`
-- `*string`
-- `[]string`
 - `bool`
-- `*bool`
-- `[]bool`
 - `int`
-- `*int`
-- `[]int`
 - `int8`
-- `*int8`
-- `[]int8`
 - `int16`
-- `[]int16`
-- `*int16`
 - `int32`
-- `[]int32`
-- `*int32`
 - `int64`
-- `[]int64`
-- `*int64`
 - `uint`
-- `[]uint`
-- `*uint`
 - `uint8`
-- `[]uint8`
-- `*uint8`
 - `uint16`
-- `[]uint16`
-- `*uint16`
 - `uint32`
-- `[]uint32`
-- `*uint32`
 - `uint64`
-- `[]uint64`
-- `*uint64`
 - `float32`
-- `*float32`
-- `[]float32`
 - `float64`
-- `*float64`
-- `[]float64`
 - `string`
-- `[]string`
 - `time.Duration`
-- `[]time.Duration`
 - `encoding.TextUnmarshaler`
-- `*encoding.TextUnmarshaler`
-- `[]encoding.TextUnmarshaler`
-- `[]*encoding.TextUnmarshaler`
 - `url.URL`
-- `[]url.URL`
-- `*url.URL`
+
+Pointers, slices and slices of pointers of those types are also supported.
 
 You can also use/define a [custom parser func](#custom-parser-funcs) for any
 other type you want.
 
 If you set the `envDefault` tag for something, this value will be used in the
-case of absence of it in the environment. If you don't do that AND the
-environment variable is also not set, the zero-value
-of the type will be used: empty for `string`s, `false` for `bool`s,
-`0` for `int`s and so forth.
+case of absence of it in the environment.
 
 By default, slice types will split the environment value on `,`; you can change
 this behavior by setting the `envSeparator` tag.
