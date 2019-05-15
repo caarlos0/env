@@ -7,8 +7,6 @@ Simple lib to parse envs to structs in Go.
 
 ## Example
 
-> 🚨 `v5`+ only works with Go Modules and will always fail with `dep` and etc.
-
 A very basic example:
 
 ```go
@@ -18,7 +16,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/caarlos0/env/v5"
+  // if using go modules
+  "github.com/caarlos0/env/v6"
+
+  // if using dep/others
+  "github.com/caarlos0/env"
 )
 
 type config struct {
@@ -130,14 +132,19 @@ to use (or define) and pass custom parsers (and their associated `reflect.Type`)
 to the `env.ParseWithFuncs()` function.
 
 In addition to accepting a struct pointer (same as `Parse()`), this function
-also accepts a `env.CustomParsers` arg that under the covers is a
-`map[reflect.Type]env.ParserFunc`.
+also accepts a `map[reflect.Type]env.ParserFunc`.
 
 `env` also ships with some pre-built custom parser funcs for common types. You
 can check them out [here](parsers/).
 
 If you add a custom parser for, say `Foo`, it will also be used to parse
 `*Foo` and `[]Foo` types.
+
+This directory contains pre-built, custom parsers that can be used with `env.ParseWithFuncs`
+to facilitate the parsing of envs that are not basic types.
+
+Check the example in the [go doc](http://godoc.org/github.com/caarlos0/env)
+for more info.
 
 ## Required fields
 

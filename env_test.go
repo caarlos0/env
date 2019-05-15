@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/caarlos0/env/v5/parsers"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -608,7 +607,7 @@ func TestCustomParserUint64Alias(t *testing.T) {
 
 	cfg := config{}
 
-	err := ParseWithFuncs(&cfg, CustomParsers{
+	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{
 		reflect.TypeOf(one): tParser,
 	})
 
@@ -657,7 +656,7 @@ func TestCustomParserNotCalledForNonAlias(t *testing.T) {
 
 	cfg := config{}
 
-	err := ParseWithFuncs(&cfg, CustomParsers{
+	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{
 		reflect.TypeOf(T(0)): tParser,
 	})
 
@@ -766,20 +765,6 @@ func ExampleParse() {
 	// Output: {Home:/tmp/fakehome Port:3000 IsProduction:false Inner:{Foo:foobar}}
 }
 
-func ExampleParseWithFuncs() {
-	type config struct {
-		ExampleURL url.URL `env:"EXAMPLE_URL" envDefault:"https://google.com"`
-	}
-	var cfg config
-	if err := ParseWithFuncs(&cfg, CustomParsers{
-		parsers.URLType: parsers.URLFunc,
-	}); err != nil {
-		fmt.Println("failed:", err)
-	}
-	fmt.Println(cfg.ExampleURL.String())
-	// Output: https://google.com
-}
-
 func TestIgnoresUnexported(t *testing.T) {
 	type unexportedConfig struct {
 		home  string `env:"HOME"`
@@ -829,4 +814,30 @@ func TestPrecedenceUnmarshalText(t *testing.T) {
 	assert.NoError(t, Parse(&cfg))
 	assert.Equal(t, DebugLevel, cfg.LogLevel)
 	assert.Equal(t, []LogLevel{DebugLevel, InfoLevel}, cfg.LogLevels)
+}
+
+func ExampleParseWithFuncs() {
+	type thing struct {
+		desc string
+	}
+
+	type conf struct {
+		Thing thing `env:"THING"`
+	}
+
+	os.Setenv("THING", "my thing")
+
+	var c = conf{}
+
+	err := ParseWithFuncs(&c, map[reflect.Type]ParserFunc{
+		reflect.TypeOf(thing{}): func(v string) (interface{}, error) {
+			return thing{desc: v}, nil
+		},
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(c.Thing.desc)
+	// Output:
+	// my thing
 }

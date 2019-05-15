@@ -4,12 +4,12 @@ import (
 	"encoding"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
-
-	"github.com/caarlos0/env/v5/parsers"
+	"time"
 )
 
 // nolint: gochecknoglobals
@@ -74,15 +74,12 @@ var (
 	}
 )
 
-func defaultCustomParsers() CustomParsers {
-	return CustomParsers{
-		parsers.URLType:      parsers.URLFunc,
-		parsers.DurationType: parsers.DurationFunc,
+func defaultTypeParsers() map[reflect.Type]ParserFunc {
+	return map[reflect.Type]ParserFunc{
+		reflect.TypeOf(url.URL{}):       URLFunc,
+		reflect.TypeOf(time.Nanosecond): DurationFunc,
 	}
 }
-
-// CustomParsers is a friendly name for the type that `ParseWithFuncs()` accepts
-type CustomParsers map[reflect.Type]ParserFunc
 
 // ParserFunc defines the signature of a function that can be used within `CustomParsers`
 type ParserFunc func(v string) (interface{}, error)
@@ -90,12 +87,12 @@ type ParserFunc func(v string) (interface{}, error)
 // Parse parses a struct containing `env` tags and loads its values from
 // environment variables.
 func Parse(v interface{}) error {
-	return ParseWithFuncs(v, CustomParsers{})
+	return ParseWithFuncs(v, map[reflect.Type]ParserFunc{})
 }
 
 // ParseWithFuncs is the same as `Parse` except it also allows the user to pass
 // in custom parsers.
-func ParseWithFuncs(v interface{}, funcMap CustomParsers) error {
+func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc) error {
 	ptrRef := reflect.ValueOf(v)
 	if ptrRef.Kind() != reflect.Ptr {
 		return ErrNotAStructPtr
@@ -104,14 +101,14 @@ func ParseWithFuncs(v interface{}, funcMap CustomParsers) error {
 	if ref.Kind() != reflect.Struct {
 		return ErrNotAStructPtr
 	}
-	var parsers = defaultCustomParsers()
+	var parsers = defaultTypeParsers()
 	for k, v := range funcMap {
 		parsers[k] = v
 	}
 	return doParse(ref, parsers)
 }
 
-func doParse(ref reflect.Value, funcMap CustomParsers) error {
+func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc) error {
 	refType := ref.Type()
 
 	for i := 0; i < refType.NumField(); i++ {
@@ -200,7 +197,7 @@ func getOr(key, defaultValue string) string {
 	return defaultValue
 }
 
-func set(field reflect.Value, sf reflect.StructField, value string, funcMap CustomParsers) error {
+func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[reflect.Type]ParserFunc) error {
 	if field.Kind() == reflect.Slice {
 		return handleSlice(field, value, sf, funcMap)
 	}
@@ -242,7 +239,7 @@ func set(field reflect.Value, sf reflect.StructField, value string, funcMap Cust
 	return newNoParserError(sf)
 }
 
-func handleSlice(field reflect.Value, value string, sf reflect.StructField, funcMap CustomParsers) error {
+func handleSlice(field reflect.Value, value string, sf reflect.StructField, funcMap map[reflect.Type]ParserFunc) error {
 	var separator = sf.Tag.Get("envSeparator")
 	if separator == "" {
 		separator = ","
@@ -346,4 +343,24 @@ func (e parseError) Error() string {
 
 func newNoParserError(sf reflect.StructField) error {
 	return fmt.Errorf(`env: no parser found for field "%s" of type "%s"`, sf.Name, sf.Type)
+}
+
+// Custom parsers
+
+// URLFunc is a basic parser for the url.URL type that should be used with `env.ParseWithFuncs()`
+func URLFunc(v string) (interface{}, error) {
+	u, err := url.Parse(v)
+	if err != nil {
+		return nil, fmt.Errorf("unable parse URL: %v", err)
+	}
+	return *u, nil
+}
+
+// DurationFunc is a basic parser for the time.Duration type that should be used with `env.ParseWithFuncs()`
+func DurationFunc(v string) (interface{}, error) {
+	s, err := time.ParseDuration(v)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parser duration: %v", err)
+	}
+	return s, err
 }
