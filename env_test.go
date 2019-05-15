@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type unmarshaler struct {
@@ -31,61 +32,94 @@ func (d *unmarshaler) UnmarshalText(data []byte) (err error) {
 
 // nolint: maligned
 type Config struct {
-	String          string          `env:"STRING"`
-	StringPtr       *string         `env:"STRING_PTR"`
-	Strings         []string        `env:"STRINGS"`
-	Bool            bool            `env:"BOOL"`
-	BoolPtr         *bool           `env:"BOOL_PTR"`
-	Bools           []bool          `env:"BOOLS"`
-	Int             int             `env:"INT"`
-	IntPtr          *int            `env:"INT_PTR"`
-	Ints            []int           `env:"INTS"`
-	Int8            int8            `env:"INT8"`
-	Int8Ptr         *int8           `env:"INT8_PTR"`
-	Int8s           []int8          `env:"INT8S"`
-	Int16           int16           `env:"INT16"`
-	Int16s          []int16         `env:"INT16S"`
-	Int16Ptr        *int16          `env:"INT16_PTR"`
-	Int32           int32           `env:"INT32"`
-	Int32s          []int32         `env:"INT32S"`
-	Int32Ptr        *int32          `env:"INT32_PTR"`
-	Int64           int64           `env:"INT64"`
-	Int64s          []int64         `env:"INT64S"`
-	Int64Ptr        *int64          `env:"INT64_PTR"`
-	Uint            uint            `env:"UINT"`
-	Uints           []uint          `env:"UINTS"`
-	UintPtr         *uint           `env:"UINT_PTR"`
-	Uint8           uint8           `env:"UINT8"`
-	Uint8s          []uint8         `env:"UINT8S"`
-	Uint8Ptr        *uint8          `env:"UINT8_PTR"`
-	Uint16          uint16          `env:"UINT16"`
-	Uint16s         []uint16        `env:"UINT16S"`
-	Uint16Ptr       *uint16         `env:"UINT16_PTR"`
-	Uint32          uint32          `env:"UINT32"`
-	Uint32s         []uint32        `env:"UINT32S"`
-	Uint32Ptr       *uint32         `env:"UINT32_PTR"`
-	Uint64          uint64          `env:"UINT64"`
-	Uint64s         []uint64        `env:"UINT64S"`
-	Uint64Ptr       *uint64         `env:"UINT64_PTR"`
-	Float32         float32         `env:"FLOAT32"`
-	Float32Ptr      *float32        `env:"FLOAT32_PTR"`
-	Float32s        []float32       `env:"FLOAT32S"`
-	Float64         float64         `env:"FLOAT64"`
-	Float64Ptr      *float64        `env:"FLOAT64_PTR"`
-	Float64s        []float64       `env:"FLOAT64S"`
-	DatabaseURL     string          `env:"DATABASE_URL" envDefault:"postgres://localhost:5432/db"`
-	SepStrings      []string        `env:"SEPSTRINGS" envSeparator:":"`
-	Duration        time.Duration   `env:"DURATION"`
-	Durations       []time.Duration `env:"DURATIONS"`
-	DurationPtr     *time.Duration  `env:"DURATION_PTR"`
-	Unmarshaler     unmarshaler     `env:"UNMARSHALER"`
-	UnmarshalerPtr  *unmarshaler    `env:"UNMARSHALER_PTR"`
-	Unmarshalers    []unmarshaler   `env:"UNMARSHALERS"`
-	UnmarshalerPtrs []*unmarshaler  `env:"UNMARSHALER_PTRS"`
-	URL             url.URL         `env:"URL"`
-	URLPtr          *url.URL        `env:"URL_PTR"`
-	URLs            []url.URL       `env:"URLS"`
-	URLPtrs         []*url.URL      `env:"URL_PTRS"`
+	String     string    `env:"STRING"`
+	StringPtr  *string   `env:"STRING"`
+	Strings    []string  `env:"STRINGS"`
+	StringPtrs []*string `env:"STRINGS"`
+
+	Bool     bool    `env:"BOOL"`
+	BoolPtr  *bool   `env:"BOOL"`
+	Bools    []bool  `env:"BOOLS"`
+	BoolPtrs []*bool `env:"BOOLS"`
+
+	Int     int    `env:"INT"`
+	IntPtr  *int   `env:"INT"`
+	Ints    []int  `env:"INTS"`
+	IntPtrs []*int `env:"INTS"`
+
+	Int8     int8    `env:"INT8"`
+	Int8Ptr  *int8   `env:"INT8"`
+	Int8s    []int8  `env:"INT8S"`
+	Int8Ptrs []*int8 `env:"INT8S"`
+
+	Int16     int16    `env:"INT16"`
+	Int16Ptr  *int16   `env:"INT16"`
+	Int16s    []int16  `env:"INT16S"`
+	Int16Ptrs []*int16 `env:"INT16S"`
+
+	Int32     int32    `env:"INT32"`
+	Int32Ptr  *int32   `env:"INT32"`
+	Int32s    []int32  `env:"INT32S"`
+	Int32Ptrs []*int32 `env:"INT32S"`
+
+	Int64     int64    `env:"INT64"`
+	Int64Ptr  *int64   `env:"INT64"`
+	Int64s    []int64  `env:"INT64S"`
+	Int64Ptrs []*int64 `env:"INT64S"`
+
+	Uint     uint    `env:"UINT"`
+	UintPtr  *uint   `env:"UINT"`
+	Uints    []uint  `env:"UINTS"`
+	UintPtrs []*uint `env:"UINTS"`
+
+	Uint8     uint8    `env:"UINT8"`
+	Uint8Ptr  *uint8   `env:"UINT8"`
+	Uint8s    []uint8  `env:"UINT8S"`
+	Uint8Ptrs []*uint8 `env:"UINT8S"`
+
+	Uint16     uint16    `env:"UINT16"`
+	Uint16Ptr  *uint16   `env:"UINT16"`
+	Uint16s    []uint16  `env:"UINT16S"`
+	Uint16Ptrs []*uint16 `env:"UINT16S"`
+
+	Uint32     uint32    `env:"UINT32"`
+	Uint32Ptr  *uint32   `env:"UINT32"`
+	Uint32s    []uint32  `env:"UINT32S"`
+	Uint32Ptrs []*uint32 `env:"UINT32S"`
+
+	Uint64     uint64    `env:"UINT64"`
+	Uint64Ptr  *uint64   `env:"UINT64"`
+	Uint64s    []uint64  `env:"UINT64S"`
+	Uint64Ptrs []*uint64 `env:"UINT64S"`
+
+	Float32     float32    `env:"FLOAT32"`
+	Float32Ptr  *float32   `env:"FLOAT32"`
+	Float32s    []float32  `env:"FLOAT32S"`
+	Float32Ptrs []*float32 `env:"FLOAT32S"`
+
+	Float64     float64    `env:"FLOAT64"`
+	Float64Ptr  *float64   `env:"FLOAT64"`
+	Float64s    []float64  `env:"FLOAT64S"`
+	Float64Ptrs []*float64 `env:"FLOAT64S"`
+
+	Duration     time.Duration    `env:"DURATION"`
+	Durations    []time.Duration  `env:"DURATIONS"`
+	DurationPtr  *time.Duration   `env:"DURATION"`
+	DurationPtrs []*time.Duration `env:"DURATIONS"`
+
+	Unmarshaler     unmarshaler    `env:"UNMARSHALER"`
+	UnmarshalerPtr  *unmarshaler   `env:"UNMARSHALER"`
+	Unmarshalers    []unmarshaler  `env:"UNMARSHALERS"`
+	UnmarshalerPtrs []*unmarshaler `env:"UNMARSHALERS"`
+
+	URL     url.URL    `env:"URL"`
+	URLPtr  *url.URL   `env:"URL"`
+	URLs    []url.URL  `env:"URLS"`
+	URLPtrs []*url.URL `env:"URLS"`
+
+	StringWithdefault string `env:"DATABASE_URL" envDefault:"postgres://localhost:5432/db"`
+
+	CustomSeparator []string `env:"SEPSTRINGS" envSeparator:":"`
 
 	NotAnEnv   string
 	unexported string `env:"FOO"`
@@ -110,86 +144,242 @@ type NestedStruct struct {
 }
 
 func TestParsesEnv(t *testing.T) {
-	os.Setenv("STRING", "somevalue")
-	os.Setenv("BOOL", "true")
-	os.Setenv("INT", "8080")
-	os.Setenv("STRINGS", "string1,string2,string3")
-	os.Setenv("SEPSTRINGS", "string1:string2:string3")
-	os.Setenv("INTS", "1,2,3,4")
-	os.Setenv("INT64S", "1,2,2147483640,-2147483640")
-	os.Setenv("UINT64S", "1,2,214748364011,9147483641")
-	os.Setenv("BOOLS", "t,TRUE,0,1")
-	os.Setenv("FLOAT32", "3.40282346638528859811704183484516925440e+38")
-	os.Setenv("FLOAT64", "1.797693134862315708145274237317043567981e+308")
-	os.Setenv("FLOAT32S", "1.0,2.0,3.0")
-	os.Setenv("FLOAT64S", "1.0,2.0,3.0")
-	os.Setenv("UINT", "44")
-	os.Setenv("UINT8", "88")
-	os.Setenv("UINT16", "1616")
-	os.Setenv("UINT32", "3232")
-	os.Setenv("UINT64", "6464")
-	os.Setenv("INT8", "-88")
-	os.Setenv("INT16", "-1616")
-	os.Setenv("INT32", "-3232")
-	os.Setenv("INT64", "-7575")
-	os.Setenv("DURATION", "1s")
-	os.Setenv("DURATION_PTR", "1s")
-	os.Setenv("DURATIONS", "1s,2s,3s")
-	os.Setenv("UNMARSHALER", "1s")
-	os.Setenv("UNMARSHALER_PTR", "1m")
-	os.Setenv("UNMARSHALERS", "2m,3m")
-	os.Setenv("UNMARSHALER_PTRS", "2m,3m")
-	os.Setenv("URL", "https://carlosbecker.dev")
-	os.Setenv("URL_PTR", "https://carlosbecker.dev/ptr")
-	os.Setenv("URLS", "https://carlosbecker.dev,https://carlosbecker.com")
-
 	defer os.Clearenv()
 
-	cfg := Config{}
-	assert.NoError(t, Parse(&cfg))
-	assert.Equal(t, "somevalue", cfg.String)
-	assert.Equal(t, true, cfg.Bool)
-	assert.Equal(t, 8080, cfg.Int)
-	assert.Equal(t, uint(44), cfg.Uint)
-	assert.Equal(t, uint8(88), cfg.Uint8)
-	assert.Equal(t, uint16(1616), cfg.Uint16)
-	assert.Equal(t, uint32(3232), cfg.Uint32)
-	assert.Equal(t, uint64(6464), cfg.Uint64)
-	assert.Equal(t, int8(-88), cfg.Int8)
-	assert.Equal(t, int16(-1616), cfg.Int16)
-	assert.Equal(t, int32(-3232), cfg.Int32)
-	assert.Equal(t, int64(-7575), cfg.Int64)
-	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.Strings)
-	assert.Equal(t, []string{"string1", "string2", "string3"}, cfg.SepStrings)
-	assert.Equal(t, []int{1, 2, 3, 4}, cfg.Ints)
-	assert.Equal(t, []int64{1, 2, 2147483640, -2147483640}, cfg.Int64s)
-	assert.Equal(t, []uint64{1, 2, 214748364011, 9147483641}, cfg.Uint64s)
-	assert.Equal(t, []bool{true, true, false, true}, cfg.Bools)
-	d1, _ := time.ParseDuration("1s")
-	assert.Equal(t, d1, cfg.Duration)
-	assert.Equal(t, &d1, cfg.DurationPtr)
-	f32 := float32(3.40282346638528859811704183484516925440e+38)
-	assert.Equal(t, f32, cfg.Float32)
-	f64 := float64(1.797693134862315708145274237317043567981e+308)
-	assert.Equal(t, f64, cfg.Float64)
-	assert.Equal(t, []float32{float32(1.0), float32(2.0), float32(3.0)}, cfg.Float32s)
-	assert.Equal(t, []float64{float64(1.0), float64(2.0), float64(3.0)}, cfg.Float64s)
-	d2, _ := time.ParseDuration("2s")
-	d3, _ := time.ParseDuration("3s")
-	assert.Equal(t, []time.Duration{d1, d2, d3}, cfg.Durations)
-	assert.Equal(t, time.Second, cfg.Unmarshaler.Duration)
-	assert.Equal(t, time.Minute, cfg.UnmarshalerPtr.Duration)
-	assert.Equal(t, []unmarshaler{{time.Minute * 2}, {time.Minute * 3}}, cfg.Unmarshalers)
-	assert.Equal(t, []*unmarshaler{{time.Minute * 2}, {time.Minute * 3}}, cfg.UnmarshalerPtrs)
+	var tos = func(v interface{}) string {
+		return fmt.Sprintf("%v", v)
+	}
 
-	assert.Equal(t, "https://carlosbecker.dev", cfg.URL.String())
-	assert.Equal(t, "https://carlosbecker.dev/ptr", cfg.URLPtr.String())
-	assert.Equal(t, "https://carlosbecker.dev", cfg.URLs[0].String())
-	assert.Equal(t, "https://carlosbecker.com", cfg.URLs[1].String())
+	var toss = func(v ...interface{}) string {
+		var ss = []string{}
+		for _, s := range v {
+			ss = append(ss, tos(s))
+		}
+		return strings.Join(ss, ",")
+	}
+
+	var str1 = "str1"
+	var str2 = "str2"
+	os.Setenv("STRING", str1)
+	os.Setenv("STRINGS", toss(str1, str2))
+
+	var bool1 = true
+	var bool2 = false
+	os.Setenv("BOOL", tos(bool1))
+	os.Setenv("BOOLS", toss(bool1, bool2))
+
+	var int1 = -1
+	var int2 = 2
+	os.Setenv("INT", tos(int1))
+	os.Setenv("INTS", toss(int1, int2))
+
+	var int81 int8 = -2
+	var int82 int8 = 5
+	os.Setenv("INT8", tos(int81))
+	os.Setenv("INT8S", toss(int81, int82))
+
+	var int161 int16 = -24
+	var int162 int16 = 15
+	os.Setenv("INT16", tos(int161))
+	os.Setenv("INT16S", toss(int161, int162))
+
+	var int321 int32 = -14
+	var int322 int32 = 154
+	os.Setenv("INT32", tos(int321))
+	os.Setenv("INT32S", toss(int321, int322))
+
+	var int641 int64 = -12
+	var int642 int64 = 150
+	os.Setenv("INT64", tos(int641))
+	os.Setenv("INT64S", toss(int641, int642))
+
+	var uint1 uint = 1
+	var uint2 uint = 2
+	os.Setenv("UINT", tos(uint1))
+	os.Setenv("UINTS", toss(uint1, uint2))
+
+	var uint81 uint8 = 15
+	var uint82 uint8 = 51
+	os.Setenv("UINT8", tos(uint81))
+	os.Setenv("UINT8S", toss(uint81, uint82))
+
+	var uint161 uint16 = 532
+	var uint162 uint16 = 123
+	os.Setenv("UINT16", tos(uint161))
+	os.Setenv("UINT16S", toss(uint161, uint162))
+
+	var uint321 uint32 = 93
+	var uint322 uint32 = 14
+	os.Setenv("UINT32", tos(uint321))
+	os.Setenv("UINT32S", toss(uint321, uint322))
+
+	var uint641 uint64 = 5
+	var uint642 uint64 = 43
+	os.Setenv("UINT64", tos(uint641))
+	os.Setenv("UINT64S", toss(uint641, uint642))
+
+	var float321 float32 = 9.3
+	var float322 float32 = 1.1
+	os.Setenv("FLOAT32", tos(float321))
+	os.Setenv("FLOAT32S", toss(float321, float322))
+
+	var float641 = 1.53
+	var float642 = 0.5
+	os.Setenv("FLOAT64", tos(float641))
+	os.Setenv("FLOAT64S", toss(float641, float642))
+
+	var duration1 = time.Second
+	var duration2 = time.Second * 4
+	os.Setenv("DURATION", tos(duration1))
+	os.Setenv("DURATIONS", toss(duration1, duration2))
+
+	var unmarshaler1 = unmarshaler{time.Minute}
+	var unmarshaler2 = unmarshaler{time.Millisecond * 1232}
+	os.Setenv("UNMARSHALER", tos(unmarshaler1.Duration))
+	os.Setenv("UNMARSHALERS", toss(unmarshaler1.Duration, unmarshaler2.Duration))
+
+	var url1 = "https://goreleaser.com"
+	var url2 = "https://caarlos0.dev"
+	os.Setenv("URL", tos(url1))
+	os.Setenv("URLS", toss(url1, url2))
+
+	os.Setenv("SEPSTRINGS", strings.Join([]string{str1, str2}, ":"))
+
+	var cfg = Config{}
+	require.NoError(t, Parse(&cfg))
+
+	assert.Equal(t, str1, cfg.String)
+	assert.Equal(t, &str1, cfg.StringPtr)
+	assert.Equal(t, str1, cfg.Strings[0])
+	assert.Equal(t, str2, cfg.Strings[1])
+	assert.Equal(t, &str1, cfg.StringPtrs[0])
+	assert.Equal(t, &str2, cfg.StringPtrs[1])
+
+	assert.Equal(t, bool1, cfg.Bool)
+	assert.Equal(t, &bool1, cfg.BoolPtr)
+	assert.Equal(t, bool1, cfg.Bools[0])
+	assert.Equal(t, bool2, cfg.Bools[1])
+	assert.Equal(t, &bool1, cfg.BoolPtrs[0])
+	assert.Equal(t, &bool2, cfg.BoolPtrs[1])
+
+	assert.Equal(t, int1, cfg.Int)
+	assert.Equal(t, &int1, cfg.IntPtr)
+	assert.Equal(t, int1, cfg.Ints[0])
+	assert.Equal(t, int2, cfg.Ints[1])
+	assert.Equal(t, &int1, cfg.IntPtrs[0])
+	assert.Equal(t, &int2, cfg.IntPtrs[1])
+
+	assert.Equal(t, int81, cfg.Int8)
+	assert.Equal(t, &int81, cfg.Int8Ptr)
+	assert.Equal(t, int81, cfg.Int8s[0])
+	assert.Equal(t, int82, cfg.Int8s[1])
+	assert.Equal(t, &int81, cfg.Int8Ptrs[0])
+	assert.Equal(t, &int82, cfg.Int8Ptrs[1])
+
+	assert.Equal(t, int161, cfg.Int16)
+	assert.Equal(t, &int161, cfg.Int16Ptr)
+	assert.Equal(t, int161, cfg.Int16s[0])
+	assert.Equal(t, int162, cfg.Int16s[1])
+	assert.Equal(t, &int161, cfg.Int16Ptrs[0])
+	assert.Equal(t, &int162, cfg.Int16Ptrs[1])
+
+	assert.Equal(t, int321, cfg.Int32)
+	assert.Equal(t, &int321, cfg.Int32Ptr)
+	assert.Equal(t, int321, cfg.Int32s[0])
+	assert.Equal(t, int322, cfg.Int32s[1])
+	assert.Equal(t, &int321, cfg.Int32Ptrs[0])
+	assert.Equal(t, &int322, cfg.Int32Ptrs[1])
+
+	assert.Equal(t, int641, cfg.Int64)
+	assert.Equal(t, &int641, cfg.Int64Ptr)
+	assert.Equal(t, int641, cfg.Int64s[0])
+	assert.Equal(t, int642, cfg.Int64s[1])
+	assert.Equal(t, &int641, cfg.Int64Ptrs[0])
+	assert.Equal(t, &int642, cfg.Int64Ptrs[1])
+
+	assert.Equal(t, uint1, cfg.Uint)
+	assert.Equal(t, &uint1, cfg.UintPtr)
+	assert.Equal(t, uint1, cfg.Uints[0])
+	assert.Equal(t, uint2, cfg.Uints[1])
+	assert.Equal(t, &uint1, cfg.UintPtrs[0])
+	assert.Equal(t, &uint2, cfg.UintPtrs[1])
+
+	assert.Equal(t, uint81, cfg.Uint8)
+	assert.Equal(t, &uint81, cfg.Uint8Ptr)
+	assert.Equal(t, uint81, cfg.Uint8s[0])
+	assert.Equal(t, uint82, cfg.Uint8s[1])
+	assert.Equal(t, &uint81, cfg.Uint8Ptrs[0])
+	assert.Equal(t, &uint82, cfg.Uint8Ptrs[1])
+
+	assert.Equal(t, uint161, cfg.Uint16)
+	assert.Equal(t, &uint161, cfg.Uint16Ptr)
+	assert.Equal(t, uint161, cfg.Uint16s[0])
+	assert.Equal(t, uint162, cfg.Uint16s[1])
+	assert.Equal(t, &uint161, cfg.Uint16Ptrs[0])
+	assert.Equal(t, &uint162, cfg.Uint16Ptrs[1])
+
+	assert.Equal(t, uint321, cfg.Uint32)
+	assert.Equal(t, &uint321, cfg.Uint32Ptr)
+	assert.Equal(t, uint321, cfg.Uint32s[0])
+	assert.Equal(t, uint322, cfg.Uint32s[1])
+	assert.Equal(t, &uint321, cfg.Uint32Ptrs[0])
+	assert.Equal(t, &uint322, cfg.Uint32Ptrs[1])
+
+	assert.Equal(t, uint641, cfg.Uint64)
+	assert.Equal(t, &uint641, cfg.Uint64Ptr)
+	assert.Equal(t, uint641, cfg.Uint64s[0])
+	assert.Equal(t, uint642, cfg.Uint64s[1])
+	assert.Equal(t, &uint641, cfg.Uint64Ptrs[0])
+	assert.Equal(t, &uint642, cfg.Uint64Ptrs[1])
+
+	assert.Equal(t, float321, cfg.Float32)
+	assert.Equal(t, &float321, cfg.Float32Ptr)
+	assert.Equal(t, float321, cfg.Float32s[0])
+	assert.Equal(t, float322, cfg.Float32s[1])
+	assert.Equal(t, &float321, cfg.Float32Ptrs[0])
+	assert.Equal(t, &float322, cfg.Float32Ptrs[1])
+
+	assert.Equal(t, float641, cfg.Float64)
+	assert.Equal(t, &float641, cfg.Float64Ptr)
+	assert.Equal(t, float641, cfg.Float64s[0])
+	assert.Equal(t, float642, cfg.Float64s[1])
+	assert.Equal(t, &float641, cfg.Float64Ptrs[0])
+	assert.Equal(t, &float642, cfg.Float64Ptrs[1])
+
+	assert.Equal(t, duration1, cfg.Duration)
+	assert.Equal(t, &duration1, cfg.DurationPtr)
+	assert.Equal(t, duration1, cfg.Durations[0])
+	assert.Equal(t, duration2, cfg.Durations[1])
+	assert.Equal(t, &duration1, cfg.DurationPtrs[0])
+	assert.Equal(t, &duration2, cfg.DurationPtrs[1])
+
+	assert.Equal(t, unmarshaler1, cfg.Unmarshaler)
+	assert.Equal(t, &unmarshaler1, cfg.UnmarshalerPtr)
+	assert.Equal(t, unmarshaler1, cfg.Unmarshalers[0])
+	assert.Equal(t, unmarshaler2, cfg.Unmarshalers[1])
+	assert.Equal(t, &unmarshaler1, cfg.UnmarshalerPtrs[0])
+	assert.Equal(t, &unmarshaler2, cfg.UnmarshalerPtrs[1])
+
+	assert.Equal(t, url1, cfg.URL.String())
+	assert.Equal(t, url1, cfg.URLPtr.String())
+	assert.Equal(t, url1, cfg.URLs[0].String())
+	assert.Equal(t, url2, cfg.URLs[1].String())
+	assert.Equal(t, url1, cfg.URLPtrs[0].String())
+	assert.Equal(t, url2, cfg.URLPtrs[1].String())
+
+	assert.Equal(t, "postgres://localhost:5432/db", cfg.StringWithdefault)
+
+	assert.Equal(t, str1, cfg.CustomSeparator[0])
+	assert.Equal(t, str2, cfg.CustomSeparator[1])
+
+	assert.Empty(t, cfg.NotAnEnv)
+
+	assert.Empty(t, cfg.unexported)
 }
 
 func TestParsesEnvInner(t *testing.T) {
 	os.Setenv("innervar", "someinnervalue")
+	os.Setenv("innernum", "8")
 	defer os.Clearenv()
 	cfg := ParentStruct{
 		InnerStruct: &InnerStruct{},
@@ -197,6 +387,19 @@ func TestParsesEnvInner(t *testing.T) {
 	}
 	assert.NoError(t, Parse(&cfg))
 	assert.Equal(t, "someinnervalue", cfg.InnerStruct.Inner)
+	assert.Equal(t, uint(8), cfg.InnerStruct.Number)
+}
+
+func TestParsesEnvInnerFails(t *testing.T) {
+	defer os.Clearenv()
+	type config struct {
+		Foo struct {
+			Number int `env:"NUMBER"`
+		}
+	}
+	os.Setenv("NUMBER", "not-a-number")
+	var cfg = config{}
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Number\" of type \"int\": strconv.ParseInt: parsing \"not-a-number\": invalid syntax")
 }
 
 func TestParsesEnvInnerNil(t *testing.T) {
@@ -224,6 +427,7 @@ func TestParsesEnvNested(t *testing.T) {
 }
 
 func TestEmptyVars(t *testing.T) {
+	os.Clearenv()
 	cfg := Config{}
 	assert.NoError(t, Parse(&cfg))
 	assert.Equal(t, "", cfg.String)
@@ -233,7 +437,7 @@ func TestEmptyVars(t *testing.T) {
 	assert.Equal(t, uint64(0), cfg.Uint64)
 	assert.Equal(t, int64(0), cfg.Int64)
 	assert.Equal(t, 0, len(cfg.Strings))
-	assert.Equal(t, 0, len(cfg.SepStrings))
+	assert.Equal(t, 0, len(cfg.CustomSeparator))
 	assert.Equal(t, 0, len(cfg.Ints))
 	assert.Equal(t, 0, len(cfg.Bools))
 }
@@ -368,12 +572,6 @@ func TestInvalidDurations(t *testing.T) {
 
 	cfg := Config{}
 	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Durations\" of type \"[]time.Duration\": unable to parser duration: time: invalid duration contains-an-invalid-duration")
-}
-
-func TestParsesDefaultConfig(t *testing.T) {
-	cfg := Config{}
-	assert.NoError(t, Parse(&cfg))
-	assert.Equal(t, "postgres://localhost:5432/db", cfg.DatabaseURL)
 }
 
 func TestParseStructWithoutEnvTag(t *testing.T) {
@@ -726,6 +924,15 @@ func TestTextUnmarshalerError(t *testing.T) {
 	os.Setenv("UNMARSHALER", "invalid")
 	cfg := &config{}
 	assert.EqualError(t, Parse(cfg), "env: parse error on field \"Unmarshaler\" of type \"env.unmarshaler\": time: invalid duration invalid")
+}
+
+func TestTextUnmarshalersError(t *testing.T) {
+	type config struct {
+		Unmarshalers []unmarshaler `env:"UNMARSHALERS"`
+	}
+	os.Setenv("UNMARSHALERS", "1s,invalid")
+	cfg := &config{}
+	assert.EqualError(t, Parse(cfg), "env: parse error on field \"Unmarshalers\" of type \"[]env.unmarshaler\": time: invalid duration invalid")
 }
 
 func TestParseURL(t *testing.T) {

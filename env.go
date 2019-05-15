@@ -72,14 +72,24 @@ var (
 			return float32(f), err
 		},
 	}
-)
 
-func defaultTypeParsers() map[reflect.Type]ParserFunc {
-	return map[reflect.Type]ParserFunc{
-		reflect.TypeOf(url.URL{}):       URLFunc,
-		reflect.TypeOf(time.Nanosecond): DurationFunc,
+	defaultTypeParsers = map[reflect.Type]ParserFunc{
+		reflect.TypeOf(url.URL{}): func(v string) (interface{}, error) {
+			u, err := url.Parse(v)
+			if err != nil {
+				return nil, fmt.Errorf("unable parse URL: %v", err)
+			}
+			return *u, nil
+		},
+		reflect.TypeOf(time.Nanosecond): func(v string) (interface{}, error) {
+			s, err := time.ParseDuration(v)
+			if err != nil {
+				return nil, fmt.Errorf("unable to parser duration: %v", err)
+			}
+			return s, err
+		},
 	}
-}
+)
 
 // ParserFunc defines the signature of a function that can be used within `CustomParsers`
 type ParserFunc func(v string) (interface{}, error)
@@ -101,7 +111,7 @@ func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc) error {
 	if ref.Kind() != reflect.Struct {
 		return ErrNotAStructPtr
 	}
-	var parsers = defaultTypeParsers()
+	var parsers = defaultTypeParsers
 	for k, v := range funcMap {
 		parsers[k] = v
 	}
@@ -109,7 +119,7 @@ func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc) error {
 }
 
 func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc) error {
-	refType := ref.Type()
+	var refType = ref.Type()
 
 	for i := 0; i < refType.NumField(); i++ {
 		refField := ref.Field(i)
@@ -226,13 +236,14 @@ func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[
 		return nil
 	}
 
-	parserFunc, ok = defaultBuiltInParsers[sf.Type.Kind()]
+	parserFunc, ok = defaultBuiltInParsers[typee.Kind()]
 	if ok {
 		val, err := parserFunc(value)
 		if err != nil {
 			return newParseError(sf, err)
 		}
-		field.Set(reflect.ValueOf(val).Convert(sf.Type))
+
+		fieldee.Set(reflect.ValueOf(val).Convert(typee))
 		return nil
 	}
 
@@ -246,18 +257,18 @@ func handleSlice(field reflect.Value, value string, sf reflect.StructField, func
 	}
 	var parts = strings.Split(value, separator)
 
-	var elemType = sf.Type.Elem()
-	if elemType.Kind() == reflect.Ptr {
-		elemType = elemType.Elem()
+	var typee = sf.Type.Elem()
+	if typee.Kind() == reflect.Ptr {
+		typee = typee.Elem()
 	}
 
-	if _, ok := reflect.New(elemType).Interface().(encoding.TextUnmarshaler); ok {
+	if _, ok := reflect.New(typee).Interface().(encoding.TextUnmarshaler); ok {
 		return parseTextUnmarshalers(field, parts, sf)
 	}
 
-	parserFunc, ok := funcMap[elemType]
+	parserFunc, ok := funcMap[typee]
 	if !ok {
-		parserFunc, ok = defaultBuiltInParsers[elemType.Kind()]
+		parserFunc, ok = defaultBuiltInParsers[typee.Kind()]
 		if !ok {
 			return newNoParserError(sf)
 		}
@@ -269,10 +280,10 @@ func handleSlice(field reflect.Value, value string, sf reflect.StructField, func
 		if err != nil {
 			return newParseError(sf, err)
 		}
-		var v = reflect.ValueOf(r).Convert(elemType)
+		var v = reflect.ValueOf(r).Convert(typee)
 		if sf.Type.Elem().Kind() == reflect.Ptr {
-			// TODO: add this!
-			return fmt.Errorf("env: pointer slices of built-in and aliased types are not supported: %s %s", sf.Name, sf.Type)
+			v = reflect.New(typee)
+			v.Elem().Set(reflect.ValueOf(r).Convert(typee))
 		}
 		result = reflect.Append(result, v)
 	}
@@ -343,24 +354,4 @@ func (e parseError) Error() string {
 
 func newNoParserError(sf reflect.StructField) error {
 	return fmt.Errorf(`env: no parser found for field "%s" of type "%s"`, sf.Name, sf.Type)
-}
-
-// Custom parsers
-
-// URLFunc is a basic parser for the url.URL type that should be used with `env.ParseWithFuncs()`
-func URLFunc(v string) (interface{}, error) {
-	u, err := url.Parse(v)
-	if err != nil {
-		return nil, fmt.Errorf("unable parse URL: %v", err)
-	}
-	return *u, nil
-}
-
-// DurationFunc is a basic parser for the time.Duration type that should be used with `env.ParseWithFuncs()`
-func DurationFunc(v string) (interface{}, error) {
-	s, err := time.ParseDuration(v)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parser duration: %v", err)
-	}
-	return s, err
 }

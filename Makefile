@@ -1,6 +1,5 @@
 SOURCE_FILES?=./...
 TEST_PATTERN?=.
-TEST_OPTIONS?=
 
 export GO111MODULE := on
 
@@ -14,7 +13,7 @@ build:
 .PHONY: build
 
 test:
-	go test $(TEST_OPTIONS) -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=2m
+	go test -v -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=2m
 .PHONY: test
 
 cover: test
