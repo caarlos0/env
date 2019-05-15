@@ -72,14 +72,24 @@ var (
 			return float32(f), err
 		},
 	}
-)
 
-func defaultTypeParsers() map[reflect.Type]ParserFunc {
-	return map[reflect.Type]ParserFunc{
-		reflect.TypeOf(url.URL{}):       URLFunc,
-		reflect.TypeOf(time.Nanosecond): DurationFunc,
+	defaultTypeParsers = map[reflect.Type]ParserFunc{
+		reflect.TypeOf(url.URL{}): func(v string) (interface{}, error) {
+			u, err := url.Parse(v)
+			if err != nil {
+				return nil, fmt.Errorf("unable parse URL: %v", err)
+			}
+			return *u, nil
+		},
+		reflect.TypeOf(time.Nanosecond): func(v string) (interface{}, error) {
+			s, err := time.ParseDuration(v)
+			if err != nil {
+				return nil, fmt.Errorf("unable to parser duration: %v", err)
+			}
+			return s, err
+		},
 	}
-}
+)
 
 // ParserFunc defines the signature of a function that can be used within `CustomParsers`
 type ParserFunc func(v string) (interface{}, error)
@@ -101,7 +111,7 @@ func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc) error {
 	if ref.Kind() != reflect.Struct {
 		return ErrNotAStructPtr
 	}
-	var parsers = defaultTypeParsers()
+	var parsers = defaultTypeParsers
 	for k, v := range funcMap {
 		parsers[k] = v
 	}
@@ -343,24 +353,4 @@ func (e parseError) Error() string {
 
 func newNoParserError(sf reflect.StructField) error {
 	return fmt.Errorf(`env: no parser found for field "%s" of type "%s"`, sf.Name, sf.Type)
-}
-
-// Custom parsers
-
-// URLFunc is a basic parser for the url.URL type that should be used with `env.ParseWithFuncs()`
-func URLFunc(v string) (interface{}, error) {
-	u, err := url.Parse(v)
-	if err != nil {
-		return nil, fmt.Errorf("unable parse URL: %v", err)
-	}
-	return *u, nil
-}
-
-// DurationFunc is a basic parser for the time.Duration type that should be used with `env.ParseWithFuncs()`
-func DurationFunc(v string) (interface{}, error) {
-	s, err := time.ParseDuration(v)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parser duration: %v", err)
-	}
-	return s, err
 }
