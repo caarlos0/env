@@ -607,7 +607,7 @@ func TestCustomParserUint64Alias(t *testing.T) {
 
 	cfg := config{}
 
-	err := ParseWithFuncs(&cfg, CustomParsers{
+	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{
 		reflect.TypeOf(one): tParser,
 	})
 
@@ -656,7 +656,7 @@ func TestCustomParserNotCalledForNonAlias(t *testing.T) {
 
 	cfg := config{}
 
-	err := ParseWithFuncs(&cfg, CustomParsers{
+	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{
 		reflect.TypeOf(T(0)): tParser,
 	})
 
@@ -829,7 +829,7 @@ func ExampleParseWithFuncs() {
 
 	var c = conf{}
 
-	err := ParseWithFuncs(&c, CustomParsers{
+	err := ParseWithFuncs(&c, map[reflect.Type]ParserFunc{
 		reflect.TypeOf(thing{}): func(v string) (interface{}, error) {
 			return thing{desc: v}, nil
 		},

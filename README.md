@@ -16,7 +16,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/caarlos0/env/v6"
+  // if using go modules
+  "github.com/caarlos0/env/v6"
+
+  // if using dep/others
+  "github.com/caarlos0/env"
 )
 
 type config struct {
@@ -128,8 +132,7 @@ to use (or define) and pass custom parsers (and their associated `reflect.Type`)
 to the `env.ParseWithFuncs()` function.
 
 In addition to accepting a struct pointer (same as `Parse()`), this function
-also accepts a `env.CustomParsers` arg that under the covers is a
-`map[reflect.Type]env.ParserFunc`.
+also accepts a `map[reflect.Type]env.ParserFunc`.
 
 `env` also ships with some pre-built custom parser funcs for common types. You
 can check them out [here](parsers/).
