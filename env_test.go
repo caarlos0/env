@@ -233,6 +233,11 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("DURATION", tos(duration1))
 	os.Setenv("DURATIONS", toss(duration1, duration2))
 
+	var unmarshaler1 = unmarshaler{time.Minute}
+	var unmarshaler2 = unmarshaler{time.Millisecond * 1232}
+	os.Setenv("UNMARSHALER", tos(unmarshaler1.Duration))
+	os.Setenv("UNMARSHALERS", toss(unmarshaler1.Duration, unmarshaler2.Duration))
+
 	var url1 = "https://goreleaser.com"
 	var url2 = "https://caarlos0.dev"
 	os.Setenv("URL", tos(url1))
@@ -348,6 +353,13 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, &duration1, cfg.DurationPtrs[0])
 	assert.Equal(t, &duration2, cfg.DurationPtrs[1])
 
+	assert.Equal(t, unmarshaler1, cfg.Unmarshaler)
+	assert.Equal(t, &unmarshaler1, cfg.UnmarshalerPtr)
+	assert.Equal(t, unmarshaler1, cfg.Unmarshalers[0])
+	assert.Equal(t, unmarshaler2, cfg.Unmarshalers[1])
+	assert.Equal(t, &unmarshaler1, cfg.UnmarshalerPtrs[0])
+	assert.Equal(t, &unmarshaler2, cfg.UnmarshalerPtrs[1])
+
 	assert.Equal(t, url1, cfg.URL.String())
 	assert.Equal(t, url1, cfg.URLPtr.String())
 	assert.Equal(t, url1, cfg.URLs[0].String())
@@ -367,6 +379,7 @@ func TestParsesEnv(t *testing.T) {
 
 func TestParsesEnvInner(t *testing.T) {
 	os.Setenv("innervar", "someinnervalue")
+	os.Setenv("innernum", "8")
 	defer os.Clearenv()
 	cfg := ParentStruct{
 		InnerStruct: &InnerStruct{},
@@ -374,6 +387,19 @@ func TestParsesEnvInner(t *testing.T) {
 	}
 	assert.NoError(t, Parse(&cfg))
 	assert.Equal(t, "someinnervalue", cfg.InnerStruct.Inner)
+	assert.Equal(t, uint(8), cfg.InnerStruct.Number)
+}
+
+func TestParsesEnvInnerFails(t *testing.T) {
+	defer os.Clearenv()
+	type config struct {
+		Foo struct {
+			Number int `env:"NUMBER"`
+		}
+	}
+	os.Setenv("NUMBER", "not-a-number")
+	var cfg = config{}
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Number\" of type \"int\": strconv.ParseInt: parsing \"not-a-number\": invalid syntax")
 }
 
 func TestParsesEnvInnerNil(t *testing.T) {
@@ -898,6 +924,15 @@ func TestTextUnmarshalerError(t *testing.T) {
 	os.Setenv("UNMARSHALER", "invalid")
 	cfg := &config{}
 	assert.EqualError(t, Parse(cfg), "env: parse error on field \"Unmarshaler\" of type \"env.unmarshaler\": time: invalid duration invalid")
+}
+
+func TestTextUnmarshalersError(t *testing.T) {
+	type config struct {
+		Unmarshalers []unmarshaler `env:"UNMARSHALERS"`
+	}
+	os.Setenv("UNMARSHALERS", "1s,invalid")
+	cfg := &config{}
+	assert.EqualError(t, Parse(cfg), "env: parse error on field \"Unmarshalers\" of type \"[]env.unmarshaler\": time: invalid duration invalid")
 }
 
 func TestParseURL(t *testing.T) {
