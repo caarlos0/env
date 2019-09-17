@@ -133,6 +133,13 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc) error {
 			}
 			continue
 		}
+		if reflect.Struct == refField.Kind() && refField.CanAddr() && refField.Type().Name() == "" {
+			err := Parse(refField.Addr().Interface())
+			if nil != err {
+				return err
+			}
+			continue
+		}
 		refTypeField := refType.Field(i)
 		value, err := get(refTypeField)
 		if err != nil {
