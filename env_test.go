@@ -121,6 +121,10 @@ type Config struct {
 
 	CustomSeparator []string `env:"SEPSTRINGS" envSeparator:":"`
 
+	NonDefined struct {
+		String string `env:"NONDEFINED_STR"`
+	}
+
 	NotAnEnv   string
 	unexported string `env:"FOO"`
 }
@@ -245,6 +249,9 @@ func TestParsesEnv(t *testing.T) {
 
 	os.Setenv("SEPSTRINGS", strings.Join([]string{str1, str2}, ":"))
 
+	nonDefinedStr := "nonDefinedStr"
+	os.Setenv("NONDEFINED_STR", nonDefinedStr)
+
 	var cfg = Config{}
 	require.NoError(t, Parse(&cfg))
 
@@ -368,6 +375,7 @@ func TestParsesEnv(t *testing.T) {
 	assert.Equal(t, url2, cfg.URLPtrs[1].String())
 
 	assert.Equal(t, "postgres://localhost:5432/db", cfg.StringWithdefault)
+	assert.Equal(t, nonDefinedStr, cfg.NonDefined.String)
 
 	assert.Equal(t, str1, cfg.CustomSeparator[0])
 	assert.Equal(t, str2, cfg.CustomSeparator[1])
