@@ -135,7 +135,7 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc) error {
 		}
 		if reflect.Struct == refField.Kind() && refField.CanAddr() && refField.Type().Name() == "" {
 			err := Parse(refField.Addr().Interface())
-			if nil != err {
+			if err != nil {
 				return err
 			}
 			continue
@@ -172,21 +172,19 @@ func get(field reflect.StructField) (string, error) {
 	val = getOr(key, defaultValue)
 
 	expandVar := field.Tag.Get("envExpand")
-	if strings.ToLower(expandVar) == "true" {
+	if strings.EqualFold(expandVar, "true") {
 		val = os.ExpandEnv(val)
 	}
 
-	if len(opts) > 0 {
-		for _, opt := range opts {
-			// The only option supported is "required".
-			switch opt {
-			case "":
-				break
-			case "required":
-				val, err = getRequired(key)
-			default:
-				err = fmt.Errorf("env: tag option %q not supported", opt)
-			}
+	for _, opt := range opts {
+		// The only option supported is "required".
+		switch opt {
+		case "":
+			break
+		case "required":
+			val, err = getRequired(key)
+		default:
+			err = fmt.Errorf("env: tag option %q not supported", opt)
 		}
 	}
 
