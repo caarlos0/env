@@ -25,7 +25,7 @@ fmt:
 .PHONY: fmt
 
 lint:
-	./bin/golangci-lint run --tests=false --enable-all --disable=lll ./...
+	./bin/golangci-lint run ./...
 .PHONY: lint
 
 ci: build test lint
