@@ -1073,9 +1073,9 @@ func TestFile(t *testing.T) {
 	file2, err := ioutil.TempFile("", "sec_key_2_*")
 	assert.NoError(t, err)
 
-	err = ioutil.WriteFile(file.Name(), []byte("the real secret1"), 660)
+	err = ioutil.WriteFile(file.Name(), []byte("the real secret1"), 0660)
 	assert.NoError(t, err)
-	err = ioutil.WriteFile(file2.Name(), []byte("the real secret2"), 660)
+	err = ioutil.WriteFile(file2.Name(), []byte("the real secret2"), 0660)
 	assert.NoError(t, err)
 
 	os.Setenv("HOST", "localhost")
