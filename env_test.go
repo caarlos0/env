@@ -3,6 +3,7 @@ package env
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -1055,4 +1056,48 @@ func ExampleParseWithFuncs() {
 	fmt.Println(c.Thing.desc)
 	// Output:
 	// my thing
+}
+
+func TestFile(t *testing.T) {
+	type config struct {
+		Host       string `env:"HOST" envDefault:"localhost"`
+		Port       int    `env:"PORT" envDefault:"3000" envExpand:"True"`
+		SecretKey0 string `env:"SECRET_KEY_0,file"`
+		SecretKey1 string `env:"SECRET_KEY_1,required,file"`
+		SecretKey2 string `env:"SECRET_KEY_2,file,required"`
+	}
+	defer os.Clearenv()
+
+	file, err := ioutil.TempFile("", "sec_key_1_*")
+	assert.NoError(t, err)
+	file2, err := ioutil.TempFile("", "sec_key_2_*")
+	assert.NoError(t, err)
+
+	err = ioutil.WriteFile(file.Name(), []byte("the real secret1"), 660)
+	assert.NoError(t, err)
+	err = ioutil.WriteFile(file2.Name(), []byte("the real secret2"), 660)
+	assert.NoError(t, err)
+
+	os.Setenv("HOST", "localhost")
+	os.Setenv("PORT", "3000")
+	os.Setenv("SECRET_KEY_0", "qwerty12345")
+	os.Setenv("SECRET_KEY_1", "dvorak12345")
+	os.Setenv("SECRET_KEY_1_FILE", file.Name())
+	os.Setenv("SECRET_KEY_2_FILE", file2.Name())
+	cfg := config{}
+	err = Parse(&cfg)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "localhost", cfg.Host)
+	assert.Equal(t, 3000, cfg.Port)
+	assert.Equal(t, "qwerty12345", cfg.SecretKey0)
+	assert.Equal(t, "the real secret1", cfg.SecretKey1)
+	assert.Equal(t, "the real secret2", cfg.SecretKey2)
+
+	// Clening up
+	err = os.Remove(file.Name())
+	assert.NoError(t, err)
+
+	err = os.Remove(file2.Name())
+	assert.NoError(t, err)
 }

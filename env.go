@@ -4,6 +4,7 @@ import (
 	"encoding"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"reflect"
@@ -160,16 +161,19 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc) error {
 	return nil
 }
 
-func get(field reflect.StructField) (string, error) {
-	var (
-		val string
-		err error
-	)
-
+func get(field reflect.StructField) (val string, err error) {
+	var required bool
+	var ok bool
 	key, opts := parseKeyForOption(field.Tag.Get("env"))
 
+	defer func() {
+		if required && !ok && err == nil {
+			err = fmt.Errorf(`env: required environment variable %q is not set`, key)
+		}
+	}()
+
 	defaultValue := field.Tag.Get("envDefault")
-	val = getOr(key, defaultValue)
+	val, ok = getOr(key, defaultValue)
 
 	expandVar := field.Tag.Get("envExpand")
 	if strings.EqualFold(expandVar, "true") {
@@ -181,8 +185,13 @@ func get(field reflect.StructField) (string, error) {
 		switch opt {
 		case "":
 			break
+		case "file":
+			val, err = getFile(key, val)
+			if err == nil {
+				ok = true
+			}
 		case "required":
-			val, err = getRequired(key)
+			required = true
 		default:
 			err = fmt.Errorf("env: tag option %q not supported", opt)
 		}
@@ -197,19 +206,21 @@ func parseKeyForOption(key string) (string, []string) {
 	return opts[0], opts[1:]
 }
 
-func getRequired(key string) (string, error) {
-	if value, ok := os.LookupEnv(key); ok {
-		return value, nil
+func getFile(key, defaultValue string) (string, error) {
+	filename, ok := os.LookupEnv(fmt.Sprintf("%s_FILE", key))
+	if !ok {
+		return defaultValue, nil
 	}
-	return "", fmt.Errorf(`env: required environment variable %q is not set`, key)
+	b, err := ioutil.ReadFile(filename)
+	return string(b), err
 }
 
-func getOr(key, defaultValue string) string {
-	value, ok := os.LookupEnv(key)
-	if ok {
-		return value
+func getOr(key, defaultValue string) (value string, ok bool) {
+	value, ok = os.LookupEnv(key)
+	if !ok {
+		value = defaultValue
 	}
-	return defaultValue
+	return value, ok
 }
 
 func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[reflect.Type]ParserFunc) error {
