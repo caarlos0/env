@@ -131,6 +131,42 @@ type config struct {
 }
 ```
 
+
+## From file
+
+The `env` tag option `file` (e.g., `env:"tagKey,file"`) can be added
+to load the value from a file. The environment variable suffixed with `_FILE` is then expected and looked at for the path 
+to that file. If the suffixed version of the environment variable is not present, the value of the original environment 
+variable is used. 
+Example below
+
+```go
+package main
+import (
+    "fmt"
+    "time"
+    "github.com/caarlos0/env"
+)
+type config struct {
+    Password     string   `env:"PASSWORD,file"`
+    SecretKey    string   `env:"SECRET_KEY,file"`
+}
+func main() {
+	cfg := config{}
+	if err := env.Parse(&cfg); err != nil {
+		fmt.Printf("%+v\n", err)
+	}
+
+	fmt.Printf("%+v\n", cfg)
+}
+```
+
+```sh
+$ PASSWORD=qwerty SECRET_KEY_FILE=/path/to/secret/key/file.pem \
+  go run main.go
+{Password:qwerty SecretKey:Content of the file.pem}
+```
+
 ## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/caarlos0/env.svg)](https://starchart.cc/caarlos0/env)
