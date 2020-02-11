@@ -163,38 +163,34 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc) error {
 
 func get(field reflect.StructField) (val string, err error) {
 	var required bool
-	var ok bool
+	var exists bool
 	key, opts := parseKeyForOption(field.Tag.Get("env"))
 
-	defer func() {
-		if required && !ok && err == nil {
-			err = fmt.Errorf(`env: required environment variable %q is not set`, key)
-		}
-	}()
-
 	defaultValue := field.Tag.Get("envDefault")
-	val, ok = getOr(key, defaultValue)
-
-	expandVar := field.Tag.Get("envExpand")
-	if strings.EqualFold(expandVar, "true") {
-		val = os.ExpandEnv(val)
-	}
+	val, exists = getOr(key, defaultValue)
 
 	for _, opt := range opts {
-		// The only option supported is "required".
 		switch opt {
 		case "":
 			break
 		case "file":
-			val, err = getFile(key, val)
-			if err == nil {
-				ok = true
-			}
+			var fileExists bool
+			val, fileExists, err = getFileOr(key, val)
+			exists = exists || fileExists
 		case "required":
 			required = true
 		default:
 			err = fmt.Errorf("env: tag option %q not supported", opt)
 		}
+	}
+
+	if required && !exists && err == nil {
+		err = fmt.Errorf(`env: required environment variable %q is not set`, key)
+	}
+
+	expandVar := field.Tag.Get("envExpand")
+	if strings.EqualFold(expandVar, "true") {
+		val = os.ExpandEnv(val)
 	}
 
 	return val, err
@@ -206,21 +202,21 @@ func parseKeyForOption(key string) (string, []string) {
 	return opts[0], opts[1:]
 }
 
-func getFile(key, defaultValue string) (string, error) {
+func getFileOr(key, defaultValue string) (value string, fileExists bool, err error) {
 	filename, ok := os.LookupEnv(fmt.Sprintf("%s_FILE", key))
 	if !ok {
-		return defaultValue, nil
+		return defaultValue, false, nil
 	}
 	b, err := ioutil.ReadFile(filename)
-	return string(b), err
+	return string(b), true, err
 }
 
-func getOr(key, defaultValue string) (value string, ok bool) {
-	value, ok = os.LookupEnv(key)
-	if !ok {
+func getOr(key, defaultValue string) (value string, exists bool) {
+	value, exists = os.LookupEnv(key)
+	if !exists {
 		value = defaultValue
 	}
-	return value, ok
+	return value, exists
 }
 
 func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[reflect.Type]ParserFunc) error {
