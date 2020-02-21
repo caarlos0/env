@@ -1080,34 +1080,6 @@ func ExampleParseWithFuncs() {
 	// my thing
 }
 
-func TestFileNotUsed(t *testing.T) {
-	type config struct {
-		SecretKey string `env:"SECRET_KEY,file"`
-	}
-	defer os.Clearenv()
-
-	os.Setenv("SECRET_KEY", "qwerty12345")
-	cfg := config{}
-	err := Parse(&cfg)
-
-	assert.NoError(t, err)
-	assert.Equal(t, "qwerty12345", cfg.SecretKey)
-}
-
-func TestFileNotUsedWithDefault(t *testing.T) {
-	type config struct {
-		SecretKey string `env:"SECRET_KEY,file" envDefault:"dvorak123"`
-	}
-	defer os.Clearenv()
-
-	cfg := config{}
-	err := Parse(&cfg)
-
-	assert.NoError(t, err)
-	assert.Equal(t, "dvorak123", cfg.SecretKey)
-
-}
-
 func TestFile(t *testing.T) {
 	type config struct {
 		SecretKey string `env:"SECRET_KEY,file"`
@@ -1123,7 +1095,7 @@ func TestFile(t *testing.T) {
 	}()
 
 	defer os.Clearenv()
-	os.Setenv("SECRET_KEY_FILE", file.Name())
+	os.Setenv("SECRET_KEY", file.Name())
 
 	cfg := config{}
 	err = Parse(&cfg)
@@ -1133,65 +1105,23 @@ func TestFile(t *testing.T) {
 
 }
 
-func TestFileOverride(t *testing.T) {
+func TestFileNoParam(t *testing.T) {
 	type config struct {
 		SecretKey string `env:"SECRET_KEY,file"`
-	}
-
-	file, err := ioutil.TempFile("", "sec_key_*")
-	assert.NoError(t, err)
-	err = ioutil.WriteFile(file.Name(), []byte("secret"), 0660)
-	assert.NoError(t, err)
-	defer func() {
-		err = os.Remove(file.Name())
-		assert.NoError(t, err)
-	}()
-
-	defer os.Clearenv()
-	os.Setenv("SECRET_KEY_FILE", file.Name())
-	os.Setenv("SECRET_KEY", "qwerty12345")
-	cfg := config{}
-	err = Parse(&cfg)
-
-	assert.NoError(t, err)
-	assert.Equal(t, "secret", cfg.SecretKey)
-
-}
-
-func TestNoFileNoEnvRequired(t *testing.T) {
-	type config struct {
-		SecretKey string `env:"SECRET_KEY,file,required"`
 	}
 	defer os.Clearenv()
 	cfg := config{}
 	err := Parse(&cfg)
 
-
-	assert.EqualError(t, err, "env: required environment variable \"SECRET_KEY\" is not set")
-
+	assert.Error(t, err)
+	assert.EqualError(t, err, `env: could not load content of file "" from vaiable SECRET_KEY: open : no such file or directory`)
 }
 
-func TestNoFileRequired(t *testing.T) {
+func TestFileWithDefault(t *testing.T) {
 	type config struct {
-		SecretKey string `env:"SECRET_KEY,file,required"`
+		SecretKey string `env:"SECRET_KEY,file" envDefault:"${FILE}" envExpand:"true"`
 	}
-
 	defer os.Clearenv()
-	os.Setenv("SECRET_KEY", "qwerty12345")
-
-	cfg := config{}
-	err := Parse(&cfg)
-
-	assert.NoError(t, err)
-	assert.Equal(t, "qwerty12345", cfg.SecretKey)
-
-}
-
-
-func TestFileOnlyRequired(t *testing.T) {
-	type config struct {
-		SecretKey string `env:"SECRET_KEY,file,required"`
-	}
 
 	file, err := ioutil.TempFile("", "sec_key_*")
 	assert.NoError(t, err)
@@ -1203,82 +1133,13 @@ func TestFileOnlyRequired(t *testing.T) {
 	}()
 
 	defer os.Clearenv()
-	os.Setenv("SECRET_KEY_FILE", file.Name())
+	os.Setenv("FILE", file.Name())
+
 	cfg := config{}
+
 	err = Parse(&cfg)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "secret", cfg.SecretKey)
-}
 
-func TestFileRequired(t *testing.T) {
-	type config struct {
-		SecretKey string `env:"SECRET_KEY,file,required"`
-	}
-
-	file, err := ioutil.TempFile("", "sec_key_*")
-	assert.NoError(t, err)
-	err = ioutil.WriteFile(file.Name(), []byte("secret"), 0660)
-	assert.NoError(t, err)
-	defer func() {
-		err = os.Remove(file.Name())
-		assert.NoError(t, err)
-	}()
-
-	defer os.Clearenv()
-	os.Setenv("SECRET_KEY_FILE", file.Name())
-	os.Setenv("SECRET_KEY", "qwerty12345")
-	cfg := config{}
-	err = Parse(&cfg)
-
-	assert.NoError(t, err)
-	assert.Equal(t, "secret", cfg.SecretKey)
-}
-
-func TestBadFileRequired(t *testing.T) {
-	type config struct {
-		SecretKey string `env:"SECRET_KEY,file"`
-	}
-
-	file, err := ioutil.TempFile("", "sec_key_*")
-	assert.NoError(t, err)
-	err = ioutil.WriteFile(file.Name(), []byte("secret"), 0660)
-	assert.NoError(t, err)
-	defer func() {
-		err = os.Remove(file.Name())
-		assert.NoError(t, err)
-	}()
-
-	defer os.Clearenv()
-	filename := file.Name()+"-bad-path"
-	os.Setenv("SECRET_KEY_FILE", filename)
-	cfg := config{}
-	err = Parse(&cfg)
-
-	assert.EqualError(t, err, fmt.Sprintf("open %s: no such file or directory", filename))
-}
-
-
-func TestFileRequiredExpand(t *testing.T) {
-	type config struct {
-		SecretKey string `env:"SECRET_KEY,file,required" envExpand:"true"`
-	}
-
-	file, err := ioutil.TempFile("", "sec_key_*")
-	assert.NoError(t, err)
-	err = ioutil.WriteFile(file.Name(), []byte("secret ${USER}"), 0660)
-	assert.NoError(t, err)
-	defer func() {
-		err = os.Remove(file.Name())
-		assert.NoError(t, err)
-	}()
-
-	defer os.Clearenv()
-	os.Setenv("USER", "GO-TEST")
-	os.Setenv("SECRET_KEY_FILE", file.Name())
-	cfg := config{}
-	err = Parse(&cfg)
-
-	assert.NoError(t, err)
-	assert.Equal(t, "secret GO-TEST", cfg.SecretKey)
 }

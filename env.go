@@ -164,33 +164,41 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc) error {
 func get(field reflect.StructField) (val string, err error) {
 	var required bool
 	var exists bool
-	key, opts := parseKeyForOption(field.Tag.Get("env"))
+	var loadFile bool
+	var expand = strings.EqualFold(field.Tag.Get("envExpand"), "true")
 
-	defaultValue := field.Tag.Get("envDefault")
-	val, exists = getOr(key, defaultValue)
+	key, opts := parseKeyForOption(field.Tag.Get("env"))
 
 	for _, opt := range opts {
 		switch opt {
 		case "":
 			break
 		case "file":
-			var fileExists bool
-			val, fileExists, err = getFileOr(key, val)
-			exists = exists || fileExists
+			loadFile = true
 		case "required":
 			required = true
 		default:
-			err = fmt.Errorf("env: tag option %q not supported", opt)
+			return "", fmt.Errorf("env: tag option %q not supported", opt)
 		}
 	}
 
-	if required && !exists && err == nil {
-		err = fmt.Errorf(`env: required environment variable %q is not set`, key)
+	defaultValue := field.Tag.Get("envDefault")
+	val, exists = getOr(key, defaultValue)
+
+	if expand {
+		val = os.ExpandEnv(val)
 	}
 
-	expandVar := field.Tag.Get("envExpand")
-	if strings.EqualFold(expandVar, "true") {
-		val = os.ExpandEnv(val)
+	if required && !exists {
+		return "", fmt.Errorf(`env: required environment variable %q is not set`, key)
+	}
+
+	if loadFile {
+		filename := val
+		val, err = getFromFile(filename)
+		if err != nil {
+			return "", fmt.Errorf(`env: could not load content of file "%s" from vaiable %s: %v`, filename, key, err)
+		}
 	}
 
 	return val, err
@@ -202,13 +210,9 @@ func parseKeyForOption(key string) (string, []string) {
 	return opts[0], opts[1:]
 }
 
-func getFileOr(key, defaultValue string) (value string, fileExists bool, err error) {
-	filename, ok := os.LookupEnv(fmt.Sprintf("%s_FILE", key))
-	if !ok {
-		return defaultValue, false, nil
-	}
+func getFromFile(filename string) (value string, err error) {
 	b, err := ioutil.ReadFile(filename)
-	return string(b), true, err
+	return string(b), err
 }
 
 func getOr(key, defaultValue string) (value string, exists bool) {
