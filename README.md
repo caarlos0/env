@@ -135,9 +135,8 @@ type config struct {
 ## From file
 
 The `env` tag option `file` (e.g., `env:"tagKey,file"`) can be added
-to load the value from a file. The environment variable suffixed with `_FILE` is then expected and looked at for the path 
-to that file. If the suffixed version of the environment variable is not present, the value of the original environment 
-variable is used. 
+to in order to indicate that the value of the variable shall be loaded from a file. The path of that file is given 
+by the environment variable associated with it
 Example below
 
 ```go
@@ -148,8 +147,9 @@ import (
     "github.com/caarlos0/env"
 )
 type config struct {
-    Password     string   `env:"PASSWORD,file"`
-    SecretKey    string   `env:"SECRET_KEY,file"`
+    Secret   string   `env:"SECRET,file"`
+    Password    string   `env:"PASSWORD,file" envDefault:"/tmp/password"`
+    Certificate  string   `env:"CERTIFICATE,file" envDefault:"${CERTIFICATE_FILE}" envExpand:"true"`
 }
 func main() {
 	cfg := config{}
@@ -162,9 +162,14 @@ func main() {
 ```
 
 ```sh
-$ PASSWORD=qwerty SECRET_KEY_FILE=/path/to/secret/key/file.pem \
+$ echo qwerty > /tmp/secret
+$ echo dvorak > /tmp/password
+$ echo coleman > /tmp/certificate
+ 
+$ SECRET=/tmp/secret  \
+  CERTIFICATE_FILE=/tmp/certificate
   go run main.go
-{Password:qwerty SecretKey:Content of the file.pem}
+{Secret:qwerty Password:dvorak Certificate:coleman}
 ```
 
 ## Stargazers over time
