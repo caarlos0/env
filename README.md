@@ -167,7 +167,7 @@ $ echo dvorak > /tmp/password
 $ echo coleman > /tmp/certificate
  
 $ SECRET=/tmp/secret  \
-  CERTIFICATE_FILE=/tmp/certificate
+  CERTIFICATE_FILE=/tmp/certificate \
   go run main.go
 {Secret:qwerty Password:dvorak Certificate:coleman}
 ```
