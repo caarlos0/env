@@ -147,8 +147,8 @@ import (
     "github.com/caarlos0/env"
 )
 type config struct {
-    Secret   string   `env:"SECRET,file"`
-    Password    string   `env:"PASSWORD,file" envDefault:"/tmp/password"`
+    Secret       string   `env:"SECRET,file"`
+    Password     string   `env:"PASSWORD,file" envDefault:"/tmp/password"`
     Certificate  string   `env:"CERTIFICATE,file" envDefault:"${CERTIFICATE_FILE}" envExpand:"true"`
 }
 func main() {
