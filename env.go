@@ -197,7 +197,7 @@ func get(field reflect.StructField) (val string, err error) {
 		filename := val
 		val, err = getFromFile(filename)
 		if err != nil {
-			return "", fmt.Errorf(`env: could not load content of file "%s" from vaiable %s: %v`, filename, key, err)
+			return "", fmt.Errorf(`env: could not load content of file "%s" from variable %s: %v`, filename, key, err)
 		}
 	}
 
