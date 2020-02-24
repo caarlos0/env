@@ -4,6 +4,7 @@ import (
 	"encoding"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"reflect"
@@ -160,31 +161,43 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc) error {
 	return nil
 }
 
-func get(field reflect.StructField) (string, error) {
-	var (
-		val string
-		err error
-	)
+func get(field reflect.StructField) (val string, err error) {
+	var required bool
+	var exists bool
+	var loadFile bool
+	var expand = strings.EqualFold(field.Tag.Get("envExpand"), "true")
 
 	key, opts := parseKeyForOption(field.Tag.Get("env"))
 
-	defaultValue := field.Tag.Get("envDefault")
-	val = getOr(key, defaultValue)
-
-	expandVar := field.Tag.Get("envExpand")
-	if strings.EqualFold(expandVar, "true") {
-		val = os.ExpandEnv(val)
-	}
-
 	for _, opt := range opts {
-		// The only option supported is "required".
 		switch opt {
 		case "":
 			break
+		case "file":
+			loadFile = true
 		case "required":
-			val, err = getRequired(key)
+			required = true
 		default:
-			err = fmt.Errorf("env: tag option %q not supported", opt)
+			return "", fmt.Errorf("env: tag option %q not supported", opt)
+		}
+	}
+
+	defaultValue := field.Tag.Get("envDefault")
+	val, exists = getOr(key, defaultValue)
+
+	if expand {
+		val = os.ExpandEnv(val)
+	}
+
+	if required && !exists {
+		return "", fmt.Errorf(`env: required environment variable %q is not set`, key)
+	}
+
+	if loadFile {
+		filename := val
+		val, err = getFromFile(filename)
+		if err != nil {
+			return "", fmt.Errorf(`env: could not load content of file "%s" from variable %s: %v`, filename, key, err)
 		}
 	}
 
@@ -197,19 +210,17 @@ func parseKeyForOption(key string) (string, []string) {
 	return opts[0], opts[1:]
 }
 
-func getRequired(key string) (string, error) {
-	if value, ok := os.LookupEnv(key); ok {
-		return value, nil
-	}
-	return "", fmt.Errorf(`env: required environment variable %q is not set`, key)
+func getFromFile(filename string) (value string, err error) {
+	b, err := ioutil.ReadFile(filename)
+	return string(b), err
 }
 
-func getOr(key, defaultValue string) string {
-	value, ok := os.LookupEnv(key)
-	if ok {
-		return value
+func getOr(key, defaultValue string) (value string, exists bool) {
+	value, exists = os.LookupEnv(key)
+	if !exists {
+		value = defaultValue
 	}
-	return defaultValue
+	return value, exists
 }
 
 func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[reflect.Type]ParserFunc) error {
