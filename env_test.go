@@ -1114,7 +1114,7 @@ func TestFileNoParam(t *testing.T) {
 	err := Parse(&cfg)
 
 	assert.Error(t, err)
-	assert.EqualError(t, err, `env: could not load content of file "" from vaiable SECRET_KEY: open : no such file or directory`)
+	assert.EqualError(t, err, `env: could not load content of file "" from variable SECRET_KEY: open : no such file or directory`)
 }
 
 func TestFileWithDefault(t *testing.T) {
