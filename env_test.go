@@ -572,7 +572,7 @@ func TestInvalidDuration(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Duration\" of type \"time.Duration\": unable to parser duration: time: invalid duration should-be-a-valid-duration")
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Duration\" of type \"time.Duration\": unable to parse duration: time: invalid duration should-be-a-valid-duration")
 }
 
 func TestInvalidDurations(t *testing.T) {
@@ -580,7 +580,7 @@ func TestInvalidDurations(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Durations\" of type \"[]time.Duration\": unable to parser duration: time: invalid duration contains-an-invalid-duration")
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Durations\" of type \"[]time.Duration\": unable to parse duration: time: invalid duration contains-an-invalid-duration")
 }
 
 func TestParseStructWithoutEnvTag(t *testing.T) {
@@ -981,7 +981,7 @@ func TestParseInvalidURL(t *testing.T) {
 	}
 	var cfg config
 	os.Setenv("EXAMPLE_URL_2", "nope://s s/")
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable parse URL: parse nope://s s/: invalid character \" \" in host name")
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable to parse URL: parse nope://s s/: invalid character \" \" in host name")
 }
 
 func ExampleParse() {
