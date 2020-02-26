@@ -193,7 +193,7 @@ func get(field reflect.StructField) (val string, err error) {
 		return "", fmt.Errorf(`env: required environment variable %q is not set`, key)
 	}
 
-	if loadFile {
+	if loadFile && val != "" {
 		filename := val
 		val, err = getFromFile(filename)
 		if err != nil {

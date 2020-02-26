@@ -1113,8 +1113,43 @@ func TestFileNoParam(t *testing.T) {
 	cfg := config{}
 	err := Parse(&cfg)
 
+	assert.NoError(t, err)
+}
+
+func TestFileNoParamRequired(t *testing.T) {
+	type config struct {
+		SecretKey string `env:"SECRET_KEY,file,required"`
+	}
+	defer os.Clearenv()
+	cfg := config{}
+	err := Parse(&cfg)
+
 	assert.Error(t, err)
-	assert.EqualError(t, err, `env: could not load content of file "" from variable SECRET_KEY: open : no such file or directory`)
+	assert.EqualError(t, err, "env: required environment variable \"SECRET_KEY\" is not set")
+}
+
+func TestFileBadFile(t *testing.T) {
+	type config struct {
+		SecretKey string `env:"SECRET_KEY,file"`
+	}
+
+	file, err := ioutil.TempFile("", "sec_key_*")
+	assert.NoError(t, err)
+	err = ioutil.WriteFile(file.Name(), []byte("secret"), 0660)
+	assert.NoError(t, err)
+
+	filename := file.Name()
+	defer os.Clearenv()
+	os.Setenv("SECRET_KEY", filename)
+
+	err = os.Remove(filename)
+	assert.NoError(t, err)
+
+	cfg := config{}
+	err = Parse(&cfg)
+
+	assert.Error(t, err)
+	assert.EqualError(t, err, fmt.Sprintf(`env: could not load content of file "%s" from variable SECRET_KEY: open %s: no such file or directory`, filename, filename))
 }
 
 func TestFileWithDefault(t *testing.T) {
