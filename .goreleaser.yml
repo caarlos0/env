@@ -1,0 +1,11 @@
+before:
+  hooks:
+    - go mod tidy
+builds:
+- skip: true
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
