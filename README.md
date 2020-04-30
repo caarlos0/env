@@ -27,6 +27,7 @@ import (
 type config struct {
 	Home         string        `env:"HOME"`
 	Port         int           `env:"PORT" envDefault:"3000"`
+	Password     string        `env:"PASSWORD" envUnset:"true"`
 	IsProduction bool          `env:"PRODUCTION"`
 	Hosts        []string      `env:"HOSTS" envSeparator:":"`
 	Duration     time.Duration `env:"DURATION"`
@@ -90,6 +91,10 @@ this behavior by setting the `envSeparator` tag.
 If you set the `envExpand` tag, environment variables (either in `${var}` or
 `$var` format) in the string will be replaced according with the actual value
 of the variable.
+
+If you set the `envUnset` tag, the environment variables (either in `${var}` or 
+`$var` format) in the string will be unset from the environment. This is useful
+for passwords that you intend to read into memory and remove from the host.
 
 Unexported fields are ignored.
 

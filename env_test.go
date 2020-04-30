@@ -694,6 +694,40 @@ func TestParseExpandOption(t *testing.T) {
 	assert.Equal(t, "def1", cfg.Default)
 }
 
+func TestParseUnsetOption(t *testing.T) {
+	type config struct {
+		Host        string `env:"HOST" envDefault:"localhost"`
+		Port        int    `env:"PORT" envDefault:"3000" envExpand:"True"`
+		Password    string `env:"PASSWORD" envUnset:"True"`
+		SecretKey   string `env:"SECRET_KEY" envExpand:"True"`
+		ExpandKey   string `env:"EXPAND_KEY"`
+		CompoundKey string `env:"HOST_PORT" envDefault:"${HOST}:${PORT}" envExpand:"True"`
+		Default     string `env:"DEFAULT" envDefault:"def1"  envExpand:"True"`
+	}
+	defer os.Clearenv()
+
+	os.Setenv("HOST", "localhost")
+	os.Setenv("PORT", "3000")
+	os.Setenv("PASSWORD", "superSecret")
+	os.Setenv("EXPAND_KEY", "qwerty12345")
+	os.Setenv("SECRET_KEY", "${EXPAND_KEY}")
+
+	cfg := config{}
+	err := Parse(&cfg)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "localhost", cfg.Host)
+	assert.Equal(t, 3000, cfg.Port)
+	assert.Equal(t, "superSecret", cfg.Password)
+	assert.Equal(t, "qwerty12345", cfg.SecretKey)
+	assert.Equal(t, "qwerty12345", cfg.ExpandKey)
+	assert.Equal(t, "localhost:3000", cfg.CompoundKey)
+	assert.Equal(t, "def1", cfg.Default)
+	unset, exists := os.LookupEnv("PASSWORD")
+	assert.Equal(t, "", unset)
+	assert.Equal(t, false, exists)
+}
+
 func TestCustomParser(t *testing.T) {
 	type foo struct {
 		name string

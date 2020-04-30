@@ -166,6 +166,7 @@ func get(field reflect.StructField) (val string, err error) {
 	var exists bool
 	var loadFile bool
 	var expand = strings.EqualFold(field.Tag.Get("envExpand"), "true")
+	var unset = strings.EqualFold(field.Tag.Get("envUnset"), "true")
 
 	key, opts := parseKeyForOption(field.Tag.Get("env"))
 
@@ -187,6 +188,10 @@ func get(field reflect.StructField) (val string, err error) {
 
 	if expand {
 		val = os.ExpandEnv(val)
+	}
+
+	if unset {
+		defer os.Unsetenv(key)
 	}
 
 	if required && !exists {
