@@ -981,10 +981,10 @@ func TestParseInvalidURL(t *testing.T) {
 	}
 	var cfg config
 
-	var invalidUrl string = "nope://s s/"
-	os.Setenv("EXAMPLE_URL_2", invalidUrl)
+	invalidURL := "nope://s s/"
+	os.Setenv("EXAMPLE_URL_2", invalidURL)
 
-	_, err := url.Parse(invalidUrl)
+	_, err := url.Parse(invalidURL)
 
 	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable to parse URL: " + err.Error())
 }
