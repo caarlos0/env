@@ -986,7 +986,7 @@ func TestParseInvalidURL(t *testing.T) {
 
 	_, err := url.Parse(invalidURL)
 
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable to parse URL: " + err.Error())
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable to parse URL: "+err.Error())
 }
 
 func ExampleParse() {
