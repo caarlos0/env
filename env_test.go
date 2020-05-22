@@ -984,6 +984,7 @@ func TestParseInvalidURL(t *testing.T) {
 	invalidURL := "nope://s s/"
 	os.Setenv("EXAMPLE_URL_2", invalidURL)
 
+	//nolint
 	_, err := url.Parse(invalidURL)
 
 	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable to parse URL: "+err.Error())
