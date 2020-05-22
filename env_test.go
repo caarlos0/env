@@ -980,8 +980,13 @@ func TestParseInvalidURL(t *testing.T) {
 		ExampleURL url.URL `env:"EXAMPLE_URL_2"`
 	}
 	var cfg config
-	os.Setenv("EXAMPLE_URL_2", "nope://s s/")
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable to parse URL: parse \"nope://s s/\": invalid character \" \" in host name")
+
+	var invalidUrl string = "nope://s s/"
+	os.Setenv("EXAMPLE_URL_2", invalidUrl)
+
+	_, err := url.Parse(invalidUrl)
+
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable to parse URL: " + err.Error())
 }
 
 func ExampleParse() {
