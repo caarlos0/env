@@ -176,7 +176,9 @@ $ SECRET=/tmp/secret  \
 ```
 
 
-## With Decrypt
+## Options
+
+### Decryptor
 
 The `env` tag option `decrypt` (e.g., `env:"tagKey,decrypt"`) can be added
 to in order to indicate that the value of the variable is encrypted and should be decrypted before set and parsed further. If tag `file` is set the value will be loaded from the file and then decrypted and set.
@@ -185,9 +187,10 @@ Having the filename decrypted and then loaded is not supported. It will assume t
 
 Other actions such as `expand` will happen **after** decryption is done if the `file` tag **is not set**. This is due to loading from file is the last action. So no other actions are possible after the file has been loaded.
 
-If the struct contains an `decrypt` tag it must be parsed with either `ParseWithDecrypt` or `ParseWithDecryptFuncs`. Otherwise an error will be returned.
+If the struct contains an `decrypt` tag it must call `Parse` with `Options.Decryptor` set.
+Otherwise an error will be returned.
 
-The second argument of these funcs should implement the `Decrypt` function of the `Decryptor` interface.
+The `Options.Decryptor` is an struct that should implement the `Decrypt(string) (string, error)` function from `Decryptor` interface.
 
 Example below using AWS and KMS to decrypt
 
@@ -236,9 +239,48 @@ func main() {
 		log.Fatal(err)
 	}
 	cfg := &Config{kms: kms.New(awsCfg)}
+	opts := &env.Options{Decryptor: cfg}
 
 	// Load env vars.
-	if err := env.ParseWithDecrypt(&cfg.envData, cfg); err != nil {
+	if err := env.Parse(&cfg.envData, opts); err != nil {
+		log.Fatal(err)
+	}
+
+	// Print the loaded data.
+	fmt.Printf("%+v\n", cfg.envData)
+}
+```
+
+### Environment
+
+By setting the `Options.Environment` map you can till `Parse` to set those `keys` and `values`
+as env vars before parsing is done.
+
+This can make your testing scenarios a bit more clean and easy to handle.
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/caarlos0/env"
+)
+
+type Config struct {
+	Password string `env:"PASSWORD"`
+}
+
+
+func main() {
+	cfg := &Config{}
+	opts := &env.Options{Environment: map[string]string{
+		"PASSWORD": "MY_PASSWORD",
+	}}
+
+	// Load env vars.
+	if err := env.Parse(&cfg.envData, opts); err != nil {
 		log.Fatal(err)
 	}
 

@@ -269,7 +269,7 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("NONDEFINED_STR", nonDefinedStr)
 
 	var cfg = Config{}
-	require.NoError(t, Parse(&cfg))
+	require.NoError(t, Parse(&cfg, nil))
 
 	assert.Equal(t, str1, cfg.String)
 	assert.Equal(t, &str1, cfg.StringPtr)
@@ -406,21 +406,43 @@ func TestParsesEnvWithDecrypt(t *testing.T) {
 	var encrypted = "encrypted"
 	os.Setenv("ENCRYPTED_STRING", encrypted)
 
-	var decryptor = TestDecryptor{fail: false}
 	var cfg = ConfigWithEncryption{}
 
-	require.NoError(t, ParseWithDecrypt(&cfg, &decryptor))
+	require.NoError(t, Parse(&cfg, &Options{Decryptor: &TestDecryptor{fail: false}}))
 	assert.Equal(t, encrypted, cfg.StringWithEncryption)
 }
 
-func TestParsesEnvWithDecryptNilDecryptor(t *testing.T) {
+func TestSetEnv(t *testing.T) {
 	defer os.Clearenv()
-	var encrypted = "encrypted"
-	os.Setenv("ENCRYPTED_STRING", encrypted)
+	envs := map[string]string{
+		"KEY1": "VALUE1",
+		"KEY2": "VALUE2",
+	}
 
-	var cfg = ConfigWithEncryption{}
-	assert.EqualError(t, ParseWithDecrypt(&cfg, nil), "env: decryptor must be set")
+	cfg := Config{}
+	require.NoError(t, Parse(&cfg, &Options{Environment: envs}))
+	assert.Equal(t, envs["KEY1"], os.Getenv("KEY1"))
+	assert.Equal(t, envs["KEY2"], os.Getenv("KEY2"))
 }
+
+func TestSetEnvError(t *testing.T) {
+	defer os.Clearenv()
+	envs := map[string]string{
+		"=": "VALUE1",
+	}
+
+	cfg := Config{}
+	assert.EqualError(t, Parse(&cfg, &Options{Environment: envs}), `env: couldn't set env with key "=" and value "VALUE1"`)
+}
+
+// func TestParsesEnvWithDecryptNilDecryptor(t *testing.T) {
+// 	defer os.Clearenv()
+// 	var encrypted = "encrypted"
+// 	os.Setenv("ENCRYPTED_STRING", encrypted)
+
+// 	var cfg = ConfigWithEncryption{}
+// 	assert.EqualError(t, Parse(&cfg, nil), "env: decryptor must be set")
+// }
 
 func TestParsesEnvWithDecryptFile(t *testing.T) {
 	type config struct {
@@ -439,9 +461,8 @@ func TestParsesEnvWithDecryptFile(t *testing.T) {
 	defer os.Clearenv()
 	os.Setenv("SECRET_KEY", file.Name())
 
-	decryptor := TestDecryptor{fail: false}
 	cfg := config{}
-	err = ParseWithDecrypt(&cfg, &decryptor)
+	err = Parse(&cfg, &Options{Decryptor: &TestDecryptor{fail: false}})
 
 	assert.NoError(t, err)
 	assert.Equal(t, "secret", cfg.SecretKey)
@@ -465,9 +486,9 @@ func TestParsesFileWithDecrypt(t *testing.T) {
 	os.Setenv("SECRET_KEY", file.Name())
 
 	cfg := config{}
-	err = Parse(&cfg)
+	err = Parse(&cfg, nil)
 
-	assert.EqualError(t, Parse(&cfg), "env: detected decrypt tag on var but called with Parse. Use ParseWithDecrypt instead")
+	assert.EqualError(t, Parse(&cfg, nil), "env: detected decrypt tag but decrytor not set in opts")
 }
 
 func TestParsesEnvWithDecryptFailByError(t *testing.T) {
@@ -475,10 +496,9 @@ func TestParsesEnvWithDecryptFailByError(t *testing.T) {
 	var encrypted = "encrypted"
 	os.Setenv("ENCRYPTED_STRING", encrypted)
 
-	var decryptor = TestDecryptor{fail: true}
 	var cfg = ConfigWithEncryption{}
 
-	assert.EqualError(t, ParseWithDecrypt(&cfg, &decryptor), "env: couldn't decrypt val using decryptor. couldn't decrypt string")
+	assert.EqualError(t, Parse(&cfg, &Options{Decryptor: &TestDecryptor{fail: true}}), "env: couldn't decrypt val using decryptor. couldn't decrypt string")
 }
 
 func TestParsesEnvWithDecryptFailByParse(t *testing.T) {
@@ -488,7 +508,7 @@ func TestParsesEnvWithDecryptFailByParse(t *testing.T) {
 
 	var cfg = ConfigWithEncryption{}
 
-	assert.EqualError(t, Parse(&cfg), "env: detected decrypt tag on var but called with Parse. Use ParseWithDecrypt instead")
+	assert.EqualError(t, Parse(&cfg, nil), "env: detected decrypt tag but decrytor not set in opts")
 }
 
 func TestParsesEnvInner(t *testing.T) {
@@ -499,7 +519,7 @@ func TestParsesEnvInner(t *testing.T) {
 		InnerStruct: &InnerStruct{},
 		unexported:  &InnerStruct{},
 	}
-	assert.NoError(t, Parse(&cfg))
+	assert.NoError(t, Parse(&cfg, nil))
 	assert.Equal(t, "someinnervalue", cfg.InnerStruct.Inner)
 	assert.Equal(t, uint(8), cfg.InnerStruct.Number)
 }
@@ -513,14 +533,14 @@ func TestParsesEnvInnerFails(t *testing.T) {
 	}
 	os.Setenv("NUMBER", "not-a-number")
 	var cfg = config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Number\" of type \"int\": strconv.ParseInt: parsing \"not-a-number\": invalid syntax")
+	assert.EqualError(t, Parse(&cfg, nil), "env: parse error on field \"Number\" of type \"int\": strconv.ParseInt: parsing \"not-a-number\": invalid syntax")
 }
 
 func TestParsesEnvInnerNil(t *testing.T) {
 	os.Setenv("innervar", "someinnervalue")
 	defer os.Clearenv()
 	cfg := ParentStruct{}
-	assert.NoError(t, Parse(&cfg))
+	assert.NoError(t, Parse(&cfg, nil))
 }
 
 func TestParsesEnvInnerInvalid(t *testing.T) {
@@ -529,21 +549,21 @@ func TestParsesEnvInnerInvalid(t *testing.T) {
 	cfg := ParentStruct{
 		InnerStruct: &InnerStruct{},
 	}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Number\" of type \"uint\": strconv.ParseUint: parsing \"-547\": invalid syntax")
+	assert.EqualError(t, Parse(&cfg, nil), "env: parse error on field \"Number\" of type \"uint\": strconv.ParseUint: parsing \"-547\": invalid syntax")
 }
 
 func TestParsesEnvNested(t *testing.T) {
 	os.Setenv("nestedvar", "somenestedvalue")
 	defer os.Clearenv()
 	var cfg ForNestedStruct
-	assert.NoError(t, Parse(&cfg))
+	assert.NoError(t, Parse(&cfg, nil))
 	assert.Equal(t, "somenestedvalue", cfg.NestedVar)
 }
 
 func TestEmptyVars(t *testing.T) {
 	os.Clearenv()
 	cfg := Config{}
-	assert.NoError(t, Parse(&cfg))
+	assert.NoError(t, Parse(&cfg, nil))
 	assert.Equal(t, "", cfg.String)
 	assert.Equal(t, false, cfg.Bool)
 	assert.Equal(t, 0, cfg.Int)
@@ -558,12 +578,12 @@ func TestEmptyVars(t *testing.T) {
 
 func TestPassAnInvalidPtr(t *testing.T) {
 	var thisShouldBreak int
-	assert.EqualError(t, Parse(&thisShouldBreak), "env: expected a pointer to a Struct")
+	assert.EqualError(t, Parse(&thisShouldBreak, nil), "env: expected a pointer to a Struct")
 }
 
 func TestPassReference(t *testing.T) {
 	cfg := Config{}
-	assert.EqualError(t, Parse(cfg), "env: expected a pointer to a Struct")
+	assert.EqualError(t, Parse(cfg, nil), "env: expected a pointer to a Struct")
 }
 
 func TestInvalidBool(t *testing.T) {
@@ -571,7 +591,7 @@ func TestInvalidBool(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Bool\" of type \"bool\": strconv.ParseBool: parsing \"should-be-a-bool\": invalid syntax")
+	assert.EqualError(t, Parse(&cfg, nil), "env: parse error on field \"Bool\" of type \"bool\": strconv.ParseBool: parsing \"should-be-a-bool\": invalid syntax")
 }
 
 func TestInvalidInt(t *testing.T) {
@@ -579,7 +599,7 @@ func TestInvalidInt(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Int\" of type \"int\": strconv.ParseInt: parsing \"should-be-an-int\": invalid syntax")
+	assert.EqualError(t, Parse(&cfg, nil), "env: parse error on field \"Int\" of type \"int\": strconv.ParseInt: parsing \"should-be-an-int\": invalid syntax")
 }
 
 func TestInvalidUint(t *testing.T) {
@@ -587,7 +607,7 @@ func TestInvalidUint(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Uint\" of type \"uint\": strconv.ParseUint: parsing \"-44\": invalid syntax")
+	assert.EqualError(t, Parse(&cfg, nil), "env: parse error on field \"Uint\" of type \"uint\": strconv.ParseUint: parsing \"-44\": invalid syntax")
 }
 
 func TestInvalidFloat32(t *testing.T) {
@@ -595,7 +615,7 @@ func TestInvalidFloat32(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Float32\" of type \"float32\": strconv.ParseFloat: parsing \"AAA\": invalid syntax")
+	assert.EqualError(t, Parse(&cfg, nil), "env: parse error on field \"Float32\" of type \"float32\": strconv.ParseFloat: parsing \"AAA\": invalid syntax")
 }
 
 func TestInvalidFloat64(t *testing.T) {
@@ -603,7 +623,7 @@ func TestInvalidFloat64(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Float64\" of type \"float64\": strconv.ParseFloat: parsing \"AAA\": invalid syntax")
+	assert.EqualError(t, Parse(&cfg, nil), "env: parse error on field \"Float64\" of type \"float64\": strconv.ParseFloat: parsing \"AAA\": invalid syntax")
 }
 
 func TestInvalidUint64(t *testing.T) {
@@ -611,7 +631,7 @@ func TestInvalidUint64(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Uint64\" of type \"uint64\": strconv.ParseUint: parsing \"AAA\": invalid syntax")
+	assert.EqualError(t, Parse(&cfg, nil), "env: parse error on field \"Uint64\" of type \"uint64\": strconv.ParseUint: parsing \"AAA\": invalid syntax")
 }
 
 func TestInvalidInt64(t *testing.T) {
@@ -619,7 +639,7 @@ func TestInvalidInt64(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Int64\" of type \"int64\": strconv.ParseInt: parsing \"AAA\": invalid syntax")
+	assert.EqualError(t, Parse(&cfg, nil), "env: parse error on field \"Int64\" of type \"int64\": strconv.ParseInt: parsing \"AAA\": invalid syntax")
 }
 
 func TestInvalidInt64Slice(t *testing.T) {
@@ -629,7 +649,7 @@ func TestInvalidInt64Slice(t *testing.T) {
 
 	os.Setenv("BADINTS", "A,2,3")
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"BadFloats\" of type \"[]int64\": strconv.ParseInt: parsing \"A\": invalid syntax")
+	assert.EqualError(t, Parse(cfg, nil), "env: parse error on field \"BadFloats\" of type \"[]int64\": strconv.ParseInt: parsing \"A\": invalid syntax")
 }
 
 func TestInvalidUInt64Slice(t *testing.T) {
@@ -639,7 +659,7 @@ func TestInvalidUInt64Slice(t *testing.T) {
 
 	os.Setenv("BADFLOATS", "A,2,3")
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"BadFloats\" of type \"[]uint64\": strconv.ParseUint: parsing \"A\": invalid syntax")
+	assert.EqualError(t, Parse(cfg, nil), "env: parse error on field \"BadFloats\" of type \"[]uint64\": strconv.ParseUint: parsing \"A\": invalid syntax")
 }
 
 func TestInvalidFloat32Slice(t *testing.T) {
@@ -649,7 +669,7 @@ func TestInvalidFloat32Slice(t *testing.T) {
 
 	os.Setenv("BADFLOATS", "A,2.0,3.0")
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"BadFloats\" of type \"[]float32\": strconv.ParseFloat: parsing \"A\": invalid syntax")
+	assert.EqualError(t, Parse(cfg, nil), "env: parse error on field \"BadFloats\" of type \"[]float32\": strconv.ParseFloat: parsing \"A\": invalid syntax")
 }
 
 func TestInvalidFloat64Slice(t *testing.T) {
@@ -659,7 +679,7 @@ func TestInvalidFloat64Slice(t *testing.T) {
 
 	os.Setenv("BADFLOATS", "A,2.0,3.0")
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"BadFloats\" of type \"[]float64\": strconv.ParseFloat: parsing \"A\": invalid syntax")
+	assert.EqualError(t, Parse(cfg, nil), "env: parse error on field \"BadFloats\" of type \"[]float64\": strconv.ParseFloat: parsing \"A\": invalid syntax")
 }
 
 func TestInvalidBoolsSlice(t *testing.T) {
@@ -669,7 +689,7 @@ func TestInvalidBoolsSlice(t *testing.T) {
 
 	os.Setenv("BADBOOLS", "t,f,TRUE,faaaalse")
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"BadBools\" of type \"[]bool\": strconv.ParseBool: parsing \"faaaalse\": invalid syntax")
+	assert.EqualError(t, Parse(cfg, nil), "env: parse error on field \"BadBools\" of type \"[]bool\": strconv.ParseBool: parsing \"faaaalse\": invalid syntax")
 }
 
 func TestInvalidDuration(t *testing.T) {
@@ -677,7 +697,7 @@ func TestInvalidDuration(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Duration\" of type \"time.Duration\": unable to parse duration: time: invalid duration should-be-a-valid-duration")
+	assert.EqualError(t, Parse(&cfg, nil), "env: parse error on field \"Duration\" of type \"time.Duration\": unable to parse duration: time: invalid duration should-be-a-valid-duration")
 }
 
 func TestInvalidDurations(t *testing.T) {
@@ -685,12 +705,12 @@ func TestInvalidDurations(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Durations\" of type \"[]time.Duration\": unable to parse duration: time: invalid duration contains-an-invalid-duration")
+	assert.EqualError(t, Parse(&cfg, nil), "env: parse error on field \"Durations\" of type \"[]time.Duration\": unable to parse duration: time: invalid duration contains-an-invalid-duration")
 }
 
 func TestParseStructWithoutEnvTag(t *testing.T) {
 	cfg := Config{}
-	assert.NoError(t, Parse(&cfg))
+	assert.NoError(t, Parse(&cfg, nil))
 	assert.Empty(t, cfg.NotAnEnv)
 }
 
@@ -700,7 +720,7 @@ func TestParseStructWithInvalidFieldKind(t *testing.T) {
 	}
 	os.Setenv("BLAH", "a")
 	cfg := config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"WontWorkByte\" of type \"uint8\": strconv.ParseUint: parsing \"a\": invalid syntax")
+	assert.EqualError(t, Parse(&cfg, nil), "env: parse error on field \"WontWorkByte\" of type \"uint8\": strconv.ParseUint: parsing \"a\": invalid syntax")
 }
 
 func TestUnsupportedSliceType(t *testing.T) {
@@ -712,7 +732,7 @@ func TestUnsupportedSliceType(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: no parser found for field \"WontWork\" of type \"[]map[int]int\"")
+	assert.EqualError(t, Parse(cfg, nil), "env: no parser found for field \"WontWork\" of type \"[]map[int]int\"")
 }
 
 func TestBadSeparator(t *testing.T) {
@@ -724,7 +744,7 @@ func TestBadSeparator(t *testing.T) {
 	os.Setenv("WONTWORK", "1,2,3,4")
 	defer os.Clearenv()
 
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"WontWork\" of type \"[]int\": strconv.ParseInt: parsing \"1,2,3,4\": invalid syntax")
+	assert.EqualError(t, Parse(cfg, nil), "env: parse error on field \"WontWork\" of type \"[]int\": strconv.ParseInt: parsing \"1,2,3,4\": invalid syntax")
 }
 
 func TestNoErrorRequiredSet(t *testing.T) {
@@ -736,7 +756,7 @@ func TestNoErrorRequiredSet(t *testing.T) {
 
 	os.Setenv("IS_REQUIRED", "")
 	defer os.Clearenv()
-	assert.NoError(t, Parse(cfg))
+	assert.NoError(t, Parse(cfg, nil))
 	assert.Equal(t, "", cfg.IsRequired)
 }
 
@@ -749,7 +769,7 @@ func TestErrorRequiredWithDefault(t *testing.T) {
 
 	os.Setenv("IS_REQUIRED", "")
 	defer os.Clearenv()
-	assert.NoError(t, Parse(cfg))
+	assert.NoError(t, Parse(cfg, nil))
 	assert.Equal(t, "", cfg.IsRequired)
 }
 
@@ -759,7 +779,7 @@ func TestErrorRequiredNotSet(t *testing.T) {
 	}
 
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: required environment variable \"IS_REQUIRED\" is not set")
+	assert.EqualError(t, Parse(cfg, nil), "env: required environment variable \"IS_REQUIRED\" is not set")
 }
 
 func TestErrorRequiredNotSetWithDefault(t *testing.T) {
@@ -768,7 +788,7 @@ func TestErrorRequiredNotSetWithDefault(t *testing.T) {
 	}
 
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: required environment variable \"IS_REQUIRED\" is not set")
+	assert.EqualError(t, Parse(cfg, nil), "env: required environment variable \"IS_REQUIRED\" is not set")
 }
 
 func TestParseExpandOption(t *testing.T) {
@@ -788,7 +808,7 @@ func TestParseExpandOption(t *testing.T) {
 	os.Setenv("SECRET_KEY", "${EXPAND_KEY}")
 
 	cfg := config{}
-	err := Parse(&cfg)
+	err := Parse(&cfg, nil)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "localhost", cfg.Host)
@@ -829,7 +849,7 @@ func TestCustomParser(t *testing.T) {
 		reflect.TypeOf(foo{}): func(v string) (interface{}, error) {
 			return foo{name: v}, nil
 		},
-	})
+	}, nil)
 
 	assert.NoError(t, err)
 	assert.Equal(t, cfg.Var.name, "test")
@@ -840,14 +860,14 @@ func TestCustomParser(t *testing.T) {
 
 func TestParseWithFuncsNoPtr(t *testing.T) {
 	type foo struct{}
-	err := ParseWithFuncs(foo{}, nil)
+	err := ParseWithFuncs(foo{}, nil, nil)
 	assert.EqualError(t, err, "env: expected a pointer to a Struct")
 }
 
 func TestParseWithFuncsInvalidType(t *testing.T) {
 	var c int
-	err1 := ParseWithFuncs(&c, nil)
-	err2 := ParseWithDecryptFuncs(&c, nil, &TestDecryptor{})
+	err1 := ParseWithFuncs(&c, nil, nil)
+	err2 := ParseWithFuncs(&c, nil, &Options{Decryptor: &TestDecryptor{}})
 	assert.EqualError(t, err1, "env: expected a pointer to a Struct")
 	assert.EqualError(t, err2, "env: expected a pointer to a Struct")
 }
@@ -870,7 +890,7 @@ func TestCustomParserError(t *testing.T) {
 		cfg := &config{}
 		err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
 			reflect.TypeOf(foo{}): customParserFunc,
-		})
+		}, nil)
 
 		assert.Empty(t, cfg.Var.name)
 		assert.EqualError(t, err, "env: parse error on field \"Var\" of type \"env.foo\": something broke")
@@ -885,7 +905,7 @@ func TestCustomParserError(t *testing.T) {
 		cfg := &config{}
 		err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
 			reflect.TypeOf(foo{}): customParserFunc,
-		})
+		}, nil)
 
 		assert.Empty(t, cfg.Var)
 		assert.EqualError(t, err, "env: parse error on field \"Var\" of type \"[]env.foo\": something broke")
@@ -914,7 +934,7 @@ func TestCustomParserBasicType(t *testing.T) {
 	cfg := &config{}
 	err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
 		reflect.TypeOf(ConstT(0)): customParserFunc,
-	})
+	}, nil)
 
 	assert.NoError(t, err)
 	assert.Equal(t, exp, cfg.Const)
@@ -945,7 +965,7 @@ func TestCustomParserUint64Alias(t *testing.T) {
 
 	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{
 		reflect.TypeOf(one): tParser,
-	})
+	}, nil)
 
 	assert.True(t, parserCalled, "tParser should have been called")
 	assert.NoError(t, err)
@@ -968,7 +988,7 @@ func TestTypeCustomParserBasicInvalid(t *testing.T) {
 	cfg := &config{}
 	err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
 		reflect.TypeOf(ConstT(0)): customParserFunc,
-	})
+	}, nil)
 
 	assert.Empty(t, cfg.Const)
 	assert.EqualError(t, err, "env: parse error on field \"Const\" of type \"env.ConstT\": random error")
@@ -994,7 +1014,7 @@ func TestCustomParserNotCalledForNonAlias(t *testing.T) {
 
 	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{
 		reflect.TypeOf(T(0)): tParser,
-	})
+	}, nil)
 
 	assert.False(t, tParserCalled, "tParser should not have been called")
 	assert.NoError(t, err)
@@ -1014,7 +1034,7 @@ func TestCustomParserBasicUnsupported(t *testing.T) {
 	os.Setenv("CONST_", "42")
 
 	cfg := &config{}
-	err := Parse(cfg)
+	err := Parse(cfg, nil)
 
 	assert.Zero(t, cfg.Const)
 	assert.EqualError(t, err, "env: no parser found for field \"Const\" of type \"env.ConstT\"")
@@ -1028,7 +1048,7 @@ func TestUnsupportedStructType(t *testing.T) {
 	os.Setenv("FOO", "foo")
 
 	cfg := &config{}
-	err := Parse(cfg)
+	err := Parse(cfg, nil)
 
 	assert.EqualError(t, err, "env: no parser found for field \"Foo\" of type \"http.Client\"")
 }
@@ -1042,7 +1062,7 @@ func TestEmptyOption(t *testing.T) {
 
 	os.Setenv("VAR", "")
 	defer os.Clearenv()
-	assert.NoError(t, Parse(cfg))
+	assert.NoError(t, Parse(cfg, nil))
 	assert.Equal(t, "", cfg.Var)
 }
 
@@ -1052,7 +1072,7 @@ func TestErrorOptionNotRecognized(t *testing.T) {
 	}
 
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: tag option \"not_supported!\" not supported")
+	assert.EqualError(t, Parse(cfg, nil), "env: tag option \"not_supported!\" not supported")
 }
 
 func TestTextUnmarshalerError(t *testing.T) {
@@ -1061,7 +1081,7 @@ func TestTextUnmarshalerError(t *testing.T) {
 	}
 	os.Setenv("UNMARSHALER", "invalid")
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"Unmarshaler\" of type \"env.unmarshaler\": time: invalid duration invalid")
+	assert.EqualError(t, Parse(cfg, nil), "env: parse error on field \"Unmarshaler\" of type \"env.unmarshaler\": time: invalid duration invalid")
 }
 
 func TestTextUnmarshalersError(t *testing.T) {
@@ -1070,7 +1090,7 @@ func TestTextUnmarshalersError(t *testing.T) {
 	}
 	os.Setenv("UNMARSHALERS", "1s,invalid")
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"Unmarshalers\" of type \"[]env.unmarshaler\": time: invalid duration invalid")
+	assert.EqualError(t, Parse(cfg, nil), "env: parse error on field \"Unmarshalers\" of type \"[]env.unmarshaler\": time: invalid duration invalid")
 }
 
 func TestParseURL(t *testing.T) {
@@ -1078,7 +1098,7 @@ func TestParseURL(t *testing.T) {
 		ExampleURL url.URL `env:"EXAMPLE_URL" envDefault:"https://google.com"`
 	}
 	var cfg config
-	assert.NoError(t, Parse(&cfg))
+	assert.NoError(t, Parse(&cfg, nil))
 	assert.Equal(t, "https://google.com", cfg.ExampleURL.String())
 }
 
@@ -1088,7 +1108,7 @@ func TestParseInvalidURL(t *testing.T) {
 	}
 	var cfg config
 	os.Setenv("EXAMPLE_URL_2", "nope://s s/")
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable to parse URL: parse \"nope://s s/\": invalid character \" \" in host name")
+	assert.EqualError(t, Parse(&cfg, nil), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable to parse URL: parse \"nope://s s/\": invalid character \" \" in host name")
 }
 
 func TestFailingOnInne(t *testing.T) {
@@ -1102,7 +1122,7 @@ func TestFailingOnInne(t *testing.T) {
 	os.Setenv("HOME", "/tmp/fakehome")
 	os.Setenv("ENCRYPTED", "encrypted")
 	var cfg config
-	assert.EqualError(t, Parse(&cfg), "env: detected decrypt tag on var but called with Parse. Use ParseWithDecrypt instead")
+	assert.EqualError(t, Parse(&cfg, nil), "env: detected decrypt tag but decrytor not set in opts")
 }
 
 func ExampleParse() {
@@ -1117,7 +1137,7 @@ func ExampleParse() {
 	}
 	os.Setenv("HOME", "/tmp/fakehome")
 	var cfg config
-	if err := Parse(&cfg); err != nil {
+	if err := Parse(&cfg, nil); err != nil {
 		fmt.Println("failed:", err)
 	}
 	fmt.Printf("%+v", cfg)
@@ -1132,7 +1152,7 @@ func TestIgnoresUnexported(t *testing.T) {
 	cfg := unexportedConfig{}
 
 	os.Setenv("HOME", "/tmp/fakehome")
-	assert.NoError(t, Parse(&cfg))
+	assert.NoError(t, Parse(&cfg, nil))
 	assert.Empty(t, cfg.home)
 	assert.Equal(t, "/tmp/fakehome", cfg.Home2)
 }
@@ -1170,7 +1190,7 @@ func TestPrecedenceUnmarshalText(t *testing.T) {
 	}
 	var cfg config
 
-	assert.NoError(t, Parse(&cfg))
+	assert.NoError(t, Parse(&cfg, nil))
 	assert.Equal(t, DebugLevel, cfg.LogLevel)
 	assert.Equal(t, []LogLevel{DebugLevel, InfoLevel}, cfg.LogLevels)
 }
@@ -1192,7 +1212,7 @@ func ExampleParseWithFuncs() {
 		reflect.TypeOf(thing{}): func(v string) (interface{}, error) {
 			return thing{desc: v}, nil
 		},
-	})
+	}, nil)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -1219,7 +1239,7 @@ func TestFile(t *testing.T) {
 	os.Setenv("SECRET_KEY", file.Name())
 
 	cfg := config{}
-	err = Parse(&cfg)
+	err = Parse(&cfg, nil)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "secret", cfg.SecretKey)
@@ -1232,7 +1252,7 @@ func TestFileNoParam(t *testing.T) {
 	}
 	defer os.Clearenv()
 	cfg := config{}
-	err := Parse(&cfg)
+	err := Parse(&cfg, nil)
 
 	assert.NoError(t, err)
 }
@@ -1243,7 +1263,7 @@ func TestFileNoParamRequired(t *testing.T) {
 	}
 	defer os.Clearenv()
 	cfg := config{}
-	err := Parse(&cfg)
+	err := Parse(&cfg, nil)
 
 	assert.Error(t, err)
 	assert.EqualError(t, err, "env: required environment variable \"SECRET_KEY\" is not set")
@@ -1267,7 +1287,7 @@ func TestFileBadFile(t *testing.T) {
 	assert.NoError(t, err)
 
 	cfg := config{}
-	err = Parse(&cfg)
+	err = Parse(&cfg, nil)
 
 	assert.Error(t, err)
 	assert.EqualError(t, err, fmt.Sprintf(`env: could not load content of file "%s" from variable SECRET_KEY: open %s: no such file or directory`, filename, filename))
@@ -1293,7 +1313,7 @@ func TestFileWithDefault(t *testing.T) {
 
 	cfg := config{}
 
-	err = Parse(&cfg)
+	err = Parse(&cfg, nil)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "secret", cfg.SecretKey)
