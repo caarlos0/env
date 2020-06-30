@@ -435,15 +435,6 @@ func TestSetEnvError(t *testing.T) {
 	assert.EqualError(t, Parse(&cfg, &Options{Environment: envs}), `env: couldn't set env with key "=" and value "VALUE1"`)
 }
 
-// func TestParsesEnvWithDecryptNilDecryptor(t *testing.T) {
-// 	defer os.Clearenv()
-// 	var encrypted = "encrypted"
-// 	os.Setenv("ENCRYPTED_STRING", encrypted)
-
-// 	var cfg = ConfigWithEncryption{}
-// 	assert.EqualError(t, Parse(&cfg, nil), "env: decryptor must be set")
-// }
-
 func TestParsesEnvWithDecryptFile(t *testing.T) {
 	type config struct {
 		SecretKey string `env:"SECRET_KEY,file,decrypt"`
@@ -468,7 +459,7 @@ func TestParsesEnvWithDecryptFile(t *testing.T) {
 	assert.Equal(t, "secret", cfg.SecretKey)
 }
 
-func TestParsesFileWithDecrypt(t *testing.T) {
+func TestParsesFileWithDecryptError(t *testing.T) {
 	type config struct {
 		SecretKey string `env:"SECRET_KEY,file,decrypt"`
 	}
