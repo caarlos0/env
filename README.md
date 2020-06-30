@@ -179,14 +179,13 @@ $ SECRET=/tmp/secret  \
 ## With Decrypt
 
 The `env` tag option `decrypt` (e.g., `env:"tagKey,decrypt"`) can be added
-to in order to indicate that the value of the variable is encrypted and should be decrypted before set and parsed further.
-The value will be decrypted and then parsed accordingly so it supports all different types. If tag `file` is supplied the value will be loaded from the file and then decrypted and parsed accordingly.
+to in order to indicate that the value of the variable is encrypted and should be decrypted before set and parsed further. If tag `file` is set the value will be loaded from the file and then decrypted and set.
 
-Having the filename decrypted and then loaded is not supported. It will assume the filename is unecrypted but the content of the file shoule be unencrypted.
+Having the filename decrypted and then loaded is not supported. It will assume the filename is unencrypted but the content of the file should be decrypted.
 
-Other actions such as `expand` will happen **after** decryption is done.
+Other actions such as `expand` will happen **after** decryption is done if the `file` tag **is not set**. This is due to loading from file is the last action. So no other actions are possible after the file has been loaded.
 
-If the struct contains an `decrypt` tag it must be parsed with either `ParseWithDecrypt` or `ParseWithDecrypFuncs`. Otherwise an error will be returned.
+If the struct contains an `decrypt` tag it must be parsed with either `ParseWithDecrypt` or `ParseWithDecryptFuncs`. Otherwise an error will be returned.
 
 The second argument of these funcs should implement the `Decrypt` function of the `Decryptor` interface.
 
