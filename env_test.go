@@ -1091,6 +1091,20 @@ func TestParseInvalidURL(t *testing.T) {
 	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable to parse URL: parse \"nope://s s/\": invalid character \" \" in host name")
 }
 
+func TestFailingOnInne(t *testing.T) {
+	type inner struct {
+		Encrypted string `env:"ENCRYPTED,decrypt"`
+	}
+	type config struct {
+		Home  string `env:"HOME,required"`
+		Inner inner
+	}
+	os.Setenv("HOME", "/tmp/fakehome")
+	os.Setenv("ENCRYPTED", "encrypted")
+	var cfg config
+	assert.EqualError(t, Parse(&cfg), "env: detected decrypt tag on var but called with Parse. Use ParseWithDecrypt instead")
+}
+
 func ExampleParse() {
 	type inner struct {
 		Foo string `env:"FOO" envDefault:"foobar"`
@@ -1285,3 +1299,15 @@ func TestFileWithDefault(t *testing.T) {
 	assert.Equal(t, "secret", cfg.SecretKey)
 
 }
+
+// func TestFileNoParamRequired(t *testing.T) {
+// 	type config struct {
+// 		SecretKey string `env:"SECRET_KEY,file,required"`
+// 	}
+// 	defer os.Clearenv()
+// 	cfg := config{}
+// 	err := Parse(&cfg)
+
+// 	assert.Error(t, err)
+// 	assert.EqualError(t, err, "env: required environment variable \"SECRET_KEY\" is not set")
+// }
