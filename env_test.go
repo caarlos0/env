@@ -130,6 +130,10 @@ type Config struct {
 	unexported string `env:"FOO"`
 }
 
+type ConfigWithEncryption struct {
+	StringWithEncryption string `env:"ENCRYPTED_STRING,decrypt"`
+}
+
 type ParentStruct struct {
 	InnerStruct *InnerStruct
 	unexported  *InnerStruct
@@ -146,6 +150,17 @@ type ForNestedStruct struct {
 }
 type NestedStruct struct {
 	NestedVar string `env:"nestedvar"`
+}
+
+type TestDecryptor struct {
+	fail bool
+}
+
+func (d *TestDecryptor) Decrypt(val string) (string, error) {
+	if d.fail {
+		return "", fmt.Errorf("couldn't decrypt string")
+	}
+	return val, nil
 }
 
 func TestParsesEnv(t *testing.T) {
@@ -384,6 +399,40 @@ func TestParsesEnv(t *testing.T) {
 	assert.Empty(t, cfg.NotAnEnv)
 
 	assert.Empty(t, cfg.unexported)
+}
+
+func TestParsesEnvWithDecrypt(t *testing.T) {
+	defer os.Clearenv()
+	var encrypted = "encrypted"
+	os.Setenv("ENCRYPTED_STRING", encrypted)
+
+	var decryptor = TestDecryptor{fail: false}
+	var cfg = ConfigWithEncryption{}
+
+	require.NoError(t, ParseWithDecrypt(&cfg, &decryptor))
+	assert.Equal(t, encrypted, cfg.StringWithEncryption)
+}
+
+func TestParsesEnvWithDecryptFailByError(t *testing.T) {
+	defer os.Clearenv()
+	var encrypted = "encrypted"
+	os.Setenv("ENCRYPTED_STRING", encrypted)
+
+	var decryptor = TestDecryptor{fail: true}
+	var cfg = ConfigWithEncryption{}
+
+	assert.EqualError(t, ParseWithDecrypt(&cfg, &decryptor), "env: couldn't decrypt val using decryptor. couldn't decrypt string")
+
+}
+
+func TestParsesEnvWithDecryptFailByParse(t *testing.T) {
+	defer os.Clearenv()
+	var encrypted = "encrypted"
+	os.Setenv("ENCRYPTED_STRING", encrypted)
+
+	var cfg = ConfigWithEncryption{}
+
+	assert.EqualError(t, Parse(&cfg), "env: detected decrypt tag on var but called with Parse. Use ParseWithDecrypt instead")
 }
 
 func TestParsesEnvInner(t *testing.T) {
