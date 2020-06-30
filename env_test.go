@@ -445,7 +445,29 @@ func TestParsesEnvWithDecryptFile(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "secret", cfg.SecretKey)
+}
 
+func TestParsesFileWithDecrypt(t *testing.T) {
+	type config struct {
+		SecretKey string `env:"SECRET_KEY,file,decrypt"`
+	}
+
+	file, err := ioutil.TempFile("", "sec_key_*")
+	assert.NoError(t, err)
+	err = ioutil.WriteFile(file.Name(), []byte("secret"), 0660)
+	assert.NoError(t, err)
+	defer func() {
+		err = os.Remove(file.Name())
+		assert.NoError(t, err)
+	}()
+
+	defer os.Clearenv()
+	os.Setenv("SECRET_KEY", file.Name())
+
+	cfg := config{}
+	err = Parse(&cfg)
+
+	assert.EqualError(t, Parse(&cfg), "env: detected decrypt tag on var but called with Parse. Use ParseWithDecrypt instead")
 }
 
 func TestParsesEnvWithDecryptFailByError(t *testing.T) {
@@ -457,7 +479,6 @@ func TestParsesEnvWithDecryptFailByError(t *testing.T) {
 	var cfg = ConfigWithEncryption{}
 
 	assert.EqualError(t, ParseWithDecrypt(&cfg, &decryptor), "env: couldn't decrypt val using decryptor. couldn't decrypt string")
-
 }
 
 func TestParsesEnvWithDecryptFailByParse(t *testing.T) {
