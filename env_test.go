@@ -1299,15 +1299,3 @@ func TestFileWithDefault(t *testing.T) {
 	assert.Equal(t, "secret", cfg.SecretKey)
 
 }
-
-// func TestFileNoParamRequired(t *testing.T) {
-// 	type config struct {
-// 		SecretKey string `env:"SECRET_KEY,file,required"`
-// 	}
-// 	defer os.Clearenv()
-// 	cfg := config{}
-// 	err := Parse(&cfg)
-
-// 	assert.Error(t, err)
-// 	assert.EqualError(t, err, "env: required environment variable \"SECRET_KEY\" is not set")
-// }
