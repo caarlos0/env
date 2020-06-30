@@ -253,8 +253,8 @@ func main() {
 
 ### Environment
 
-By setting the `Options.Environment` map you can till `Parse` to set those `keys` and `values`
-as env vars before parsing is done.
+By setting the `Options.Environment` map you can tell `Parse` to add those `keys` and `values`
+as env vars before parsing is done. These envs are stored in the map and never actually set by `os.Setenv`.
 
 This can make your testing scenarios a bit more clean and easy to handle.
 

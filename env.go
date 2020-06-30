@@ -99,7 +99,7 @@ type ParserFunc func(v string) (interface{}, error)
 type Options struct {
 	// Decryptor is used to decrypt any env vars with the tag decrypt.
 	Decryptor Decryptor
-	// Environment keys and values will be set as env vars when running Parse.
+	// Environment keys and values that will be accessible for the service.
 	Environment map[string]string
 }
 
@@ -121,9 +121,6 @@ func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, opts *Op
 	if opts == nil {
 		opts = &Options{}
 	}
-	if err := setEnv(opts.Environment); err != nil {
-		return err
-	}
 
 	ptrRef := reflect.ValueOf(v)
 	if ptrRef.Kind() != reflect.Ptr {
@@ -139,16 +136,6 @@ func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, opts *Op
 	}
 
 	return doParse(ref, parsers, opts)
-}
-
-// setEnv takes map[string]string and sets those environment variables.
-func setEnv(env map[string]string) error {
-	for key, val := range env {
-		if err := os.Setenv(key, val); err != nil {
-			return fmt.Errorf(`env: couldn't set env with key "%s" and value "%s"`, key, val)
-		}
-	}
-	return nil
 }
 
 func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts *Options) error {
@@ -218,7 +205,7 @@ func get(field reflect.StructField, opts *Options) (val string, err error) {
 	}
 
 	defaultValue := field.Tag.Get("envDefault")
-	val, exists = getOr(key, defaultValue)
+	val, exists = getOr(key, defaultValue, opts.Environment)
 
 	if decrypt && !loadFile {
 		decryptedVal, err := decryptVal(val, opts.Decryptor)
@@ -278,7 +265,13 @@ func getFromFile(filename string) (value string, err error) {
 	return string(b), err
 }
 
-func getOr(key, defaultValue string) (value string, exists bool) {
+func getOr(key, defaultValue string, envs map[string]string) (value string, exists bool) {
+	// If key exists in the environment map return that value
+	// before checking for env var.
+	if value, exists = envs[key]; exists {
+		return value, exists
+	}
+
 	value, exists = os.LookupEnv(key)
 	if !exists {
 		value = defaultValue
