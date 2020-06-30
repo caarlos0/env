@@ -230,8 +230,10 @@ func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[
 
 	var tm = asTextUnmarshaler(field)
 	if tm != nil {
-		var err = tm.UnmarshalText([]byte(value))
-		return newParseError(sf, err)
+		if err := tm.UnmarshalText([]byte(value)); err != nil {
+			return newParseError(sf, err)
+		}
+		return nil
 	}
 
 	var typee = sf.Type
