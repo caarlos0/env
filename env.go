@@ -148,6 +148,9 @@ func ParseWithDecryptFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, d
 	if err != nil {
 		return err
 	}
+	if decryptor == nil {
+		return fmt.Errorf("env: decryptor must be set")
+	}
 	return doParse(ref, parsers, decryptor)
 }
 
