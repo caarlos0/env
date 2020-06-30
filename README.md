@@ -189,36 +189,61 @@ If the struct contains an `decrypt` tag it must be parsed with either `ParseWith
 
 The second argument of these funcs should implement the `Decrypt` function of the `Decryptor` interface.
 
-Example below
+Example below using AWS and KMS to decrypt
 
 ```go
 package main
 
 import (
+	"context"
+	"encoding/base64"
 	"fmt"
+	"log"
+
+	"github.com/aws/aws-sdk-go-v2/aws/external"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/caarlos0/env"
 )
 
-type MyDecryptor struct {}
-
-// Decrypt will decrypt val using my decryption service.
-func (*MyDecryptor) Decrypt(val string) (string, error) {
-	decryptedVal := fmt.Sprintf("%s is now decrypted", val)
-	return decryptedVal, nil
+type Config struct {
+	kms     *kms.Client
+	envData struct {
+		Password string `env:"PASSWORD,decrypt"`
+	}
 }
 
-type config struct {
-	Password     string   `env:"PASSWORD,decrypt"`
+// Decrypt will decrypt val using KMS.
+func (c *Config) Decrypt(val string) (string, error) {
+	raw, err := base64.StdEncoding.DecodeString(val)
+	if err != nil {
+		return "", fmt.Errorf("couldn't base64 decode string")
+	}
+
+	resp, err := c.kms.DecryptRequest(&kms.DecryptInput{
+		CiphertextBlob: raw,
+	}).Send(context.Background())
+	if err != nil {
+		return "", fmt.Errorf("couldn't decrypt string. %s", err.Error())
+	}
+
+	return string(resp.DecryptOutput.Plaintext), nil
 }
 
 func main() {
-	cfg := config{}
-	if err := env.ParseWithDecrypt(&cfg);
-	err != nil {
-		fmt.Printf("%+v\n", err)
+	// Load the default AWS config and create KMS service.
+	awsCfg, err := external.LoadDefaultAWSConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	cfg := &Config{kms: kms.New(awsCfg)}
+
+	// Load env vars.
+	if err := env.ParseWithDecrypt(&cfg.envData, cfg); err != nil {
+		log.Fatal(err)
 	}
 
-	fmt.Printf("%+v\n", cfg)
+	// Print the loaded data.
+	fmt.Printf("%+v\n", cfg.envData)
 }
 ```
 
