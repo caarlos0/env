@@ -413,6 +413,32 @@ func TestParsesEnvWithDecrypt(t *testing.T) {
 	assert.Equal(t, encrypted, cfg.StringWithEncryption)
 }
 
+func TestParsesEnvWithDecryptFile(t *testing.T) {
+	type config struct {
+		SecretKey string `env:"SECRET_KEY,file,decrypt"`
+	}
+
+	file, err := ioutil.TempFile("", "sec_key_*")
+	assert.NoError(t, err)
+	err = ioutil.WriteFile(file.Name(), []byte("secret"), 0660)
+	assert.NoError(t, err)
+	defer func() {
+		err = os.Remove(file.Name())
+		assert.NoError(t, err)
+	}()
+
+	defer os.Clearenv()
+	os.Setenv("SECRET_KEY", file.Name())
+
+	decryptor := TestDecryptor{fail: false}
+	cfg := config{}
+	err = ParseWithDecrypt(&cfg, &decryptor)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "secret", cfg.SecretKey)
+
+}
+
 func TestParsesEnvWithDecryptFailByError(t *testing.T) {
 	defer os.Clearenv()
 	var encrypted = "encrypted"
