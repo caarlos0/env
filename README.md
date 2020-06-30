@@ -175,6 +175,54 @@ $ SECRET=/tmp/secret  \
 {Secret:qwerty Password:dvorak Certificate:coleman}
 ```
 
+
+## With Decrypt
+
+The `env` tag option `decrypt` (e.g., `env:"tagKey,decrypt"`) can be added
+to in order to indicate that the value of the variable is encrypted and should be decrypted before set and parsed further.
+The value will be decrypted and then parsed accordingly so it supports all different types. If tag `file` is supplied the value will be loaded from the file and then decrypted and parsed accordingly.
+
+Having the filename decrypted and then loaded is not supported. It will assume the filename is unecrypted but the content of the file shoule be unencrypted.
+
+Other actions such as `expand` will happen **after** decryption is done.
+
+If the struct contains an `decrypt` tag it must be parsed with either `ParseWithDecrypt` or `ParseWithDecrypFuncs`. Otherwise an error will be returned.
+
+The second argument of these funcs should implement the `Decrypt` function of the `Decryptor` interface.
+
+Example below
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/caarlos0/env"
+)
+
+type MyDecryptor struct {}
+
+// Decrypt will decrypt val using my decryption service.
+func (*MyDecryptor) Decrypt(val string) (string, error) {
+	decryptedVal := fmt.Sprintf("%s is now decrypted", val)
+	return decryptedVal, nil
+}
+
+type config struct {
+	Password     string   `env:"PASSWORD,decrypt"`
+}
+
+func main() {
+	cfg := config{}
+	if err := env.ParseWithDecrypt(&cfg);
+	err != nil {
+		fmt.Printf("%+v\n", err)
+	}
+
+	fmt.Printf("%+v\n", cfg)
+}
+```
+
 ## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/caarlos0/env.svg)](https://starchart.cc/caarlos0/env)
