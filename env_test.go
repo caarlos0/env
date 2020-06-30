@@ -433,7 +433,7 @@ func TestJSONTag(t *testing.T) {
 	defer os.Clearenv()
 	type config struct {
 		Key1 string `json:"KEY1"`
-		Key2 int    `json:"KEY2,required"`
+		Key2 int    `json:"KEY2"`
 	}
 
 	os.Setenv("KEY1", "VALUE7")
