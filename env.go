@@ -148,9 +148,6 @@ func ParseWithDecryptFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, d
 	if err != nil {
 		return err
 	}
-	if decryptor == nil {
-		return fmt.Errorf("env: decryptor must be set")
-	}
 	return doParse(ref, parsers, decryptor)
 }
 
@@ -163,14 +160,14 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, decryptor D
 			continue
 		}
 		if reflect.Ptr == refField.Kind() && !refField.IsNil() {
-			err := ParseWithFuncs(refField.Interface(), funcMap)
+			err := ParseWithDecryptFuncs(refField.Interface(), funcMap, decryptor)
 			if err != nil {
 				return err
 			}
 			continue
 		}
 		if reflect.Struct == refField.Kind() && refField.CanAddr() && refField.Type().Name() == "" {
-			err := Parse(refField.Addr().Interface())
+			err := ParseWithDecrypt(refField.Addr().Interface(), decryptor)
 			if err != nil {
 				return err
 			}
