@@ -102,15 +102,15 @@ func Parse(v interface{}) error {
 }
 
 // Decryptor is used to decrypt variables tagged with encrypted when using the
-// ParseWithEncryption function. It wraps Parse otherwise.
+// ParseWithDecrypt function. It wraps Parse otherwise.
 type Decryptor interface {
 	Decrypt(val string) (string, error)
 }
 
-// ParseWithEncryption is the same as `Parse` except it allows you to supply an decryptor
+// ParseWithDecrypt is the same as `Parse` except it allows you to supply an decryptor
 // to be used for decrypting any vars tagged with `encrypted`.
-func ParseWithEncryption(v interface{}, decryptor Decryptor) error {
-	return ParseWithEncryptionFuncs(v, map[reflect.Type]ParserFunc{}, decryptor)
+func ParseWithDecrypt(v interface{}, decryptor Decryptor) error {
+	return ParseWithDecryptFuncs(v, map[reflect.Type]ParserFunc{}, decryptor)
 }
 
 // ParseWithFuncs is the same as `Parse` except it also allows the user to pass
@@ -131,9 +131,9 @@ func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc) error {
 	return doParse(ref, parsers, nil)
 }
 
-// ParseWithEncryptionFuncs is the same as `ParseWithEncryption` except it also
+// ParseWithDecryptFuncs is the same as `ParseWithDecrypt` except it also
 // allows the user to pass in custom parsers.
-func ParseWithEncryptionFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, decryptor Decryptor) error {
+func ParseWithDecryptFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, decryptor Decryptor) error {
 	ptrRef := reflect.ValueOf(v)
 	if ptrRef.Kind() != reflect.Ptr {
 		return ErrNotAStructPtr
@@ -220,7 +220,7 @@ func get(field reflect.StructField, decryptor Decryptor) (val string, err error)
 
 	if encrypted {
 		if decryptor == nil {
-			return "", fmt.Errorf("env: detected encrypted var but called with Parse. Use ParseWithEncryption instead")
+			return "", fmt.Errorf("env: detected encrypted var but called with Parse. Use ParseWithDecrypt instead")
 		}
 		decryptedVal, err := decryptor.Decrypt(val)
 		if err != nil {
