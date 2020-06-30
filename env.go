@@ -113,20 +113,30 @@ func ParseWithDecrypt(v interface{}, decryptor Decryptor) error {
 	return ParseWithDecryptFuncs(v, map[reflect.Type]ParserFunc{}, decryptor)
 }
 
-// ParseWithFuncs is the same as `Parse` except it also allows the user to pass
-// in custom parsers.
-func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc) error {
+// parseWithFuncsCommon is the common function for ParseWithFuncs and ParseWithDecryptFuncs
+// to get ref, parses and return them.
+func parseWithFuncsCommon(v interface{}, funcMap map[reflect.Type]ParserFunc) (reflect.Value, map[reflect.Type]ParserFunc, error) {
 	ptrRef := reflect.ValueOf(v)
 	if ptrRef.Kind() != reflect.Ptr {
-		return ErrNotAStructPtr
+		return reflect.Value{}, nil, ErrNotAStructPtr
 	}
 	ref := ptrRef.Elem()
 	if ref.Kind() != reflect.Struct {
-		return ErrNotAStructPtr
+		return reflect.Value{}, nil, ErrNotAStructPtr
 	}
 	var parsers = defaultTypeParsers
 	for k, v := range funcMap {
 		parsers[k] = v
+	}
+	return ref, parsers, nil
+}
+
+// ParseWithFuncs is the same as `Parse` except it also allows the user to pass
+// in custom parsers.
+func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc) error {
+	ref, parsers, err := parseWithFuncsCommon(v, funcMap)
+	if err != nil {
+		return err
 	}
 	return doParse(ref, parsers, nil)
 }
@@ -134,17 +144,9 @@ func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc) error {
 // ParseWithDecryptFuncs is the same as `ParseWithDecrypt` except it also
 // allows the user to pass in custom parsers.
 func ParseWithDecryptFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, decryptor Decryptor) error {
-	ptrRef := reflect.ValueOf(v)
-	if ptrRef.Kind() != reflect.Ptr {
-		return ErrNotAStructPtr
-	}
-	ref := ptrRef.Elem()
-	if ref.Kind() != reflect.Struct {
-		return ErrNotAStructPtr
-	}
-	var parsers = defaultTypeParsers
-	for k, v := range funcMap {
-		parsers[k] = v
+	ref, parsers, err := parseWithFuncsCommon(v, funcMap)
+	if err != nil {
+		return err
 	}
 	return doParse(ref, parsers, decryptor)
 }
@@ -195,7 +197,7 @@ func get(field reflect.StructField, decryptor Decryptor) (val string, err error)
 	var required bool
 	var exists bool
 	var loadFile bool
-	var encrypted bool
+	var decrypt bool
 	var expand = strings.EqualFold(field.Tag.Get("envExpand"), "true")
 
 	key, opts := parseKeyForOption(field.Tag.Get("env"))
@@ -208,8 +210,8 @@ func get(field reflect.StructField, decryptor Decryptor) (val string, err error)
 			loadFile = true
 		case "required":
 			required = true
-		case "encrypted":
-			encrypted = true
+		case "decrypt":
+			decrypt = true
 		default:
 			return "", fmt.Errorf("env: tag option %q not supported", opt)
 		}
@@ -218,9 +220,9 @@ func get(field reflect.StructField, decryptor Decryptor) (val string, err error)
 	defaultValue := field.Tag.Get("envDefault")
 	val, exists = getOr(key, defaultValue)
 
-	if encrypted {
+	if decrypt {
 		if decryptor == nil {
-			return "", fmt.Errorf("env: detected encrypted var but called with Parse. Use ParseWithDecrypt instead")
+			return "", fmt.Errorf("env: detected decrypt tag on var but called with Parse. Use ParseWithDecrypt instead")
 		}
 		decryptedVal, err := decryptor.Decrypt(val)
 		if err != nil {
