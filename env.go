@@ -103,18 +103,60 @@ type Options struct {
 	Environment map[string]string
 	// TagName specifies another tagname to use rather than the default env.
 	TagName string
+
+	// Sets to true if we have already configured once.
+	configured bool
 }
 
 // configure will do the basic configurations and defaults.
-func configure(opts *Options) *Options {
-	if opts == nil {
-		opts = &Options{}
-	}
-	if opts.TagName == "" {
-		opts.TagName = "env"
+func configure(opts []*Options) []*Options {
+	// If we have already configured the first item
+	// of options will have been configured set to true.
+	if len(opts) > 0 {
+		if opts[0] != nil && opts[0].configured {
+			return opts
+		}
 	}
 
-	return opts
+	// Created options with defaults.
+	opt := &Options{
+		TagName:    "env",
+		configured: true,
+	}
+
+	// Loop over all opts structs and set
+	// to opt if value is not default/empty.
+	for _, item := range opts {
+		if item == nil {
+			continue
+		}
+		if item.Decryptor != nil {
+			opt.Decryptor = item.Decryptor
+		}
+		if item.Environment != nil {
+			opt.Environment = item.Environment
+		}
+		if item.TagName != "" {
+			opt.TagName = item.TagName
+		}
+	}
+
+	return []*Options{opt}
+}
+
+// getTagName returns the tag name.
+func getTagName(opts []*Options) string {
+	return opts[0].TagName
+}
+
+// getEnvironment returns the environment map.
+func getEnvironment(opts []*Options) map[string]string {
+	return opts[0].Environment
+}
+
+// getDecryptor returns the decryptor.
+func getDecryptor(opts []*Options) Decryptor {
+	return opts[0].Decryptor
 }
 
 // Decryptor is used to decrypt variables tagged with encrypted when using the
@@ -125,13 +167,13 @@ type Decryptor interface {
 
 // Parse parses a struct containing `env` tags and loads its values from
 // environment variables.
-func Parse(v interface{}, opts *Options) error {
-	return ParseWithFuncs(v, map[reflect.Type]ParserFunc{}, opts)
+func Parse(v interface{}, opts ...*Options) error {
+	return ParseWithFuncs(v, map[reflect.Type]ParserFunc{}, opts...)
 }
 
 // ParseWithFuncs is the same as `Parse` except it also allows the user to pass
 // in custom parsers.
-func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, opts *Options) error {
+func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, opts ...*Options) error {
 	opts = configure(opts)
 
 	ptrRef := reflect.ValueOf(v)
@@ -150,7 +192,7 @@ func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, opts *Op
 	return doParse(ref, parsers, opts)
 }
 
-func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts *Options) error {
+func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts []*Options) error {
 	var refType = ref.Type()
 
 	for i := 0; i < refType.NumField(); i++ {
@@ -159,14 +201,14 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts *Optio
 			continue
 		}
 		if reflect.Ptr == refField.Kind() && !refField.IsNil() {
-			err := ParseWithFuncs(refField.Interface(), funcMap, opts)
+			err := ParseWithFuncs(refField.Interface(), funcMap, opts...)
 			if err != nil {
 				return err
 			}
 			continue
 		}
 		if reflect.Struct == refField.Kind() && refField.CanAddr() && refField.Type().Name() == "" {
-			err := Parse(refField.Addr().Interface(), opts)
+			err := Parse(refField.Addr().Interface(), opts...)
 			if err != nil {
 				return err
 			}
@@ -192,14 +234,14 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts *Optio
 	return nil
 }
 
-func get(field reflect.StructField, opts *Options) (val string, err error) {
+func get(field reflect.StructField, opts []*Options) (val string, err error) {
 	var required bool
 	var exists bool
 	var loadFile bool
 	var decrypt bool
 	var expand = strings.EqualFold(field.Tag.Get("envExpand"), "true")
 
-	key, tags := parseKeyForOption(field.Tag.Get(opts.TagName))
+	key, tags := parseKeyForOption(field.Tag.Get(getTagName(opts)))
 
 	for _, tag := range tags {
 		switch tag {
@@ -217,10 +259,10 @@ func get(field reflect.StructField, opts *Options) (val string, err error) {
 	}
 
 	defaultValue := field.Tag.Get("envDefault")
-	val, exists = getOr(key, defaultValue, opts.Environment)
+	val, exists = getOr(key, defaultValue, getEnvironment(opts))
 
 	if decrypt && !loadFile {
-		decryptedVal, err := decryptVal(val, opts.Decryptor)
+		decryptedVal, err := decryptVal(val, getDecryptor(opts))
 		if err != nil {
 			return "", err
 		}
@@ -243,7 +285,7 @@ func get(field reflect.StructField, opts *Options) (val string, err error) {
 		}
 
 		if decrypt {
-			decryptedVal, err := decryptVal(val, opts.Decryptor)
+			decryptedVal, err := decryptVal(val, getDecryptor(opts))
 			if err != nil {
 				return "", err
 			}
