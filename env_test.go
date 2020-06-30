@@ -413,6 +413,15 @@ func TestParsesEnvWithDecrypt(t *testing.T) {
 	assert.Equal(t, encrypted, cfg.StringWithEncryption)
 }
 
+func TestParsesEnvWithDecryptNilDecryptor(t *testing.T) {
+	defer os.Clearenv()
+	var encrypted = "encrypted"
+	os.Setenv("ENCRYPTED_STRING", encrypted)
+
+	var cfg = ConfigWithEncryption{}
+	assert.EqualError(t, ParseWithDecrypt(&cfg, nil), "env: decryptor must be set")
+}
+
 func TestParsesEnvWithDecryptFile(t *testing.T) {
 	type config struct {
 		SecretKey string `env:"SECRET_KEY,file,decrypt"`
@@ -816,8 +825,10 @@ func TestParseWithFuncsNoPtr(t *testing.T) {
 
 func TestParseWithFuncsInvalidType(t *testing.T) {
 	var c int
-	err := ParseWithFuncs(&c, nil)
-	assert.EqualError(t, err, "env: expected a pointer to a Struct")
+	err1 := ParseWithFuncs(&c, nil)
+	err2 := ParseWithDecryptFuncs(&c, nil, &TestDecryptor{})
+	assert.EqualError(t, err1, "env: expected a pointer to a Struct")
+	assert.EqualError(t, err2, "env: expected a pointer to a Struct")
 }
 
 func TestCustomParserError(t *testing.T) {
