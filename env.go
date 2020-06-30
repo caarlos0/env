@@ -101,6 +101,20 @@ type Options struct {
 	Decryptor Decryptor
 	// Environment keys and values that will be accessible for the service.
 	Environment map[string]string
+	// TagName specifies another tagname to use rather than the default env.
+	TagName string
+}
+
+// configure will do the basic configurations and defaults.
+func configure(opts *Options) *Options {
+	if opts == nil {
+		opts = &Options{}
+	}
+	if opts.TagName == "" {
+		opts.TagName = "env"
+	}
+
+	return opts
 }
 
 // Decryptor is used to decrypt variables tagged with encrypted when using the
@@ -118,9 +132,7 @@ func Parse(v interface{}, opts *Options) error {
 // ParseWithFuncs is the same as `Parse` except it also allows the user to pass
 // in custom parsers.
 func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, opts *Options) error {
-	if opts == nil {
-		opts = &Options{}
-	}
+	opts = configure(opts)
 
 	ptrRef := reflect.ValueOf(v)
 	if ptrRef.Kind() != reflect.Ptr {
@@ -187,7 +199,7 @@ func get(field reflect.StructField, opts *Options) (val string, err error) {
 	var decrypt bool
 	var expand = strings.EqualFold(field.Tag.Get("envExpand"), "true")
 
-	key, tags := parseKeyForOption(field.Tag.Get("env"))
+	key, tags := parseKeyForOption(field.Tag.Get(opts.TagName))
 
 	for _, tag := range tags {
 		switch tag {

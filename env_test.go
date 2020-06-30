@@ -429,15 +429,21 @@ func TestSetEnv(t *testing.T) {
 	assert.Equal(t, 3, cfg.Key2)
 }
 
-// func TestSetEnvError(t *testing.T) {
-// 	defer os.Clearenv()
-// 	envs := map[string]string{
-// 		"=": "VALUE1",
-// 	}
+func TestJSONTag(t *testing.T) {
+	defer os.Clearenv()
+	type config struct {
+		Key1 string `json:"KEY1"`
+		Key2 int    `json:"KEY2,required"`
+	}
 
-// 	cfg := Config{}
-// 	assert.EqualError(t, Parse(&cfg, &Options{Environment: envs}), `env: couldn't set env with key "=" and value "VALUE1"`)
-// }
+	os.Setenv("KEY1", "VALUE7")
+	os.Setenv("KEY2", "5")
+
+	cfg := config{}
+	require.NoError(t, Parse(&cfg, &Options{TagName: "json"}))
+	assert.Equal(t, "VALUE7", cfg.Key1)
+	assert.Equal(t, 5, cfg.Key2)
+}
 
 func TestParsesEnvWithDecryptFile(t *testing.T) {
 	type config struct {

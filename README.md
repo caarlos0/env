@@ -272,7 +272,6 @@ type Config struct {
 	Password string `env:"PASSWORD"`
 }
 
-
 func main() {
 	cfg := &Config{}
 	opts := &env.Options{Environment: map[string]string{
@@ -280,7 +279,41 @@ func main() {
 	}}
 
 	// Load env vars.
-	if err := env.Parse(&cfg.envData, opts); err != nil {
+	if err := env.Parse(cfg, opts); err != nil {
+		log.Fatal(err)
+	}
+
+	// Print the loaded data.
+	fmt.Printf("%+v\n", cfg.envData)
+}
+```
+
+### Changing default tag name
+
+You can change what tag name to use for setting the env vars by setting the `Options.TagName`
+variable.
+
+For example
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/caarlos0/env"
+)
+
+type Config struct {
+	Password string `json:"PASSWORD"`
+}
+
+func main() {
+	cfg := &Config{}
+	opts := &env.Options{TagName: "json"}
+
+	// Load env vars.
+	if err := env.Parse(cfg, opts); err != nil {
 		log.Fatal(err)
 	}
 
