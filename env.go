@@ -220,13 +220,10 @@ func get(field reflect.StructField, decryptor Decryptor) (val string, err error)
 	defaultValue := field.Tag.Get("envDefault")
 	val, exists = getOr(key, defaultValue)
 
-	if decrypt {
-		if decryptor == nil {
-			return "", fmt.Errorf("env: detected decrypt tag on var but called with Parse. Use ParseWithDecrypt instead")
-		}
-		decryptedVal, err := decryptor.Decrypt(val)
+	if decrypt && !loadFile {
+		decryptedVal, err := decryptVal(val, decryptor)
 		if err != nil {
-			return "", fmt.Errorf("env: couldn't decrypt val using decryptor. %s", err.Error())
+			return "", err
 		}
 		val = decryptedVal
 	}
@@ -245,9 +242,29 @@ func get(field reflect.StructField, decryptor Decryptor) (val string, err error)
 		if err != nil {
 			return "", fmt.Errorf(`env: could not load content of file "%s" from variable %s: %v`, filename, key, err)
 		}
+
+		if decrypt {
+			decryptedVal, err := decryptVal(val, decryptor)
+			if err != nil {
+				return "", err
+			}
+			val = decryptedVal
+		}
 	}
 
 	return val, err
+}
+
+// decryptVal will decrypt val using decryptor.
+func decryptVal(val string, decryptor Decryptor) (string, error) {
+	if decryptor == nil {
+		return "", fmt.Errorf("env: detected decrypt tag on var but called with Parse. Use ParseWithDecrypt instead")
+	}
+	decryptedVal, err := decryptor.Decrypt(val)
+	if err != nil {
+		return "", fmt.Errorf("env: couldn't decrypt val using decryptor. %s", err.Error())
+	}
+	return decryptedVal, nil
 }
 
 // split the env tag's key into the expected key and desired option, if any.
