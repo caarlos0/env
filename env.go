@@ -258,8 +258,8 @@ func get(field reflect.StructField, opts []*Options) (val string, err error) {
 		}
 	}
 
-	defaultValue := field.Tag.Get("envDefault")
-	val, exists = getOr(key, defaultValue, getEnvironment(opts))
+	defaultValue, defExists := field.Tag.Lookup("envDefault")
+	val, exists = getOr(key, defaultValue, defExists, getEnvironment(opts))
 
 	if decrypt && !loadFile {
 		decryptedVal, err := decryptVal(val, getDecryptor(opts))
@@ -319,18 +319,24 @@ func getFromFile(filename string) (value string, err error) {
 	return string(b), err
 }
 
-func getOr(key, defaultValue string, envs map[string]string) (value string, exists bool) {
+func getOr(key, defaultValue string, defExists bool, envs map[string]string) (value string, exists bool) {
 	// If key exists in the environment map return that value
 	// before checking for env var.
 	if value, exists = envs[key]; exists {
-		return value, exists
+		return value, true
 	}
 
+	// If the default value tag exists return value as
+	// existing. Otherwise return empty string and false.
 	value, exists = os.LookupEnv(key)
-	if !exists {
-		value = defaultValue
+	switch {
+	case !exists && defExists:
+		return defaultValue, true
+	case !exists:
+		return "", false
 	}
-	return value, exists
+
+	return value, true
 }
 
 func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[reflect.Type]ParserFunc) error {
