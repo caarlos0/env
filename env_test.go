@@ -1178,3 +1178,22 @@ func TestFileWithDefault(t *testing.T) {
 	assert.Equal(t, "secret", cfg.SecretKey)
 
 }
+
+func TestCustomSliceType(t *testing.T) {
+	type customslice []byte
+
+	type config struct {
+		SecretKey customslice `env:"SECRET_KEY"`
+	}
+
+	parsecustomsclice := func(value string) (interface{}, error) {
+		return customslice(value), nil
+	}
+
+	defer os.Clearenv()
+	os.Setenv("SECRET_KEY", "somesecretkey")
+
+	var cfg config
+	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{reflect.TypeOf(customslice{}): parsecustomsclice})
+	assert.NoError(t, err)
+}

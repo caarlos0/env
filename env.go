@@ -224,10 +224,6 @@ func getOr(key, defaultValue string) (value string, exists bool) {
 }
 
 func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[reflect.Type]ParserFunc) error {
-	if field.Kind() == reflect.Slice {
-		return handleSlice(field, value, sf, funcMap)
-	}
-
 	var tm = asTextUnmarshaler(field)
 	if tm != nil {
 		var err = tm.UnmarshalText([]byte(value))
@@ -261,6 +257,10 @@ func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[
 
 		fieldee.Set(reflect.ValueOf(val).Convert(typee))
 		return nil
+	}
+
+	if field.Kind() == reflect.Slice {
+		return handleSlice(field, value, sf, funcMap)
 	}
 
 	return newNoParserError(sf)
