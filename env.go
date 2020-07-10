@@ -116,8 +116,9 @@ func configure(opts []Options) []Options {
 
 	// Created options with defaults.
 	opt := Options{
-		TagName:    "env",
-		configured: true,
+		TagName:     "env",
+		Environment: toMap(os.Environ()),
+		configured:  true,
 	}
 
 	// Loop over all opts structs and set
@@ -132,6 +133,15 @@ func configure(opts []Options) []Options {
 	}
 
 	return []Options{opt}
+}
+
+func toMap(env []string) map[string]string {
+	r := map[string]string{}
+	for _, e := range env {
+		p := strings.SplitN(e, "=", 2)
+		r[p[0]] = p[1]
+	}
+	return r
 }
 
 // getTagName returns the tag name.
@@ -268,15 +278,7 @@ func getFromFile(filename string) (value string, err error) {
 }
 
 func getOr(key, defaultValue string, defExists bool, envs map[string]string) (value string, exists bool) {
-	// If key exists in the environment map return that value
-	// before checking for env var.
-	if value, exists = envs[key]; exists {
-		return value, true
-	}
-
-	// If the default value tag exists return value as
-	// existing. Otherwise return empty string and false.
-	value, exists = os.LookupEnv(key)
+	value, exists = envs[key]
 	switch {
 	case !exists && defExists:
 		return defaultValue, true
