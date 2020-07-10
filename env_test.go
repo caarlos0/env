@@ -774,6 +774,12 @@ func TestParseWithFuncsNoPtr(t *testing.T) {
 	assert.EqualError(t, err, "env: expected a pointer to a Struct")
 }
 
+func TestParseWithFuncsInvalidType(t *testing.T) {
+	var c int
+	err := ParseWithFuncs(&c, nil)
+	assert.EqualError(t, err, "env: expected a pointer to a Struct")
+}
+
 func TestCustomParserError(t *testing.T) {
 	type foo struct {
 		name string
