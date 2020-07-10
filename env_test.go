@@ -398,7 +398,7 @@ func TestSetEnvAndTagOptsChain(t *testing.T) {
 	}
 
 	cfg := config{}
-	require.NoError(t, Parse(&cfg, nil, &Options{TagName: "mytag"}, nil, &Options{Environment: envs}))
+	require.NoError(t, Parse(&cfg, Options{TagName: "mytag"}, Options{Environment: envs}))
 	assert.Equal(t, "VALUE1", cfg.Key1)
 	assert.Equal(t, 3, cfg.Key2)
 }
@@ -414,7 +414,7 @@ func TestJSONTag(t *testing.T) {
 	os.Setenv("KEY2", "5")
 
 	cfg := config{}
-	require.NoError(t, Parse(&cfg, &Options{TagName: "json"}))
+	require.NoError(t, Parse(&cfg, Options{TagName: "json"}))
 	assert.Equal(t, "VALUE7", cfg.Key1)
 	assert.Equal(t, 5, cfg.Key2)
 }
@@ -759,7 +759,7 @@ func TestCustomParser(t *testing.T) {
 		reflect.TypeOf(foo{}): func(v string) (interface{}, error) {
 			return foo{name: v}, nil
 		},
-	}, nil)
+	})
 
 	assert.NoError(t, err)
 	assert.Equal(t, cfg.Var.name, "test")
@@ -770,7 +770,7 @@ func TestCustomParser(t *testing.T) {
 
 func TestParseWithFuncsNoPtr(t *testing.T) {
 	type foo struct{}
-	err := ParseWithFuncs(foo{}, nil, nil)
+	err := ParseWithFuncs(foo{}, nil)
 	assert.EqualError(t, err, "env: expected a pointer to a Struct")
 }
 
@@ -792,7 +792,7 @@ func TestCustomParserError(t *testing.T) {
 		cfg := &config{}
 		err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
 			reflect.TypeOf(foo{}): customParserFunc,
-		}, nil)
+		})
 
 		assert.Empty(t, cfg.Var.name)
 		assert.EqualError(t, err, "env: parse error on field \"Var\" of type \"env.foo\": something broke")
@@ -807,7 +807,7 @@ func TestCustomParserError(t *testing.T) {
 		cfg := &config{}
 		err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
 			reflect.TypeOf(foo{}): customParserFunc,
-		}, nil)
+		})
 
 		assert.Empty(t, cfg.Var)
 		assert.EqualError(t, err, "env: parse error on field \"Var\" of type \"[]env.foo\": something broke")
@@ -836,7 +836,7 @@ func TestCustomParserBasicType(t *testing.T) {
 	cfg := &config{}
 	err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
 		reflect.TypeOf(ConstT(0)): customParserFunc,
-	}, nil)
+	})
 
 	assert.NoError(t, err)
 	assert.Equal(t, exp, cfg.Const)
@@ -867,7 +867,7 @@ func TestCustomParserUint64Alias(t *testing.T) {
 
 	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{
 		reflect.TypeOf(one): tParser,
-	}, nil)
+	})
 
 	assert.True(t, parserCalled, "tParser should have been called")
 	assert.NoError(t, err)
@@ -890,7 +890,7 @@ func TestTypeCustomParserBasicInvalid(t *testing.T) {
 	cfg := &config{}
 	err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
 		reflect.TypeOf(ConstT(0)): customParserFunc,
-	}, nil)
+	})
 
 	assert.Empty(t, cfg.Const)
 	assert.EqualError(t, err, "env: parse error on field \"Const\" of type \"env.ConstT\": random error")
@@ -916,7 +916,7 @@ func TestCustomParserNotCalledForNonAlias(t *testing.T) {
 
 	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{
 		reflect.TypeOf(T(0)): tParser,
-	}, nil)
+	})
 
 	assert.False(t, tParserCalled, "tParser should not have been called")
 	assert.NoError(t, err)
@@ -1100,7 +1100,7 @@ func ExampleParseWithFuncs() {
 		reflect.TypeOf(thing{}): func(v string) (interface{}, error) {
 			return thing{desc: v}, nil
 		},
-	}, nil)
+	})
 	if err != nil {
 		fmt.Println(err)
 	}
