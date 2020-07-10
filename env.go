@@ -97,8 +97,6 @@ type ParserFunc func(v string) (interface{}, error)
 
 // Options for the parser.
 type Options struct {
-	// Decryptor is used to decrypt any env vars with the tag decrypt.
-	Decryptor Decryptor
 	// Environment keys and values that will be accessible for the service.
 	Environment map[string]string
 	// TagName specifies another tagname to use rather than the default env.
@@ -130,9 +128,6 @@ func configure(opts []*Options) []*Options {
 		if item == nil {
 			continue
 		}
-		if item.Decryptor != nil {
-			opt.Decryptor = item.Decryptor
-		}
 		if item.Environment != nil {
 			opt.Environment = item.Environment
 		}
@@ -152,17 +147,6 @@ func getTagName(opts []*Options) string {
 // getEnvironment returns the environment map.
 func getEnvironment(opts []*Options) map[string]string {
 	return opts[0].Environment
-}
-
-// getDecryptor returns the decryptor.
-func getDecryptor(opts []*Options) Decryptor {
-	return opts[0].Decryptor
-}
-
-// Decryptor is used to decrypt variables tagged with encrypted when using the
-// ParseWithDecrypt function. It wraps Parse otherwise.
-type Decryptor interface {
-	Decrypt(val string) (string, error)
 }
 
 // Parse parses a struct containing `env` tags and loads its values from
@@ -238,7 +222,6 @@ func get(field reflect.StructField, opts []*Options) (val string, err error) {
 	var required bool
 	var exists bool
 	var loadFile bool
-	var decrypt bool
 	var expand = strings.EqualFold(field.Tag.Get("envExpand"), "true")
 
 	key, tags := parseKeyForOption(field.Tag.Get(getTagName(opts)))
@@ -251,8 +234,6 @@ func get(field reflect.StructField, opts []*Options) (val string, err error) {
 			loadFile = true
 		case "required":
 			required = true
-		case "decrypt":
-			decrypt = true
 		default:
 			return "", fmt.Errorf("env: tag option %q not supported", tag)
 		}
@@ -260,14 +241,6 @@ func get(field reflect.StructField, opts []*Options) (val string, err error) {
 
 	defaultValue, defExists := field.Tag.Lookup("envDefault")
 	val, exists = getOr(key, defaultValue, defExists, getEnvironment(opts))
-
-	if decrypt && !loadFile {
-		decryptedVal, err := decryptVal(val, getDecryptor(opts))
-		if err != nil {
-			return "", err
-		}
-		val = decryptedVal
-	}
 
 	if expand {
 		val = os.ExpandEnv(val)
@@ -283,29 +256,9 @@ func get(field reflect.StructField, opts []*Options) (val string, err error) {
 		if err != nil {
 			return "", fmt.Errorf(`env: could not load content of file "%s" from variable %s: %v`, filename, key, err)
 		}
-
-		if decrypt {
-			decryptedVal, err := decryptVal(val, getDecryptor(opts))
-			if err != nil {
-				return "", err
-			}
-			val = decryptedVal
-		}
 	}
 
 	return val, err
-}
-
-// decryptVal will decrypt val using decryptor.
-func decryptVal(val string, decryptor Decryptor) (string, error) {
-	if decryptor == nil {
-		return "", fmt.Errorf("env: detected decrypt tag but decrytor not set in opts")
-	}
-	decryptedVal, err := decryptor.Decrypt(val)
-	if err != nil {
-		return "", fmt.Errorf("env: couldn't decrypt val using decryptor. %s", err.Error())
-	}
-	return decryptedVal, nil
 }
 
 // split the env tag's key into the expected key and desired option, if any.

@@ -130,10 +130,6 @@ type Config struct {
 	unexported string `env:"FOO"`
 }
 
-type ConfigWithEncryption struct {
-	StringWithEncryption string `env:"ENCRYPTED_STRING,decrypt"`
-}
-
 type ParentStruct struct {
 	InnerStruct *InnerStruct
 	unexported  *InnerStruct
@@ -150,17 +146,6 @@ type ForNestedStruct struct {
 }
 type NestedStruct struct {
 	NestedVar string `env:"nestedvar"`
-}
-
-type TestDecryptor struct {
-	fail bool
-}
-
-func (d *TestDecryptor) Decrypt(val string) (string, error) {
-	if d.fail {
-		return "", fmt.Errorf("couldn't decrypt string")
-	}
-	return val, nil
 }
 
 func TestParsesEnv(t *testing.T) {
@@ -401,17 +386,6 @@ func TestParsesEnv(t *testing.T) {
 	assert.Empty(t, cfg.unexported)
 }
 
-func TestParsesEnvWithDecrypt(t *testing.T) {
-	defer os.Clearenv()
-	var encrypted = "encrypted"
-	os.Setenv("ENCRYPTED_STRING", encrypted)
-
-	var cfg = ConfigWithEncryption{}
-
-	require.NoError(t, Parse(&cfg, &Options{Decryptor: &TestDecryptor{fail: false}}))
-	assert.Equal(t, encrypted, cfg.StringWithEncryption)
-}
-
 func TestSetEnvAndTagOptsChain(t *testing.T) {
 	defer os.Clearenv()
 	type config struct {
@@ -443,73 +417,6 @@ func TestJSONTag(t *testing.T) {
 	require.NoError(t, Parse(&cfg, &Options{TagName: "json"}))
 	assert.Equal(t, "VALUE7", cfg.Key1)
 	assert.Equal(t, 5, cfg.Key2)
-}
-
-func TestParsesEnvWithDecryptFile(t *testing.T) {
-	type config struct {
-		SecretKey string `env:"SECRET_KEY,file,decrypt"`
-	}
-
-	file, err := ioutil.TempFile("", "sec_key_*")
-	assert.NoError(t, err)
-	err = ioutil.WriteFile(file.Name(), []byte("secret"), 0660)
-	assert.NoError(t, err)
-	defer func() {
-		err = os.Remove(file.Name())
-		assert.NoError(t, err)
-	}()
-
-	defer os.Clearenv()
-	os.Setenv("SECRET_KEY", file.Name())
-
-	cfg := config{}
-	err = Parse(&cfg, &Options{Decryptor: &TestDecryptor{fail: false}})
-
-	assert.NoError(t, err)
-	assert.Equal(t, "secret", cfg.SecretKey)
-}
-
-func TestParsesFileWithDecryptError(t *testing.T) {
-	type config struct {
-		SecretKey string `env:"SECRET_KEY,file,decrypt"`
-	}
-
-	file, err := ioutil.TempFile("", "sec_key_*")
-	assert.NoError(t, err)
-	err = ioutil.WriteFile(file.Name(), []byte("secret"), 0660)
-	assert.NoError(t, err)
-	defer func() {
-		err = os.Remove(file.Name())
-		assert.NoError(t, err)
-	}()
-
-	defer os.Clearenv()
-	os.Setenv("SECRET_KEY", file.Name())
-
-	cfg := config{}
-	err = Parse(&cfg)
-
-	assert.EqualError(t, Parse(&cfg), "env: detected decrypt tag but decrytor not set in opts")
-}
-
-func TestParsesEnvWithDecryptFailByError(t *testing.T) {
-	defer os.Clearenv()
-	var encrypted = "encrypted"
-	os.Setenv("ENCRYPTED_STRING", encrypted)
-
-	var cfg = ConfigWithEncryption{}
-
-	assert.EqualError(t, Parse(&cfg, &Options{Decryptor: &TestDecryptor{fail: true}}), "env: couldn't decrypt val using decryptor. couldn't decrypt string")
-}
-
-func TestParsesEnvWithDecryptFailByParse(t *testing.T) {
-	defer os.Clearenv()
-	var encrypted = "encrypted"
-	os.Setenv("ENCRYPTED_STRING", encrypted)
-
-	var cfg = ConfigWithEncryption{}
-
-	assert.EqualError(t, Parse(&cfg), "env: detected decrypt tag but decrytor not set in opts")
 }
 
 func TestParsesEnvInner(t *testing.T) {
@@ -867,14 +774,6 @@ func TestParseWithFuncsNoPtr(t *testing.T) {
 	assert.EqualError(t, err, "env: expected a pointer to a Struct")
 }
 
-func TestParseWithFuncsInvalidType(t *testing.T) {
-	var c int
-	err1 := ParseWithFuncs(&c, nil, nil)
-	err2 := ParseWithFuncs(&c, nil, &Options{Decryptor: &TestDecryptor{}})
-	assert.EqualError(t, err1, "env: expected a pointer to a Struct")
-	assert.EqualError(t, err2, "env: expected a pointer to a Struct")
-}
-
 func TestCustomParserError(t *testing.T) {
 	type foo struct {
 		name string
@@ -1112,20 +1011,6 @@ func TestParseInvalidURL(t *testing.T) {
 	var cfg config
 	os.Setenv("EXAMPLE_URL_2", "nope://s s/")
 	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable to parse URL: parse \"nope://s s/\": invalid character \" \" in host name")
-}
-
-func TestFailingOnInne(t *testing.T) {
-	type inner struct {
-		Encrypted string `env:"ENCRYPTED,decrypt"`
-	}
-	type config struct {
-		Home  string `env:"HOME,required"`
-		Inner inner
-	}
-	os.Setenv("HOME", "/tmp/fakehome")
-	os.Setenv("ENCRYPTED", "encrypted")
-	var cfg config
-	assert.EqualError(t, Parse(&cfg), "env: detected decrypt tag but decrytor not set in opts")
 }
 
 func ExampleParse() {
