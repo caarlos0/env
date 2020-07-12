@@ -95,15 +95,76 @@ var (
 // ParserFunc defines the signature of a function that can be used within `CustomParsers`
 type ParserFunc func(v string) (interface{}, error)
 
+// Options for the parser.
+type Options struct {
+	// Environment keys and values that will be accessible for the service.
+	Environment map[string]string
+	// TagName specifies another tagname to use rather than the default env.
+	TagName string
+
+	// Sets to true if we have already configured once.
+	configured bool
+}
+
+// configure will do the basic configurations and defaults.
+func configure(opts []Options) []Options {
+	// If we have already configured the first item
+	// of options will have been configured set to true.
+	if len(opts) > 0 && opts[0].configured {
+		return opts
+	}
+
+	// Created options with defaults.
+	opt := Options{
+		TagName:     "env",
+		Environment: toMap(os.Environ()),
+		configured:  true,
+	}
+
+	// Loop over all opts structs and set
+	// to opt if value is not default/empty.
+	for _, item := range opts {
+		if item.Environment != nil {
+			opt.Environment = item.Environment
+		}
+		if item.TagName != "" {
+			opt.TagName = item.TagName
+		}
+	}
+
+	return []Options{opt}
+}
+
+func toMap(env []string) map[string]string {
+	r := map[string]string{}
+	for _, e := range env {
+		p := strings.SplitN(e, "=", 2)
+		r[p[0]] = p[1]
+	}
+	return r
+}
+
+// getTagName returns the tag name.
+func getTagName(opts []Options) string {
+	return opts[0].TagName
+}
+
+// getEnvironment returns the environment map.
+func getEnvironment(opts []Options) map[string]string {
+	return opts[0].Environment
+}
+
 // Parse parses a struct containing `env` tags and loads its values from
 // environment variables.
-func Parse(v interface{}) error {
-	return ParseWithFuncs(v, map[reflect.Type]ParserFunc{})
+func Parse(v interface{}, opts ...Options) error {
+	return ParseWithFuncs(v, map[reflect.Type]ParserFunc{}, opts...)
 }
 
 // ParseWithFuncs is the same as `Parse` except it also allows the user to pass
 // in custom parsers.
-func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc) error {
+func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, opts ...Options) error {
+	opts = configure(opts)
+
 	ptrRef := reflect.ValueOf(v)
 	if ptrRef.Kind() != reflect.Ptr {
 		return ErrNotAStructPtr
@@ -116,10 +177,11 @@ func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc) error {
 	for k, v := range funcMap {
 		parsers[k] = v
 	}
-	return doParse(ref, parsers)
+
+	return doParse(ref, parsers, opts)
 }
 
-func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc) error {
+func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts []Options) error {
 	var refType = ref.Type()
 
 	for i := 0; i < refType.NumField(); i++ {
@@ -128,27 +190,27 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc) error {
 			continue
 		}
 		if reflect.Ptr == refField.Kind() && !refField.IsNil() {
-			err := ParseWithFuncs(refField.Interface(), funcMap)
+			err := ParseWithFuncs(refField.Interface(), funcMap, opts...)
 			if err != nil {
 				return err
 			}
 			continue
 		}
 		if reflect.Struct == refField.Kind() && refField.CanAddr() && refField.Type().Name() == "" {
-			err := Parse(refField.Addr().Interface())
+			err := Parse(refField.Addr().Interface(), opts...)
 			if err != nil {
 				return err
 			}
 			continue
 		}
 		refTypeField := refType.Field(i)
-		value, err := get(refTypeField)
+		value, err := get(refTypeField, opts)
 		if err != nil {
 			return err
 		}
 		if value == "" {
 			if reflect.Struct == refField.Kind() {
-				if err := doParse(refField, funcMap); err != nil {
+				if err := doParse(refField, funcMap, opts); err != nil {
 					return err
 				}
 			}
@@ -161,16 +223,16 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc) error {
 	return nil
 }
 
-func get(field reflect.StructField) (val string, err error) {
+func get(field reflect.StructField, opts []Options) (val string, err error) {
 	var required bool
 	var exists bool
 	var loadFile bool
 	var expand = strings.EqualFold(field.Tag.Get("envExpand"), "true")
 
-	key, opts := parseKeyForOption(field.Tag.Get("env"))
+	key, tags := parseKeyForOption(field.Tag.Get(getTagName(opts)))
 
-	for _, opt := range opts {
-		switch opt {
+	for _, tag := range tags {
+		switch tag {
 		case "":
 			break
 		case "file":
@@ -178,12 +240,12 @@ func get(field reflect.StructField) (val string, err error) {
 		case "required":
 			required = true
 		default:
-			return "", fmt.Errorf("env: tag option %q not supported", opt)
+			return "", fmt.Errorf("env: tag option %q not supported", tag)
 		}
 	}
 
-	defaultValue := field.Tag.Get("envDefault")
-	val, exists = getOr(key, defaultValue)
+	defaultValue, defExists := field.Tag.Lookup("envDefault")
+	val, exists = getOr(key, defaultValue, defExists, getEnvironment(opts))
 
 	if expand {
 		val = os.ExpandEnv(val)
@@ -215,12 +277,16 @@ func getFromFile(filename string) (value string, err error) {
 	return string(b), err
 }
 
-func getOr(key, defaultValue string) (value string, exists bool) {
-	value, exists = os.LookupEnv(key)
-	if !exists {
-		value = defaultValue
+func getOr(key, defaultValue string, defExists bool, envs map[string]string) (value string, exists bool) {
+	value, exists = envs[key]
+	switch {
+	case !exists && defExists:
+		return defaultValue, true
+	case !exists:
+		return "", false
 	}
-	return value, exists
+
+	return value, true
 }
 
 func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[reflect.Type]ParserFunc) error {

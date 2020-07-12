@@ -175,6 +175,81 @@ $ SECRET=/tmp/secret  \
 {Secret:qwerty Password:dvorak Certificate:coleman}
 ```
 
+
+## Options
+
+### Environment
+
+By setting the `Options.Environment` map you can tell `Parse` to add those `keys` and `values`
+as env vars before parsing is done. These envs are stored in the map and never actually set by `os.Setenv`.
+This option effectively makes `env` ignore the OS environment variables: only the ones provided in the option are used.
+
+This can make your testing scenarios a bit more clean and easy to handle.
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/caarlos0/env"
+)
+
+type Config struct {
+	Password string `env:"PASSWORD"`
+}
+
+func main() {
+	cfg := &Config{}
+	opts := &env.Options{Environment: map[string]string{
+		"PASSWORD": "MY_PASSWORD",
+	}}
+
+	// Load env vars.
+	if err := env.Parse(cfg, opts); err != nil {
+		log.Fatal(err)
+	}
+
+	// Print the loaded data.
+	fmt.Printf("%+v\n", cfg.envData)
+}
+```
+
+### Changing default tag name
+
+You can change what tag name to use for setting the env vars by setting the `Options.TagName`
+variable.
+
+For example
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/caarlos0/env"
+)
+
+type Config struct {
+	Password string `json:"PASSWORD"`
+}
+
+func main() {
+	cfg := &Config{}
+	opts := &env.Options{TagName: "json"}
+
+	// Load env vars.
+	if err := env.Parse(cfg, opts); err != nil {
+		log.Fatal(err)
+	}
+
+	// Print the loaded data.
+	fmt.Printf("%+v\n", cfg.envData)
+}
+```
+
 ## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/caarlos0/env.svg)](https://starchart.cc/caarlos0/env)

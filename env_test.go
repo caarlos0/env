@@ -386,6 +386,39 @@ func TestParsesEnv(t *testing.T) {
 	assert.Empty(t, cfg.unexported)
 }
 
+func TestSetEnvAndTagOptsChain(t *testing.T) {
+	defer os.Clearenv()
+	type config struct {
+		Key1 string `mytag:"KEY1,required"`
+		Key2 int    `mytag:"KEY2,required"`
+	}
+	envs := map[string]string{
+		"KEY1": "VALUE1",
+		"KEY2": "3",
+	}
+
+	cfg := config{}
+	require.NoError(t, Parse(&cfg, Options{TagName: "mytag"}, Options{Environment: envs}))
+	assert.Equal(t, "VALUE1", cfg.Key1)
+	assert.Equal(t, 3, cfg.Key2)
+}
+
+func TestJSONTag(t *testing.T) {
+	defer os.Clearenv()
+	type config struct {
+		Key1 string `json:"KEY1"`
+		Key2 int    `json:"KEY2"`
+	}
+
+	os.Setenv("KEY1", "VALUE7")
+	os.Setenv("KEY2", "5")
+
+	cfg := config{}
+	require.NoError(t, Parse(&cfg, Options{TagName: "json"}))
+	assert.Equal(t, "VALUE7", cfg.Key1)
+	assert.Equal(t, 5, cfg.Key2)
+}
+
 func TestParsesEnvInner(t *testing.T) {
 	os.Setenv("innervar", "someinnervalue")
 	os.Setenv("innernum", "8")
@@ -663,7 +696,9 @@ func TestErrorRequiredNotSetWithDefault(t *testing.T) {
 	}
 
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: required environment variable \"IS_REQUIRED\" is not set")
+
+	assert.NoError(t, Parse(cfg))
+	assert.Equal(t, "important", cfg.IsRequired)
 }
 
 func TestParseExpandOption(t *testing.T) {
