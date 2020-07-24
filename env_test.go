@@ -662,10 +662,22 @@ func TestNoErrorRequiredSet(t *testing.T) {
 
 	cfg := &config{}
 
-	os.Setenv("IS_REQUIRED", "")
+	os.Setenv("IS_REQUIRED", "true")
 	defer os.Clearenv()
 	assert.NoError(t, Parse(cfg))
-	assert.Equal(t, "", cfg.IsRequired)
+	assert.Equal(t, "true", cfg.IsRequired)
+}
+
+func TestErrorRequiredSetWithEmptyValue(t *testing.T) {
+	type config struct {
+		IsRequired string `env:"IS_REQUIRED,required"`
+	}
+
+	cfg := &config{}
+
+	os.Setenv("IS_REQUIRED", "")
+	defer os.Clearenv()
+	assert.EqualError(t, Parse(cfg), "env: required environment variable \"IS_REQUIRED\" is not set")
 }
 
 func TestErrorRequiredWithDefault(t *testing.T) {
@@ -677,8 +689,7 @@ func TestErrorRequiredWithDefault(t *testing.T) {
 
 	os.Setenv("IS_REQUIRED", "")
 	defer os.Clearenv()
-	assert.NoError(t, Parse(cfg))
-	assert.Equal(t, "", cfg.IsRequired)
+	assert.EqualError(t, Parse(cfg), "env: required environment variable \"IS_REQUIRED\" is not set")
 }
 
 func TestErrorRequiredNotSet(t *testing.T) {

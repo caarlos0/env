@@ -225,7 +225,6 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts []Opti
 
 func get(field reflect.StructField, opts []Options) (val string, err error) {
 	var required bool
-	var exists bool
 	var loadFile bool
 	var expand = strings.EqualFold(field.Tag.Get("envExpand"), "true")
 
@@ -245,13 +244,13 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 	}
 
 	defaultValue, defExists := field.Tag.Lookup("envDefault")
-	val, exists = getOr(key, defaultValue, defExists, getEnvironment(opts))
+	val, _ = getOr(key, defaultValue, defExists, getEnvironment(opts))
 
 	if expand {
 		val = os.ExpandEnv(val)
 	}
 
-	if required && !exists {
+	if required && len(val) == 0 {
 		return "", fmt.Errorf(`env: required environment variable %q is not set`, key)
 	}
 
