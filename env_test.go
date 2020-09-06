@@ -412,7 +412,7 @@ func TestPartialEnvOptsChain(t *testing.T) {
 	envs := map[string]string{
 		"KEY1": "VALUE1",
 	}
-	os.Setenv("KEY2", "3")
+	require.NoError(t, os.Setenv("KEY2", "3"))
 
 	cfg := config{}
 	require.NoError(t, Parse(&cfg, Options{Environment: envs}))
