@@ -403,6 +403,23 @@ func TestSetEnvAndTagOptsChain(t *testing.T) {
 	assert.Equal(t, 3, cfg.Key2)
 }
 
+func TestPartialEnvOptsChain(t *testing.T) {
+	defer os.Clearenv()
+	type config struct {
+		Key1 string `env:"KEY1,required"`
+		Key2 int    `env:"KEY2,required"`
+	}
+	envs := map[string]string{
+		"KEY1": "VALUE1",
+	}
+	os.Setenv("KEY2", "3")
+
+	cfg := config{}
+	require.NoError(t, Parse(&cfg, Options{Environment: envs}))
+	assert.Equal(t, "VALUE1", cfg.Key1)
+	assert.Equal(t, 3, cfg.Key2)
+}
+
 func TestJSONTag(t *testing.T) {
 	defer os.Clearenv()
 	type config struct {
