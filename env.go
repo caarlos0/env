@@ -125,7 +125,9 @@ func configure(opts []Options) []Options {
 	// to opt if value is not default/empty.
 	for _, item := range opts {
 		if item.Environment != nil {
-			opt.Environment = item.Environment
+			for key, val := range item.Environment {
+				opt.Environment[key] = val
+			}
 		}
 		if item.TagName != "" {
 			opt.TagName = item.TagName
