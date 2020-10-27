@@ -19,6 +19,8 @@ var (
 	// Struct to Parse
 	ErrNotAStructPtr = errors.New("env: expected a pointer to a Struct")
 
+	dotEnvCache = make(map[string]string)
+
 	defaultBuiltInParsers = map[reflect.Kind]ParserFunc{
 		reflect.Bool: func(v string) (interface{}, error) {
 			return strconv.ParseBool(v)
@@ -227,6 +229,7 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 	var required bool
 	var exists bool
 	var loadFile bool
+	var dotEnv bool
 	var expand = strings.EqualFold(field.Tag.Get("envExpand"), "true")
 
 	key, tags := parseKeyForOption(field.Tag.Get(getTagName(opts)))
@@ -237,11 +240,17 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 			break
 		case "file":
 			loadFile = true
+		case "dotenv":
+			dotEnv = true
 		case "required":
 			required = true
 		default:
 			return "", fmt.Errorf("env: tag option %q not supported", tag)
 		}
+	}
+
+	if dotEnv && loadFile {
+		return "", fmt.Errorf(`env: dotenv and file not use one time`)
 	}
 
 	defaultValue, defExists := field.Tag.Lookup("envDefault")
@@ -263,7 +272,35 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 		}
 	}
 
+	if dotEnv && len(dotEnvCache) == 0 {
+		dotEnvCache, err = loadEnvData()
+		if err != nil {
+			return "", fmt.Errorf(`env: could not load content of dotenv file from variable %s: %v`, key, err)
+		}
+	}
+
+	if dotEnv {
+		if dotValue, ok := dotEnvCache[key]; ok {
+			val = dotValue
+		}
+	}
 	return val, err
+}
+
+func loadEnvData() (dotEnvData map[string]string, err error) {
+	var content string
+	content, err = getFromFile(".env")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, rawValue := range strings.Split(content, "\n") {
+		keyValue := strings.Split(rawValue, "=")
+		if len(keyValue) == 2 {
+			dotEnvCache[keyValue[0]] = keyValue[1]
+		}
+	}
+	return dotEnvCache, nil
 }
 
 // split the env tag's key into the expected key and desired option, if any.

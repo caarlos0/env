@@ -1232,3 +1232,64 @@ func TestCustomSliceType(t *testing.T) {
 	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{reflect.TypeOf(customslice{}): parsecustomsclice})
 	assert.NoError(t, err)
 }
+
+func TestDotEnv(t *testing.T) {
+	type config struct {
+		LogLevel string `env:"LOG_LEVEL,dotenv"`
+		Host     string `env:"HOST,dotenv"`
+		Username string `env:"USERNAME,dotenv" envDefault:"admin"`
+		Secret   string `env:"SECRET,dotenv"`
+		Port     string `env:"PORT,dotenv"`
+	}
+
+	err := ioutil.WriteFile(".env", []byte("HOST=localhost\nSECRET=top secret\nPORT=80"), 0660)
+	assert.NoError(t, err)
+	defer func() {
+		err = os.Remove(".env")
+		assert.NoError(t, err)
+	}()
+
+	defer os.Clearenv()
+
+	cfg := config{}
+	err = Parse(&cfg)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "localhost", cfg.Host)
+	assert.Equal(t, "admin", cfg.Username)
+	assert.Equal(t, "top secret", cfg.Secret)
+	assert.Equal(t, "80", cfg.Port)
+	assert.Equal(t, "", cfg.LogLevel)
+}
+
+func TestLoadEnvData(t *testing.T) {
+	err := ioutil.WriteFile(".env", []byte("HOST=localhost\nSECRET=top secret\nPORT=80"), 0660)
+	assert.NoError(t, err)
+	defer func() {
+		err = os.Remove(".env")
+		assert.NoError(t, err)
+	}()
+	defer os.Clearenv()
+
+	data, err := loadEnvData()
+
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(data))
+	assert.Equal(t, "localhost", data["HOST"])
+	assert.Equal(t, "top secret", data["SECRET"])
+	assert.Equal(t, "80", data["PORT"])
+}
+
+func TestBadLoadEnvData(t *testing.T) {
+	_, err := loadEnvData()
+	assert.Error(t, err)
+}
+
+func TestBadDotEnvAndFile(t *testing.T) {
+	type config struct {
+		LogLevel string `env:"LOG_LEVEL,dotenv,file"`
+	}
+	cfg := config{}
+	err := Parse(&cfg)
+	assert.Error(t, err)
+}

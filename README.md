@@ -176,6 +176,45 @@ $ SECRET=/tmp/secret  \
 ```
 
 
+## From dotenv
+
+The `env` tag option `dotenv` (e.g., `env:"tagKey,dotenv"`) can be added
+to in order to indicate that the value of the variable shall be loaded from a `.env` file with concrete key.
+If there is no such key in the env file, there variable will be loaded a default value or empty value.
+Example below
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/caarlos0/env/v6"
+)
+
+type config struct {
+	Host     string `env:"HOST,dotenv"`
+	Username string `env:"USERNAME,dotenv"`
+	Password string `env:"PASSWORD,dotenv"`
+	Port     string `env:"PORT,dotenv" envDefault:"80"`
+}
+
+func main() {
+	cfg := config{}
+	if err := env.Parse(&cfg); err != nil {
+		fmt.Printf("%+v\n", err)
+	}
+
+	fmt.Printf("%+v\n", cfg)
+}
+```
+
+```.env
+HOST=mail.ru
+USERNAME=admindd
+PASSWORD=password
+```
+
+
 ## Options
 
 ### Environment
