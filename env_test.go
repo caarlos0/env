@@ -1232,3 +1232,21 @@ func TestCustomSliceType(t *testing.T) {
 	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{reflect.TypeOf(customslice{}): parsecustomsclice})
 	assert.NoError(t, err)
 }
+
+func TestBlankKey (t *testing.T) {
+	type testStruct struct {
+		Blank string
+		BlankWithTag string `env:""`
+	}
+
+	val := testStruct{}
+
+	defer os.Clearenv()
+	os.Setenv("", "You should not see this")
+
+	err := Parse(&val)
+	require.NoError(t, err)
+
+	assert.Equal(t, "", val.Blank)
+	assert.Equal(t, "", val.BlankWithTag)
+}
