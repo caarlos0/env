@@ -245,13 +245,6 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 	}
 
 	defaultValue, defExists := field.Tag.Lookup("envDefault")
-	if key == "" {
-		if defExists {
-			return defaultValue, nil
-		}
-		return "", nil
-	}
-
 	val, exists = getOr(key, defaultValue, defExists, getEnvironment(opts))
 
 	if expand {
@@ -287,7 +280,7 @@ func getFromFile(filename string) (value string, err error) {
 func getOr(key, defaultValue string, defExists bool, envs map[string]string) (value string, exists bool) {
 	value, exists = envs[key]
 	switch {
-	case !exists && defExists:
+	case (!exists || key == "") && defExists:
 		return defaultValue, true
 	case !exists:
 		return "", false
