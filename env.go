@@ -248,9 +248,8 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 	if key == "" {
 		if defExists {
 			return defaultValue, nil
-		} else {
-			return "", nil
 		}
+		return "", nil
 	}
 
 	val, exists = getOr(key, defaultValue, defExists, getEnvironment(opts))
