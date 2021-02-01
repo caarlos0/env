@@ -245,6 +245,13 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 	}
 
 	defaultValue, defExists := field.Tag.Lookup("envDefault")
+	if key == "" {
+		if defExists {
+			return defaultValue, nil
+		}
+		return "", nil
+	}
+
 	val, exists = getOr(key, defaultValue, defExists, getEnvironment(opts))
 
 	if expand {
