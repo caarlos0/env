@@ -263,7 +263,7 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 		}
 	}
 
-	return val, err
+	return strings.TrimSpace(val), err
 }
 
 // split the env tag's key into the expected key and desired option, if any.
