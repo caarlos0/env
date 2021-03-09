@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -1169,7 +1170,11 @@ func TestFileBadFile(t *testing.T) {
 	err := Parse(&cfg)
 
 	assert.Error(t, err)
-	assert.EqualError(t, err, fmt.Sprintf(`env: could not load content of file "%s" from variable SECRET_KEY: open %s: no such file or directory`, filename, filename))
+	oserr := "no such file or directory"
+	if runtime.GOOS == "windows" {
+		oserr = "The system cannot find the file specified."
+	}
+	assert.EqualError(t, err, fmt.Sprintf(`env: could not load content of file "%s" from variable SECRET_KEY: open %s: %s`, filename, filename, oserr))
 }
 
 func TestFileWithDefault(t *testing.T) {
