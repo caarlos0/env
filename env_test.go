@@ -1233,9 +1233,9 @@ func TestCustomSliceType(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestBlankKey (t *testing.T) {
+func TestBlankKey(t *testing.T) {
 	type testStruct struct {
-		Blank string
+		Blank        string
 		BlankWithTag string `env:""`
 	}
 
@@ -1251,16 +1251,15 @@ func TestBlankKey (t *testing.T) {
 	assert.Equal(t, "", val.BlankWithTag)
 }
 
-
 // On Windows, environment variables can start with '='. This test verifies this behavior without relying on a Windows environment.
 // See env_windows.go in the Go source: https://github.com/golang/go/blob/master/src/syscall/env_windows.go#L58
-func TestToMap (t *testing.T) {
+func TestToMapWindows(t *testing.T) {
 	envVars := []string{"=::=::\\", "=C:=C:\\test", "VAR=REGULARVAR"}
-	result := toMap(envVars)
+	result := toMap(envVars, true)
 	assert.Equal(t, map[string]string{
 		"=::": "::\\",
 		"=C:": "C:\\test",
 		"VAR": "REGULARVAR",
 	},
-	result)
+		result)
 }
