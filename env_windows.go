@@ -5,7 +5,6 @@ import "strings"
 func toMap(env []string) map[string]string {
 	r := map[string]string{}
 	for _, e := range env {
-
 		p := strings.SplitN(e, "=", 2)
 
 		// On Windows, environment variables can start with '='. If so, Split at next character.
