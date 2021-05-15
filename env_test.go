@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -259,134 +258,134 @@ func TestParsesEnv(t *testing.T) {
 	cfg := Config{}
 	require.NoError(t, Parse(&cfg))
 
-	assert.Equal(t, str1, cfg.String)
-	assert.Equal(t, &str1, cfg.StringPtr)
-	assert.Equal(t, str1, cfg.Strings[0])
-	assert.Equal(t, str2, cfg.Strings[1])
-	assert.Equal(t, &str1, cfg.StringPtrs[0])
-	assert.Equal(t, &str2, cfg.StringPtrs[1])
+	require.Equal(t, str1, cfg.String)
+	require.Equal(t, &str1, cfg.StringPtr)
+	require.Equal(t, str1, cfg.Strings[0])
+	require.Equal(t, str2, cfg.Strings[1])
+	require.Equal(t, &str1, cfg.StringPtrs[0])
+	require.Equal(t, &str2, cfg.StringPtrs[1])
 
-	assert.Equal(t, bool1, cfg.Bool)
-	assert.Equal(t, &bool1, cfg.BoolPtr)
-	assert.Equal(t, bool1, cfg.Bools[0])
-	assert.Equal(t, bool2, cfg.Bools[1])
-	assert.Equal(t, &bool1, cfg.BoolPtrs[0])
-	assert.Equal(t, &bool2, cfg.BoolPtrs[1])
+	require.Equal(t, bool1, cfg.Bool)
+	require.Equal(t, &bool1, cfg.BoolPtr)
+	require.Equal(t, bool1, cfg.Bools[0])
+	require.Equal(t, bool2, cfg.Bools[1])
+	require.Equal(t, &bool1, cfg.BoolPtrs[0])
+	require.Equal(t, &bool2, cfg.BoolPtrs[1])
 
-	assert.Equal(t, int1, cfg.Int)
-	assert.Equal(t, &int1, cfg.IntPtr)
-	assert.Equal(t, int1, cfg.Ints[0])
-	assert.Equal(t, int2, cfg.Ints[1])
-	assert.Equal(t, &int1, cfg.IntPtrs[0])
-	assert.Equal(t, &int2, cfg.IntPtrs[1])
+	require.Equal(t, int1, cfg.Int)
+	require.Equal(t, &int1, cfg.IntPtr)
+	require.Equal(t, int1, cfg.Ints[0])
+	require.Equal(t, int2, cfg.Ints[1])
+	require.Equal(t, &int1, cfg.IntPtrs[0])
+	require.Equal(t, &int2, cfg.IntPtrs[1])
 
-	assert.Equal(t, int81, cfg.Int8)
-	assert.Equal(t, &int81, cfg.Int8Ptr)
-	assert.Equal(t, int81, cfg.Int8s[0])
-	assert.Equal(t, int82, cfg.Int8s[1])
-	assert.Equal(t, &int81, cfg.Int8Ptrs[0])
-	assert.Equal(t, &int82, cfg.Int8Ptrs[1])
+	require.Equal(t, int81, cfg.Int8)
+	require.Equal(t, &int81, cfg.Int8Ptr)
+	require.Equal(t, int81, cfg.Int8s[0])
+	require.Equal(t, int82, cfg.Int8s[1])
+	require.Equal(t, &int81, cfg.Int8Ptrs[0])
+	require.Equal(t, &int82, cfg.Int8Ptrs[1])
 
-	assert.Equal(t, int161, cfg.Int16)
-	assert.Equal(t, &int161, cfg.Int16Ptr)
-	assert.Equal(t, int161, cfg.Int16s[0])
-	assert.Equal(t, int162, cfg.Int16s[1])
-	assert.Equal(t, &int161, cfg.Int16Ptrs[0])
-	assert.Equal(t, &int162, cfg.Int16Ptrs[1])
+	require.Equal(t, int161, cfg.Int16)
+	require.Equal(t, &int161, cfg.Int16Ptr)
+	require.Equal(t, int161, cfg.Int16s[0])
+	require.Equal(t, int162, cfg.Int16s[1])
+	require.Equal(t, &int161, cfg.Int16Ptrs[0])
+	require.Equal(t, &int162, cfg.Int16Ptrs[1])
 
-	assert.Equal(t, int321, cfg.Int32)
-	assert.Equal(t, &int321, cfg.Int32Ptr)
-	assert.Equal(t, int321, cfg.Int32s[0])
-	assert.Equal(t, int322, cfg.Int32s[1])
-	assert.Equal(t, &int321, cfg.Int32Ptrs[0])
-	assert.Equal(t, &int322, cfg.Int32Ptrs[1])
+	require.Equal(t, int321, cfg.Int32)
+	require.Equal(t, &int321, cfg.Int32Ptr)
+	require.Equal(t, int321, cfg.Int32s[0])
+	require.Equal(t, int322, cfg.Int32s[1])
+	require.Equal(t, &int321, cfg.Int32Ptrs[0])
+	require.Equal(t, &int322, cfg.Int32Ptrs[1])
 
-	assert.Equal(t, int641, cfg.Int64)
-	assert.Equal(t, &int641, cfg.Int64Ptr)
-	assert.Equal(t, int641, cfg.Int64s[0])
-	assert.Equal(t, int642, cfg.Int64s[1])
-	assert.Equal(t, &int641, cfg.Int64Ptrs[0])
-	assert.Equal(t, &int642, cfg.Int64Ptrs[1])
+	require.Equal(t, int641, cfg.Int64)
+	require.Equal(t, &int641, cfg.Int64Ptr)
+	require.Equal(t, int641, cfg.Int64s[0])
+	require.Equal(t, int642, cfg.Int64s[1])
+	require.Equal(t, &int641, cfg.Int64Ptrs[0])
+	require.Equal(t, &int642, cfg.Int64Ptrs[1])
 
-	assert.Equal(t, uint1, cfg.Uint)
-	assert.Equal(t, &uint1, cfg.UintPtr)
-	assert.Equal(t, uint1, cfg.Uints[0])
-	assert.Equal(t, uint2, cfg.Uints[1])
-	assert.Equal(t, &uint1, cfg.UintPtrs[0])
-	assert.Equal(t, &uint2, cfg.UintPtrs[1])
+	require.Equal(t, uint1, cfg.Uint)
+	require.Equal(t, &uint1, cfg.UintPtr)
+	require.Equal(t, uint1, cfg.Uints[0])
+	require.Equal(t, uint2, cfg.Uints[1])
+	require.Equal(t, &uint1, cfg.UintPtrs[0])
+	require.Equal(t, &uint2, cfg.UintPtrs[1])
 
-	assert.Equal(t, uint81, cfg.Uint8)
-	assert.Equal(t, &uint81, cfg.Uint8Ptr)
-	assert.Equal(t, uint81, cfg.Uint8s[0])
-	assert.Equal(t, uint82, cfg.Uint8s[1])
-	assert.Equal(t, &uint81, cfg.Uint8Ptrs[0])
-	assert.Equal(t, &uint82, cfg.Uint8Ptrs[1])
+	require.Equal(t, uint81, cfg.Uint8)
+	require.Equal(t, &uint81, cfg.Uint8Ptr)
+	require.Equal(t, uint81, cfg.Uint8s[0])
+	require.Equal(t, uint82, cfg.Uint8s[1])
+	require.Equal(t, &uint81, cfg.Uint8Ptrs[0])
+	require.Equal(t, &uint82, cfg.Uint8Ptrs[1])
 
-	assert.Equal(t, uint161, cfg.Uint16)
-	assert.Equal(t, &uint161, cfg.Uint16Ptr)
-	assert.Equal(t, uint161, cfg.Uint16s[0])
-	assert.Equal(t, uint162, cfg.Uint16s[1])
-	assert.Equal(t, &uint161, cfg.Uint16Ptrs[0])
-	assert.Equal(t, &uint162, cfg.Uint16Ptrs[1])
+	require.Equal(t, uint161, cfg.Uint16)
+	require.Equal(t, &uint161, cfg.Uint16Ptr)
+	require.Equal(t, uint161, cfg.Uint16s[0])
+	require.Equal(t, uint162, cfg.Uint16s[1])
+	require.Equal(t, &uint161, cfg.Uint16Ptrs[0])
+	require.Equal(t, &uint162, cfg.Uint16Ptrs[1])
 
-	assert.Equal(t, uint321, cfg.Uint32)
-	assert.Equal(t, &uint321, cfg.Uint32Ptr)
-	assert.Equal(t, uint321, cfg.Uint32s[0])
-	assert.Equal(t, uint322, cfg.Uint32s[1])
-	assert.Equal(t, &uint321, cfg.Uint32Ptrs[0])
-	assert.Equal(t, &uint322, cfg.Uint32Ptrs[1])
+	require.Equal(t, uint321, cfg.Uint32)
+	require.Equal(t, &uint321, cfg.Uint32Ptr)
+	require.Equal(t, uint321, cfg.Uint32s[0])
+	require.Equal(t, uint322, cfg.Uint32s[1])
+	require.Equal(t, &uint321, cfg.Uint32Ptrs[0])
+	require.Equal(t, &uint322, cfg.Uint32Ptrs[1])
 
-	assert.Equal(t, uint641, cfg.Uint64)
-	assert.Equal(t, &uint641, cfg.Uint64Ptr)
-	assert.Equal(t, uint641, cfg.Uint64s[0])
-	assert.Equal(t, uint642, cfg.Uint64s[1])
-	assert.Equal(t, &uint641, cfg.Uint64Ptrs[0])
-	assert.Equal(t, &uint642, cfg.Uint64Ptrs[1])
+	require.Equal(t, uint641, cfg.Uint64)
+	require.Equal(t, &uint641, cfg.Uint64Ptr)
+	require.Equal(t, uint641, cfg.Uint64s[0])
+	require.Equal(t, uint642, cfg.Uint64s[1])
+	require.Equal(t, &uint641, cfg.Uint64Ptrs[0])
+	require.Equal(t, &uint642, cfg.Uint64Ptrs[1])
 
-	assert.Equal(t, float321, cfg.Float32)
-	assert.Equal(t, &float321, cfg.Float32Ptr)
-	assert.Equal(t, float321, cfg.Float32s[0])
-	assert.Equal(t, float322, cfg.Float32s[1])
-	assert.Equal(t, &float321, cfg.Float32Ptrs[0])
-	assert.Equal(t, &float322, cfg.Float32Ptrs[1])
+	require.Equal(t, float321, cfg.Float32)
+	require.Equal(t, &float321, cfg.Float32Ptr)
+	require.Equal(t, float321, cfg.Float32s[0])
+	require.Equal(t, float322, cfg.Float32s[1])
+	require.Equal(t, &float321, cfg.Float32Ptrs[0])
+	require.Equal(t, &float322, cfg.Float32Ptrs[1])
 
-	assert.Equal(t, float641, cfg.Float64)
-	assert.Equal(t, &float641, cfg.Float64Ptr)
-	assert.Equal(t, float641, cfg.Float64s[0])
-	assert.Equal(t, float642, cfg.Float64s[1])
-	assert.Equal(t, &float641, cfg.Float64Ptrs[0])
-	assert.Equal(t, &float642, cfg.Float64Ptrs[1])
+	require.Equal(t, float641, cfg.Float64)
+	require.Equal(t, &float641, cfg.Float64Ptr)
+	require.Equal(t, float641, cfg.Float64s[0])
+	require.Equal(t, float642, cfg.Float64s[1])
+	require.Equal(t, &float641, cfg.Float64Ptrs[0])
+	require.Equal(t, &float642, cfg.Float64Ptrs[1])
 
-	assert.Equal(t, duration1, cfg.Duration)
-	assert.Equal(t, &duration1, cfg.DurationPtr)
-	assert.Equal(t, duration1, cfg.Durations[0])
-	assert.Equal(t, duration2, cfg.Durations[1])
-	assert.Equal(t, &duration1, cfg.DurationPtrs[0])
-	assert.Equal(t, &duration2, cfg.DurationPtrs[1])
+	require.Equal(t, duration1, cfg.Duration)
+	require.Equal(t, &duration1, cfg.DurationPtr)
+	require.Equal(t, duration1, cfg.Durations[0])
+	require.Equal(t, duration2, cfg.Durations[1])
+	require.Equal(t, &duration1, cfg.DurationPtrs[0])
+	require.Equal(t, &duration2, cfg.DurationPtrs[1])
 
-	assert.Equal(t, unmarshaler1, cfg.Unmarshaler)
-	assert.Equal(t, &unmarshaler1, cfg.UnmarshalerPtr)
-	assert.Equal(t, unmarshaler1, cfg.Unmarshalers[0])
-	assert.Equal(t, unmarshaler2, cfg.Unmarshalers[1])
-	assert.Equal(t, &unmarshaler1, cfg.UnmarshalerPtrs[0])
-	assert.Equal(t, &unmarshaler2, cfg.UnmarshalerPtrs[1])
+	require.Equal(t, unmarshaler1, cfg.Unmarshaler)
+	require.Equal(t, &unmarshaler1, cfg.UnmarshalerPtr)
+	require.Equal(t, unmarshaler1, cfg.Unmarshalers[0])
+	require.Equal(t, unmarshaler2, cfg.Unmarshalers[1])
+	require.Equal(t, &unmarshaler1, cfg.UnmarshalerPtrs[0])
+	require.Equal(t, &unmarshaler2, cfg.UnmarshalerPtrs[1])
 
-	assert.Equal(t, url1, cfg.URL.String())
-	assert.Equal(t, url1, cfg.URLPtr.String())
-	assert.Equal(t, url1, cfg.URLs[0].String())
-	assert.Equal(t, url2, cfg.URLs[1].String())
-	assert.Equal(t, url1, cfg.URLPtrs[0].String())
-	assert.Equal(t, url2, cfg.URLPtrs[1].String())
+	require.Equal(t, url1, cfg.URL.String())
+	require.Equal(t, url1, cfg.URLPtr.String())
+	require.Equal(t, url1, cfg.URLs[0].String())
+	require.Equal(t, url2, cfg.URLs[1].String())
+	require.Equal(t, url1, cfg.URLPtrs[0].String())
+	require.Equal(t, url2, cfg.URLPtrs[1].String())
 
-	assert.Equal(t, "postgres://localhost:5432/db", cfg.StringWithdefault)
-	assert.Equal(t, nonDefinedStr, cfg.NonDefined.String)
+	require.Equal(t, "postgres://localhost:5432/db", cfg.StringWithdefault)
+	require.Equal(t, nonDefinedStr, cfg.NonDefined.String)
 
-	assert.Equal(t, str1, cfg.CustomSeparator[0])
-	assert.Equal(t, str2, cfg.CustomSeparator[1])
+	require.Equal(t, str1, cfg.CustomSeparator[0])
+	require.Equal(t, str2, cfg.CustomSeparator[1])
 
-	assert.Empty(t, cfg.NotAnEnv)
+	require.Empty(t, cfg.NotAnEnv)
 
-	assert.Empty(t, cfg.unexported)
+	require.Empty(t, cfg.unexported)
 }
 
 func TestSetEnvAndTagOptsChain(t *testing.T) {
@@ -402,8 +401,8 @@ func TestSetEnvAndTagOptsChain(t *testing.T) {
 
 	cfg := config{}
 	require.NoError(t, Parse(&cfg, Options{TagName: "mytag"}, Options{Environment: envs}))
-	assert.Equal(t, "VALUE1", cfg.Key1)
-	assert.Equal(t, 3, cfg.Key2)
+	require.Equal(t, "VALUE1", cfg.Key1)
+	require.Equal(t, 3, cfg.Key2)
 }
 
 func TestJSONTag(t *testing.T) {
@@ -418,8 +417,8 @@ func TestJSONTag(t *testing.T) {
 
 	cfg := config{}
 	require.NoError(t, Parse(&cfg, Options{TagName: "json"}))
-	assert.Equal(t, "VALUE7", cfg.Key1)
-	assert.Equal(t, 5, cfg.Key2)
+	require.Equal(t, "VALUE7", cfg.Key1)
+	require.Equal(t, 5, cfg.Key2)
 }
 
 func TestParsesEnvInner(t *testing.T) {
@@ -430,9 +429,9 @@ func TestParsesEnvInner(t *testing.T) {
 		InnerStruct: &InnerStruct{},
 		unexported:  &InnerStruct{},
 	}
-	assert.NoError(t, Parse(&cfg))
-	assert.Equal(t, "someinnervalue", cfg.InnerStruct.Inner)
-	assert.Equal(t, uint(8), cfg.InnerStruct.Number)
+	require.NoError(t, Parse(&cfg))
+	require.Equal(t, "someinnervalue", cfg.InnerStruct.Inner)
+	require.Equal(t, uint(8), cfg.InnerStruct.Number)
 }
 
 func TestParsesEnvInnerFails(t *testing.T) {
@@ -444,14 +443,14 @@ func TestParsesEnvInnerFails(t *testing.T) {
 	}
 	os.Setenv("NUMBER", "not-a-number")
 	cfg := config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Number\" of type \"int\": strconv.ParseInt: parsing \"not-a-number\": invalid syntax")
+	require.EqualError(t, Parse(&cfg), "env: parse error on field \"Number\" of type \"int\": strconv.ParseInt: parsing \"not-a-number\": invalid syntax")
 }
 
 func TestParsesEnvInnerNil(t *testing.T) {
 	os.Setenv("innervar", "someinnervalue")
 	defer os.Clearenv()
 	cfg := ParentStruct{}
-	assert.NoError(t, Parse(&cfg))
+	require.NoError(t, Parse(&cfg))
 }
 
 func TestParsesEnvInnerInvalid(t *testing.T) {
@@ -460,41 +459,41 @@ func TestParsesEnvInnerInvalid(t *testing.T) {
 	cfg := ParentStruct{
 		InnerStruct: &InnerStruct{},
 	}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Number\" of type \"uint\": strconv.ParseUint: parsing \"-547\": invalid syntax")
+	require.EqualError(t, Parse(&cfg), "env: parse error on field \"Number\" of type \"uint\": strconv.ParseUint: parsing \"-547\": invalid syntax")
 }
 
 func TestParsesEnvNested(t *testing.T) {
 	os.Setenv("nestedvar", "somenestedvalue")
 	defer os.Clearenv()
 	var cfg ForNestedStruct
-	assert.NoError(t, Parse(&cfg))
-	assert.Equal(t, "somenestedvalue", cfg.NestedVar)
+	require.NoError(t, Parse(&cfg))
+	require.Equal(t, "somenestedvalue", cfg.NestedVar)
 }
 
 func TestEmptyVars(t *testing.T) {
 	os.Clearenv()
 	cfg := Config{}
-	assert.NoError(t, Parse(&cfg))
-	assert.Equal(t, "", cfg.String)
-	assert.Equal(t, false, cfg.Bool)
-	assert.Equal(t, 0, cfg.Int)
-	assert.Equal(t, uint(0), cfg.Uint)
-	assert.Equal(t, uint64(0), cfg.Uint64)
-	assert.Equal(t, int64(0), cfg.Int64)
-	assert.Equal(t, 0, len(cfg.Strings))
-	assert.Equal(t, 0, len(cfg.CustomSeparator))
-	assert.Equal(t, 0, len(cfg.Ints))
-	assert.Equal(t, 0, len(cfg.Bools))
+	require.NoError(t, Parse(&cfg))
+	require.Equal(t, "", cfg.String)
+	require.Equal(t, false, cfg.Bool)
+	require.Equal(t, 0, cfg.Int)
+	require.Equal(t, uint(0), cfg.Uint)
+	require.Equal(t, uint64(0), cfg.Uint64)
+	require.Equal(t, int64(0), cfg.Int64)
+	require.Equal(t, 0, len(cfg.Strings))
+	require.Equal(t, 0, len(cfg.CustomSeparator))
+	require.Equal(t, 0, len(cfg.Ints))
+	require.Equal(t, 0, len(cfg.Bools))
 }
 
 func TestPassAnInvalidPtr(t *testing.T) {
 	var thisShouldBreak int
-	assert.EqualError(t, Parse(&thisShouldBreak), "env: expected a pointer to a Struct")
+	require.EqualError(t, Parse(&thisShouldBreak), "env: expected a pointer to a Struct")
 }
 
 func TestPassReference(t *testing.T) {
 	cfg := Config{}
-	assert.EqualError(t, Parse(cfg), "env: expected a pointer to a Struct")
+	require.EqualError(t, Parse(cfg), "env: expected a pointer to a Struct")
 }
 
 func TestInvalidBool(t *testing.T) {
@@ -502,7 +501,7 @@ func TestInvalidBool(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Bool\" of type \"bool\": strconv.ParseBool: parsing \"should-be-a-bool\": invalid syntax")
+	require.EqualError(t, Parse(&cfg), "env: parse error on field \"Bool\" of type \"bool\": strconv.ParseBool: parsing \"should-be-a-bool\": invalid syntax")
 }
 
 func TestInvalidInt(t *testing.T) {
@@ -510,7 +509,7 @@ func TestInvalidInt(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Int\" of type \"int\": strconv.ParseInt: parsing \"should-be-an-int\": invalid syntax")
+	require.EqualError(t, Parse(&cfg), "env: parse error on field \"Int\" of type \"int\": strconv.ParseInt: parsing \"should-be-an-int\": invalid syntax")
 }
 
 func TestInvalidUint(t *testing.T) {
@@ -518,7 +517,7 @@ func TestInvalidUint(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Uint\" of type \"uint\": strconv.ParseUint: parsing \"-44\": invalid syntax")
+	require.EqualError(t, Parse(&cfg), "env: parse error on field \"Uint\" of type \"uint\": strconv.ParseUint: parsing \"-44\": invalid syntax")
 }
 
 func TestInvalidFloat32(t *testing.T) {
@@ -526,7 +525,7 @@ func TestInvalidFloat32(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Float32\" of type \"float32\": strconv.ParseFloat: parsing \"AAA\": invalid syntax")
+	require.EqualError(t, Parse(&cfg), "env: parse error on field \"Float32\" of type \"float32\": strconv.ParseFloat: parsing \"AAA\": invalid syntax")
 }
 
 func TestInvalidFloat64(t *testing.T) {
@@ -534,7 +533,7 @@ func TestInvalidFloat64(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Float64\" of type \"float64\": strconv.ParseFloat: parsing \"AAA\": invalid syntax")
+	require.EqualError(t, Parse(&cfg), "env: parse error on field \"Float64\" of type \"float64\": strconv.ParseFloat: parsing \"AAA\": invalid syntax")
 }
 
 func TestInvalidUint64(t *testing.T) {
@@ -542,7 +541,7 @@ func TestInvalidUint64(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Uint64\" of type \"uint64\": strconv.ParseUint: parsing \"AAA\": invalid syntax")
+	require.EqualError(t, Parse(&cfg), "env: parse error on field \"Uint64\" of type \"uint64\": strconv.ParseUint: parsing \"AAA\": invalid syntax")
 }
 
 func TestInvalidInt64(t *testing.T) {
@@ -550,7 +549,7 @@ func TestInvalidInt64(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Int64\" of type \"int64\": strconv.ParseInt: parsing \"AAA\": invalid syntax")
+	require.EqualError(t, Parse(&cfg), "env: parse error on field \"Int64\" of type \"int64\": strconv.ParseInt: parsing \"AAA\": invalid syntax")
 }
 
 func TestInvalidInt64Slice(t *testing.T) {
@@ -560,7 +559,7 @@ func TestInvalidInt64Slice(t *testing.T) {
 
 	os.Setenv("BADINTS", "A,2,3")
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"BadFloats\" of type \"[]int64\": strconv.ParseInt: parsing \"A\": invalid syntax")
+	require.EqualError(t, Parse(cfg), "env: parse error on field \"BadFloats\" of type \"[]int64\": strconv.ParseInt: parsing \"A\": invalid syntax")
 }
 
 func TestInvalidUInt64Slice(t *testing.T) {
@@ -570,7 +569,7 @@ func TestInvalidUInt64Slice(t *testing.T) {
 
 	os.Setenv("BADFLOATS", "A,2,3")
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"BadFloats\" of type \"[]uint64\": strconv.ParseUint: parsing \"A\": invalid syntax")
+	require.EqualError(t, Parse(cfg), "env: parse error on field \"BadFloats\" of type \"[]uint64\": strconv.ParseUint: parsing \"A\": invalid syntax")
 }
 
 func TestInvalidFloat32Slice(t *testing.T) {
@@ -580,7 +579,7 @@ func TestInvalidFloat32Slice(t *testing.T) {
 
 	os.Setenv("BADFLOATS", "A,2.0,3.0")
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"BadFloats\" of type \"[]float32\": strconv.ParseFloat: parsing \"A\": invalid syntax")
+	require.EqualError(t, Parse(cfg), "env: parse error on field \"BadFloats\" of type \"[]float32\": strconv.ParseFloat: parsing \"A\": invalid syntax")
 }
 
 func TestInvalidFloat64Slice(t *testing.T) {
@@ -590,7 +589,7 @@ func TestInvalidFloat64Slice(t *testing.T) {
 
 	os.Setenv("BADFLOATS", "A,2.0,3.0")
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"BadFloats\" of type \"[]float64\": strconv.ParseFloat: parsing \"A\": invalid syntax")
+	require.EqualError(t, Parse(cfg), "env: parse error on field \"BadFloats\" of type \"[]float64\": strconv.ParseFloat: parsing \"A\": invalid syntax")
 }
 
 func TestInvalidBoolsSlice(t *testing.T) {
@@ -600,7 +599,7 @@ func TestInvalidBoolsSlice(t *testing.T) {
 
 	os.Setenv("BADBOOLS", "t,f,TRUE,faaaalse")
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"BadBools\" of type \"[]bool\": strconv.ParseBool: parsing \"faaaalse\": invalid syntax")
+	require.EqualError(t, Parse(cfg), "env: parse error on field \"BadBools\" of type \"[]bool\": strconv.ParseBool: parsing \"faaaalse\": invalid syntax")
 }
 
 func TestInvalidDuration(t *testing.T) {
@@ -608,7 +607,7 @@ func TestInvalidDuration(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Duration\" of type \"time.Duration\": unable to parse duration: time: invalid duration \"should-be-a-valid-duration\"")
+	require.EqualError(t, Parse(&cfg), "env: parse error on field \"Duration\" of type \"time.Duration\": unable to parse duration: time: invalid duration \"should-be-a-valid-duration\"")
 }
 
 func TestInvalidDurations(t *testing.T) {
@@ -616,13 +615,13 @@ func TestInvalidDurations(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Durations\" of type \"[]time.Duration\": unable to parse duration: time: invalid duration \"contains-an-invalid-duration\"")
+	require.EqualError(t, Parse(&cfg), "env: parse error on field \"Durations\" of type \"[]time.Duration\": unable to parse duration: time: invalid duration \"contains-an-invalid-duration\"")
 }
 
 func TestParseStructWithoutEnvTag(t *testing.T) {
 	cfg := Config{}
-	assert.NoError(t, Parse(&cfg))
-	assert.Empty(t, cfg.NotAnEnv)
+	require.NoError(t, Parse(&cfg))
+	require.Empty(t, cfg.NotAnEnv)
 }
 
 func TestParseStructWithInvalidFieldKind(t *testing.T) {
@@ -631,7 +630,7 @@ func TestParseStructWithInvalidFieldKind(t *testing.T) {
 	}
 	os.Setenv("BLAH", "a")
 	cfg := config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"WontWorkByte\" of type \"uint8\": strconv.ParseUint: parsing \"a\": invalid syntax")
+	require.EqualError(t, Parse(&cfg), "env: parse error on field \"WontWorkByte\" of type \"uint8\": strconv.ParseUint: parsing \"a\": invalid syntax")
 }
 
 func TestUnsupportedSliceType(t *testing.T) {
@@ -643,7 +642,7 @@ func TestUnsupportedSliceType(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: no parser found for field \"WontWork\" of type \"[]map[int]int\"")
+	require.EqualError(t, Parse(cfg), "env: no parser found for field \"WontWork\" of type \"[]map[int]int\"")
 }
 
 func TestBadSeparator(t *testing.T) {
@@ -655,7 +654,7 @@ func TestBadSeparator(t *testing.T) {
 	os.Setenv("WONTWORK", "1,2,3,4")
 	defer os.Clearenv()
 
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"WontWork\" of type \"[]int\": strconv.ParseInt: parsing \"1,2,3,4\": invalid syntax")
+	require.EqualError(t, Parse(cfg), "env: parse error on field \"WontWork\" of type \"[]int\": strconv.ParseInt: parsing \"1,2,3,4\": invalid syntax")
 }
 
 func TestNoErrorRequiredSet(t *testing.T) {
@@ -667,8 +666,8 @@ func TestNoErrorRequiredSet(t *testing.T) {
 
 	os.Setenv("IS_REQUIRED", "")
 	defer os.Clearenv()
-	assert.NoError(t, Parse(cfg))
-	assert.Equal(t, "", cfg.IsRequired)
+	require.NoError(t, Parse(cfg))
+	require.Equal(t, "", cfg.IsRequired)
 }
 
 func TestErrorRequiredWithDefault(t *testing.T) {
@@ -680,8 +679,8 @@ func TestErrorRequiredWithDefault(t *testing.T) {
 
 	os.Setenv("IS_REQUIRED", "")
 	defer os.Clearenv()
-	assert.NoError(t, Parse(cfg))
-	assert.Equal(t, "", cfg.IsRequired)
+	require.NoError(t, Parse(cfg))
+	require.Equal(t, "", cfg.IsRequired)
 }
 
 func TestErrorRequiredNotSet(t *testing.T) {
@@ -690,7 +689,7 @@ func TestErrorRequiredNotSet(t *testing.T) {
 	}
 
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: required environment variable \"IS_REQUIRED\" is not set")
+	require.EqualError(t, Parse(cfg), "env: required environment variable \"IS_REQUIRED\" is not set")
 }
 
 func TestErrorRequiredNotSetWithDefault(t *testing.T) {
@@ -700,8 +699,8 @@ func TestErrorRequiredNotSetWithDefault(t *testing.T) {
 
 	cfg := &config{}
 
-	assert.NoError(t, Parse(cfg))
-	assert.Equal(t, "important", cfg.IsRequired)
+	require.NoError(t, Parse(cfg))
+	require.Equal(t, "important", cfg.IsRequired)
 }
 
 func TestParseExpandOption(t *testing.T) {
@@ -723,13 +722,13 @@ func TestParseExpandOption(t *testing.T) {
 	cfg := config{}
 	err := Parse(&cfg)
 
-	assert.NoError(t, err)
-	assert.Equal(t, "localhost", cfg.Host)
-	assert.Equal(t, 3000, cfg.Port)
-	assert.Equal(t, "qwerty12345", cfg.SecretKey)
-	assert.Equal(t, "qwerty12345", cfg.ExpandKey)
-	assert.Equal(t, "localhost:3000", cfg.CompoundKey)
-	assert.Equal(t, "def1", cfg.Default)
+	require.NoError(t, err)
+	require.Equal(t, "localhost", cfg.Host)
+	require.Equal(t, 3000, cfg.Port)
+	require.Equal(t, "qwerty12345", cfg.SecretKey)
+	require.Equal(t, "qwerty12345", cfg.ExpandKey)
+	require.Equal(t, "localhost:3000", cfg.CompoundKey)
+	require.Equal(t, "def1", cfg.Default)
 }
 
 func TestParseUnsetRequireOptions(t *testing.T) {
@@ -782,23 +781,23 @@ func TestCustomParser(t *testing.T) {
 		},
 	})
 
-	assert.NoError(t, err)
-	assert.Equal(t, cfg.Var.name, "test")
-	assert.Equal(t, cfg.Foo.name, "test3")
-	assert.Equal(t, cfg.Other.Name, "test2")
-	assert.Equal(t, cfg.Other.Foo.name, "test3")
+	require.NoError(t, err)
+	require.Equal(t, cfg.Var.name, "test")
+	require.Equal(t, cfg.Foo.name, "test3")
+	require.Equal(t, cfg.Other.Name, "test2")
+	require.Equal(t, cfg.Other.Foo.name, "test3")
 }
 
 func TestParseWithFuncsNoPtr(t *testing.T) {
 	type foo struct{}
 	err := ParseWithFuncs(foo{}, nil)
-	assert.EqualError(t, err, "env: expected a pointer to a Struct")
+	require.EqualError(t, err, "env: expected a pointer to a Struct")
 }
 
 func TestParseWithFuncsInvalidType(t *testing.T) {
 	var c int
 	err := ParseWithFuncs(&c, nil)
-	assert.EqualError(t, err, "env: expected a pointer to a Struct")
+	require.EqualError(t, err, "env: expected a pointer to a Struct")
 }
 
 func TestCustomParserError(t *testing.T) {
@@ -821,8 +820,8 @@ func TestCustomParserError(t *testing.T) {
 			reflect.TypeOf(foo{}): customParserFunc,
 		})
 
-		assert.Empty(t, cfg.Var.name)
-		assert.EqualError(t, err, "env: parse error on field \"Var\" of type \"env.foo\": something broke")
+		require.Empty(t, cfg.Var.name)
+		require.EqualError(t, err, "env: parse error on field \"Var\" of type \"env.foo\": something broke")
 	})
 
 	t.Run("slice", func(t *testing.T) {
@@ -836,8 +835,8 @@ func TestCustomParserError(t *testing.T) {
 			reflect.TypeOf(foo{}): customParserFunc,
 		})
 
-		assert.Empty(t, cfg.Var)
-		assert.EqualError(t, err, "env: parse error on field \"Var\" of type \"[]env.foo\": something broke")
+		require.Empty(t, cfg.Var)
+		require.EqualError(t, err, "env: parse error on field \"Var\" of type \"[]env.foo\": something broke")
 	})
 }
 
@@ -865,8 +864,8 @@ func TestCustomParserBasicType(t *testing.T) {
 		reflect.TypeOf(ConstT(0)): customParserFunc,
 	})
 
-	assert.NoError(t, err)
-	assert.Equal(t, exp, cfg.Const)
+	require.NoError(t, err)
+	require.Equal(t, exp, cfg.Const)
 }
 
 func TestCustomParserUint64Alias(t *testing.T) {
@@ -896,9 +895,9 @@ func TestCustomParserUint64Alias(t *testing.T) {
 		reflect.TypeOf(one): tParser,
 	})
 
-	assert.True(t, parserCalled, "tParser should have been called")
-	assert.NoError(t, err)
-	assert.Equal(t, T(1), cfg.Val)
+	require.True(t, parserCalled, "tParser should have been called")
+	require.NoError(t, err)
+	require.Equal(t, T(1), cfg.Val)
 }
 
 func TestTypeCustomParserBasicInvalid(t *testing.T) {
@@ -919,8 +918,8 @@ func TestTypeCustomParserBasicInvalid(t *testing.T) {
 		reflect.TypeOf(ConstT(0)): customParserFunc,
 	})
 
-	assert.Empty(t, cfg.Const)
-	assert.EqualError(t, err, "env: parse error on field \"Const\" of type \"env.ConstT\": random error")
+	require.Empty(t, cfg.Const)
+	require.EqualError(t, err, "env: parse error on field \"Const\" of type \"env.ConstT\": random error")
 }
 
 func TestCustomParserNotCalledForNonAlias(t *testing.T) {
@@ -945,10 +944,10 @@ func TestCustomParserNotCalledForNonAlias(t *testing.T) {
 		reflect.TypeOf(T(0)): tParser,
 	})
 
-	assert.False(t, tParserCalled, "tParser should not have been called")
-	assert.NoError(t, err)
-	assert.Equal(t, uint64(33), cfg.Val)
-	assert.Equal(t, U(44), cfg.Other)
+	require.False(t, tParserCalled, "tParser should not have been called")
+	require.NoError(t, err)
+	require.Equal(t, uint64(33), cfg.Val)
+	require.Equal(t, U(44), cfg.Other)
 }
 
 func TestCustomParserBasicUnsupported(t *testing.T) {
@@ -965,8 +964,8 @@ func TestCustomParserBasicUnsupported(t *testing.T) {
 	cfg := &config{}
 	err := Parse(cfg)
 
-	assert.Zero(t, cfg.Const)
-	assert.EqualError(t, err, "env: no parser found for field \"Const\" of type \"env.ConstT\"")
+	require.Zero(t, cfg.Const)
+	require.EqualError(t, err, "env: no parser found for field \"Const\" of type \"env.ConstT\"")
 }
 
 func TestUnsupportedStructType(t *testing.T) {
@@ -979,7 +978,7 @@ func TestUnsupportedStructType(t *testing.T) {
 	cfg := &config{}
 	err := Parse(cfg)
 
-	assert.EqualError(t, err, "env: no parser found for field \"Foo\" of type \"http.Client\"")
+	require.EqualError(t, err, "env: no parser found for field \"Foo\" of type \"http.Client\"")
 }
 
 func TestEmptyOption(t *testing.T) {
@@ -991,8 +990,8 @@ func TestEmptyOption(t *testing.T) {
 
 	os.Setenv("VAR", "")
 	defer os.Clearenv()
-	assert.NoError(t, Parse(cfg))
-	assert.Equal(t, "", cfg.Var)
+	require.NoError(t, Parse(cfg))
+	require.Equal(t, "", cfg.Var)
 }
 
 func TestErrorOptionNotRecognized(t *testing.T) {
@@ -1001,7 +1000,7 @@ func TestErrorOptionNotRecognized(t *testing.T) {
 	}
 
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: tag option \"not_supported!\" not supported")
+	require.EqualError(t, Parse(cfg), "env: tag option \"not_supported!\" not supported")
 }
 
 func TestTextUnmarshalerError(t *testing.T) {
@@ -1010,7 +1009,7 @@ func TestTextUnmarshalerError(t *testing.T) {
 	}
 	os.Setenv("UNMARSHALER", "invalid")
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"Unmarshaler\" of type \"env.unmarshaler\": time: invalid duration \"invalid\"")
+	require.EqualError(t, Parse(cfg), "env: parse error on field \"Unmarshaler\" of type \"env.unmarshaler\": time: invalid duration \"invalid\"")
 }
 
 func TestTextUnmarshalersError(t *testing.T) {
@@ -1019,7 +1018,7 @@ func TestTextUnmarshalersError(t *testing.T) {
 	}
 	os.Setenv("UNMARSHALERS", "1s,invalid")
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"Unmarshalers\" of type \"[]env.unmarshaler\": time: invalid duration \"invalid\"")
+	require.EqualError(t, Parse(cfg), "env: parse error on field \"Unmarshalers\" of type \"[]env.unmarshaler\": time: invalid duration \"invalid\"")
 }
 
 func TestParseURL(t *testing.T) {
@@ -1027,8 +1026,8 @@ func TestParseURL(t *testing.T) {
 		ExampleURL url.URL `env:"EXAMPLE_URL" envDefault:"https://google.com"`
 	}
 	var cfg config
-	assert.NoError(t, Parse(&cfg))
-	assert.Equal(t, "https://google.com", cfg.ExampleURL.String())
+	require.NoError(t, Parse(&cfg))
+	require.Equal(t, "https://google.com", cfg.ExampleURL.String())
 }
 
 func TestParseInvalidURL(t *testing.T) {
@@ -1037,7 +1036,7 @@ func TestParseInvalidURL(t *testing.T) {
 	}
 	var cfg config
 	os.Setenv("EXAMPLE_URL_2", "nope://s s/")
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable to parse URL: parse \"nope://s s/\": invalid character \" \" in host name")
+	require.EqualError(t, Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable to parse URL: parse \"nope://s s/\": invalid character \" \" in host name")
 }
 
 func ExampleParse() {
@@ -1067,9 +1066,9 @@ func TestIgnoresUnexported(t *testing.T) {
 	cfg := unexportedConfig{}
 
 	os.Setenv("HOME", "/tmp/fakehome")
-	assert.NoError(t, Parse(&cfg))
-	assert.Empty(t, cfg.home)
-	assert.Equal(t, "/tmp/fakehome", cfg.Home2)
+	require.NoError(t, Parse(&cfg))
+	require.Empty(t, cfg.home)
+	require.Equal(t, "/tmp/fakehome", cfg.Home2)
 }
 
 type LogLevel int8
@@ -1105,9 +1104,9 @@ func TestPrecedenceUnmarshalText(t *testing.T) {
 	}
 	var cfg config
 
-	assert.NoError(t, Parse(&cfg))
-	assert.Equal(t, DebugLevel, cfg.LogLevel)
-	assert.Equal(t, []LogLevel{DebugLevel, InfoLevel}, cfg.LogLevels)
+	require.NoError(t, Parse(&cfg))
+	require.Equal(t, DebugLevel, cfg.LogLevel)
+	require.Equal(t, []LogLevel{DebugLevel, InfoLevel}, cfg.LogLevels)
 }
 
 func ExampleParseWithFuncs() {
@@ -1149,8 +1148,8 @@ func TestFile(t *testing.T) {
 	os.Setenv("SECRET_KEY", file)
 
 	cfg := config{}
-	assert.NoError(t, Parse(&cfg))
-	assert.Equal(t, "secret", cfg.SecretKey)
+	require.NoError(t, Parse(&cfg))
+	require.Equal(t, "secret", cfg.SecretKey)
 }
 
 func TestFileNoParam(t *testing.T) {
@@ -1160,7 +1159,7 @@ func TestFileNoParam(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := config{}
-	assert.NoError(t, Parse(&cfg))
+	require.NoError(t, Parse(&cfg))
 }
 
 func TestFileNoParamRequired(t *testing.T) {
@@ -1171,8 +1170,8 @@ func TestFileNoParamRequired(t *testing.T) {
 	cfg := config{}
 	err := Parse(&cfg)
 
-	assert.Error(t, err)
-	assert.EqualError(t, err, "env: required environment variable \"SECRET_KEY\" is not set")
+	require.Error(t, err)
+	require.EqualError(t, err, "env: required environment variable \"SECRET_KEY\" is not set")
 }
 
 func TestFileBadFile(t *testing.T) {
@@ -1187,12 +1186,12 @@ func TestFileBadFile(t *testing.T) {
 	cfg := config{}
 	err := Parse(&cfg)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	oserr := "no such file or directory"
 	if runtime.GOOS == "windows" {
 		oserr = "The system cannot find the file specified."
 	}
-	assert.EqualError(t, err, fmt.Sprintf(`env: could not load content of file "%s" from variable SECRET_KEY: open %s: %s`, filename, filename, oserr))
+	require.EqualError(t, err, fmt.Sprintf(`env: could not load content of file "%s" from variable SECRET_KEY: open %s: %s`, filename, filename, oserr))
 }
 
 func TestFileWithDefault(t *testing.T) {
@@ -1209,8 +1208,8 @@ func TestFileWithDefault(t *testing.T) {
 	os.Setenv("FILE", file)
 
 	cfg := config{}
-	assert.NoError(t, Parse(&cfg))
-	assert.Equal(t, "secret", cfg.SecretKey)
+	require.NoError(t, Parse(&cfg))
+	require.Equal(t, "secret", cfg.SecretKey)
 }
 
 func TestCustomSliceType(t *testing.T) {
@@ -1229,7 +1228,7 @@ func TestCustomSliceType(t *testing.T) {
 
 	var cfg config
 	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{reflect.TypeOf(customslice{}): parsecustomsclice})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestBlankKey(t *testing.T) {
@@ -1246,6 +1245,6 @@ func TestBlankKey(t *testing.T) {
 	err := Parse(&val)
 	require.NoError(t, err)
 
-	assert.Equal(t, "", val.Blank)
-	assert.Equal(t, "", val.BlankWithTag)
+	require.Equal(t, "", val.Blank)
+	require.Equal(t, "", val.BlankWithTag)
 }
