@@ -149,11 +149,11 @@ an error is returned if the `config` struct is changed to:
 
 ```go
 type config struct {
-    Home         string   `env:"HOME"`
-    Port         int      `env:"PORT" envDefault:"3000"`
-    IsProduction bool     `env:"PRODUCTION"`
-    Hosts        []string `env:"HOSTS" envSeparator:":"`
-    SecretKey    string   `env:"SECRET_KEY,required"`
+	Home         string   `env:"HOME"`
+	Port         int      `env:"PORT" envDefault:"3000"`
+	IsProduction bool     `env:"PRODUCTION"`
+	Hosts        []string `env:"HOSTS" envSeparator:":"`
+	SecretKey    string   `env:"SECRET_KEY,required"`
 }
 ```
 
@@ -166,7 +166,7 @@ Example:
 
 ```go
 type config struct {
-    SecretKey string `env:"SECRET_KEY,unset"`
+	SecretKey string `env:"SECRET_KEY,unset"`
 }
 ```
 
@@ -291,4 +291,3 @@ func main() {
 ## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/caarlos0/env.svg)](https://starchart.cc/caarlos0/env)
-
