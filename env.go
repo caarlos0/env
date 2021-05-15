@@ -218,6 +218,7 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 	var required bool
 	var exists bool
 	var loadFile bool
+	var unset bool
 	expand := strings.EqualFold(field.Tag.Get("envExpand"), "true")
 
 	key, tags := parseKeyForOption(field.Tag.Get(getTagName(opts)))
@@ -230,6 +231,8 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 			loadFile = true
 		case "required":
 			required = true
+		case "unset":
+			unset = true
 		default:
 			return "", fmt.Errorf("env: tag option %q not supported", tag)
 		}
@@ -240,6 +243,10 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 
 	if expand {
 		val = os.ExpandEnv(val)
+	}
+
+	if unset {
+		defer os.Unsetenv(key)
 	}
 
 	if required && !exists {

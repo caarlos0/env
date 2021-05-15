@@ -732,6 +732,24 @@ func TestParseExpandOption(t *testing.T) {
 	assert.Equal(t, "def1", cfg.Default)
 }
 
+func TestParseUnsetRequireOptions(t *testing.T) {
+	type config struct {
+		Password string `env:"PASSWORD,unset,required"`
+	}
+	defer os.Clearenv()
+	cfg := config{}
+
+	require.EqualError(t, Parse(&cfg), `env: required environment variable "PASSWORD" is not set`)
+
+	os.Setenv("PASSWORD", "superSecret")
+	require.NoError(t, Parse(&cfg))
+
+	require.Equal(t, "superSecret", cfg.Password)
+	unset, exists := os.LookupEnv("PASSWORD")
+	require.Equal(t, "", unset)
+	require.Equal(t, false, exists)
+}
+
 func TestCustomParser(t *testing.T) {
 	type foo struct {
 		name string
