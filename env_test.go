@@ -23,7 +23,7 @@ type unmarshaler struct {
 	time.Duration
 }
 
-// TextUnmarshaler implements encoding.TextUnmarshaler
+// TextUnmarshaler implements encoding.TextUnmarshaler.
 func (d *unmarshaler) UnmarshalText(data []byte) (err error) {
 	if len(data) != 0 {
 		d.Duration, err = time.ParseDuration(string(data))

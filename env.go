@@ -16,7 +16,7 @@ import (
 // nolint: gochecknoglobals
 var (
 	// ErrNotAStructPtr is returned if you pass something that is not a pointer to a
-	// Struct to Parse
+	// Struct to Parse.
 	ErrNotAStructPtr = errors.New("env: expected a pointer to a Struct")
 
 	defaultBuiltInParsers = map[reflect.Kind]ParserFunc{
@@ -92,7 +92,7 @@ var (
 	}
 )
 
-// ParserFunc defines the signature of a function that can be used within `CustomParsers`
+// ParserFunc defines the signature of a function that can be used within `CustomParsers`.
 type ParserFunc func(v string) (interface{}, error)
 
 // Options for the parser.
