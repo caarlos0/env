@@ -1251,9 +1251,9 @@ func TestBlankKey(t *testing.T) {
 
 type MyTime time.Time
 
-func (t MyTime) UnmarshalText(text []byte) error {
+func (t *MyTime) UnmarshalText(text []byte) error {
 	tt, err := time.Parse("2006-01-02", string(text))
-	t = MyTime(tt)
+	*t = MyTime(tt)
 	return err
 }
 
@@ -1267,4 +1267,7 @@ func TestCustomTimeParser(t *testing.T) {
 
 	var cfg config
 	require.NoError(t, Parse(&cfg))
+	require.Equal(t, 2021, time.Time(cfg.SomeTime).Year())
+	require.Equal(t, time.Month(5), time.Time(cfg.SomeTime).Month())
+	require.Equal(t, 6, time.Time(cfg.SomeTime).Day())
 }

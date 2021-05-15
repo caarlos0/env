@@ -127,9 +127,9 @@ Its fairly straightforward:
 ```go
 type MyTime time.Time
 
-func (t MyTime) UnmarshalText(text []byte) error {
+func (t *MyTime) UnmarshalText(text []byte) error {
 	tt, err := time.Parse("2006-01-02", string(text))
-	t = MyTime(tt)
+	*t = MyTime(tt)
 	return err
 }
 
