@@ -684,6 +684,44 @@ func TestErrorRequiredNotSet(t *testing.T) {
 	isErrorWithMessage(t, Parse(&config{}), `env: required environment variable "IS_REQUIRED" is not set`)
 }
 
+func TestNoErrorNotEmptySet(t *testing.T) {
+	is := is.New(t)
+	os.Setenv("IS_REQUIRED", "1")
+	defer os.Clearenv()
+	type config struct {
+		IsRequired string `env:"IS_REQUIRED,notEmpty"`
+	}
+	is.NoErr(Parse(&config{}))
+}
+
+func TestNoErrorRequiredAndNotEmptySet(t *testing.T) {
+	is := is.New(t)
+	os.Setenv("IS_REQUIRED", "1")
+	defer os.Clearenv()
+	type config struct {
+		IsRequired string `env:"IS_REQUIRED,required,notEmpty"`
+	}
+	is.NoErr(Parse(&config{}))
+}
+
+func TestErrorNotEmptySet(t *testing.T) {
+	os.Setenv("IS_REQUIRED", "")
+	defer os.Clearenv()
+	type config struct {
+		IsRequired string `env:"IS_REQUIRED,notEmpty"`
+	}
+	isErrorWithMessage(t, Parse(&config{}), `env: environment variable "IS_REQUIRED" should not be empty`)
+}
+
+func TestErrorRequiredAndNotEmptySet(t *testing.T) {
+	os.Setenv("IS_REQUIRED", "")
+	defer os.Clearenv()
+	type config struct {
+		IsRequired string `env:"IS_REQUIRED,notEmpty,required"`
+	}
+	isErrorWithMessage(t, Parse(&config{}), `env: environment variable "IS_REQUIRED" should not be empty`)
+}
+
 func TestErrorRequiredNotSetWithDefault(t *testing.T) {
 	is := is.New(t)
 

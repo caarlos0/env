@@ -2,7 +2,7 @@
 
 [![Build Status](https://img.shields.io/github/workflow/status/caarlos0/env/build?style=for-the-badge)](https://github.com/caarlos0/env/actions?workflow=build)
 [![Coverage Status](https://img.shields.io/codecov/c/gh/caarlos0/env.svg?logo=codecov&style=for-the-badge)](https://codecov.io/gh/caarlos0/env)
-[![](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](http://godoc.org/github.com/caarlos0/env/v6)
+[![](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://pkg.go.dev/github.com/caarlos0/env/v6)
 
 Simple lib to parse envs to structs in Go.
 
@@ -17,11 +17,7 @@ import (
 	"fmt"
 	"time"
 
-	// if using go modules
 	"github.com/caarlos0/env/v6"
-
-	// if using dep/others
-	"github.com/caarlos0/env"
 )
 
 type config struct {
@@ -142,18 +138,25 @@ And then you can parse `Config` with `env.Parse`.
 
 ## Required fields
 
-The `env` tag option `required` (e.g., `env:"tagKey,required"`) can be added
-to ensure that some environment variable is set.  In the example above,
-an error is returned if the `config` struct is changed to:
-
+The `env` tag option `required` (e.g., `env:"tagKey,required"`) can be added to ensure that some environment variable is set.
+In the example above, an error is returned if the `config` struct is changed to:
 
 ```go
 type config struct {
-	Home         string   `env:"HOME"`
-	Port         int      `env:"PORT" envDefault:"3000"`
-	IsProduction bool     `env:"PRODUCTION"`
-	Hosts        []string `env:"HOSTS" envSeparator:":"`
-	SecretKey    string   `env:"SECRET_KEY,required"`
+	SecretKey string `env:"SECRET_KEY,required"`
+}
+```
+
+## Not Empty fields
+
+While `required` demands the environment variable to be check, it doesn't check its value.
+If you want to make sure the environment is set and not emtpy, you need to use the `notEmpty` tag option instead (`env:"SOME_ENV,notEmpty"`).
+
+Example:
+
+```go
+type config struct {
+	SecretKey string `env:"SECRET_KEY,notEmpty"`
 }
 ```
 
@@ -183,7 +186,7 @@ package main
 import (
 	"fmt"
 	"time"
-	"github.com/caarlos0/env"
+	"github.com/caarlos0/env/v6"
 )
 
 type config struct {
@@ -213,7 +216,6 @@ $ SECRET=/tmp/secret  \
 {Secret:qwerty Password:dvorak Certificate:coleman}
 ```
 
-
 ## Options
 
 ### Environment
@@ -231,7 +233,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env"
+	"github.com/caarlos0/env/v6"
 )
 
 type Config struct {
@@ -267,7 +269,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env"
+	"github.com/caarlos0/env/v6"
 )
 
 type Config struct {
