@@ -288,8 +288,7 @@ func getOr(key, defaultValue string, defExists bool, envs map[string]string) (va
 }
 
 func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[reflect.Type]ParserFunc) error {
-	tm := asTextUnmarshaler(field)
-	if tm != nil {
+	if tm := asTextUnmarshaler(field); tm != nil {
 		if err := tm.UnmarshalText([]byte(value)); err != nil {
 			return newParseError(sf, err)
 		}

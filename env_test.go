@@ -1248,3 +1248,26 @@ func TestBlankKey(t *testing.T) {
 	require.Equal(t, "", val.Blank)
 	require.Equal(t, "", val.BlankWithTag)
 }
+
+type MyTime time.Time
+
+func (t *MyTime) UnmarshalText(text []byte) error {
+	tt, err := time.Parse("2006-01-02", string(text))
+	*t = MyTime(tt)
+	return err
+}
+
+func TestCustomTimeParser(t *testing.T) {
+	type config struct {
+		SomeTime MyTime `env:"SOME_TIME"`
+	}
+
+	os.Setenv("SOME_TIME", "2021-05-06")
+	defer os.Unsetenv("SOME_TIME")
+
+	var cfg config
+	require.NoError(t, Parse(&cfg))
+	require.Equal(t, 2021, time.Time(cfg.SomeTime).Year())
+	require.Equal(t, time.Month(5), time.Time(cfg.SomeTime).Month())
+	require.Equal(t, 6, time.Time(cfg.SomeTime).Day())
+}

@@ -115,6 +115,31 @@ to facilitate the parsing of envs that are not basic types.
 Check the example in the [go doc](http://godoc.org/github.com/caarlos0/env)
 for more info.
 
+### A note about `TextUnmarshaler` and `time.Time`
+
+Env supports by default anything that implements the `TextUnmarshaler` interface.
+That includes things like `time.Time` for example.
+The upside is that depending on the format you need, you don't need to change anything.
+The downside is that if you do need time in another format, you'll need to create your own type.
+
+Its fairly straightforward:
+
+```go
+type MyTime time.Time
+
+func (t *MyTime) UnmarshalText(text []byte) error {
+	tt, err := time.Parse("2006-01-02", string(text))
+	*t = MyTime(tt)
+	return err
+}
+
+type Config struct {
+	SomeTime MyTime `env:"SOME_TIME"`
+}
+```
+
+And then you can parse `Config` with `env.Parse`.
+
 ## Required fields
 
 The `env` tag option `required` (e.g., `env:"tagKey,required"`) can be added
