@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -21,7 +23,7 @@ type unmarshaler struct {
 	time.Duration
 }
 
-// TextUnmarshaler implements encoding.TextUnmarshaler
+// TextUnmarshaler implements encoding.TextUnmarshaler.
 func (d *unmarshaler) UnmarshalText(data []byte) (err error) {
 	if len(data) != 0 {
 		d.Duration, err = time.ParseDuration(string(data))
@@ -144,6 +146,7 @@ type InnerStruct struct {
 type ForNestedStruct struct {
 	NestedStruct
 }
+
 type NestedStruct struct {
 	NestedVar string `env:"nestedvar"`
 }
@@ -151,30 +154,30 @@ type NestedStruct struct {
 func TestParsesEnv(t *testing.T) {
 	defer os.Clearenv()
 
-	var tos = func(v interface{}) string {
+	tos := func(v interface{}) string {
 		return fmt.Sprintf("%v", v)
 	}
 
-	var toss = func(v ...interface{}) string {
-		var ss = []string{}
+	toss := func(v ...interface{}) string {
+		ss := []string{}
 		for _, s := range v {
 			ss = append(ss, tos(s))
 		}
 		return strings.Join(ss, ",")
 	}
 
-	var str1 = "str1"
-	var str2 = "str2"
+	str1 := "str1"
+	str2 := "str2"
 	os.Setenv("STRING", str1)
 	os.Setenv("STRINGS", toss(str1, str2))
 
-	var bool1 = true
-	var bool2 = false
+	bool1 := true
+	bool2 := false
 	os.Setenv("BOOL", tos(bool1))
 	os.Setenv("BOOLS", toss(bool1, bool2))
 
-	var int1 = -1
-	var int2 = 2
+	int1 := -1
+	int2 := 2
 	os.Setenv("INT", tos(int1))
 	os.Setenv("INTS", toss(int1, int2))
 
@@ -228,23 +231,23 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("FLOAT32", tos(float321))
 	os.Setenv("FLOAT32S", toss(float321, float322))
 
-	var float641 = 1.53
-	var float642 = 0.5
+	float641 := 1.53
+	float642 := 0.5
 	os.Setenv("FLOAT64", tos(float641))
 	os.Setenv("FLOAT64S", toss(float641, float642))
 
-	var duration1 = time.Second
-	var duration2 = time.Second * 4
+	duration1 := time.Second
+	duration2 := time.Second * 4
 	os.Setenv("DURATION", tos(duration1))
 	os.Setenv("DURATIONS", toss(duration1, duration2))
 
-	var unmarshaler1 = unmarshaler{time.Minute}
-	var unmarshaler2 = unmarshaler{time.Millisecond * 1232}
+	unmarshaler1 := unmarshaler{time.Minute}
+	unmarshaler2 := unmarshaler{time.Millisecond * 1232}
 	os.Setenv("UNMARSHALER", tos(unmarshaler1.Duration))
 	os.Setenv("UNMARSHALERS", toss(unmarshaler1.Duration, unmarshaler2.Duration))
 
-	var url1 = "https://goreleaser.com"
-	var url2 = "https://caarlos0.dev"
+	url1 := "https://goreleaser.com"
+	url2 := "https://caarlos0.dev"
 	os.Setenv("URL", tos(url1))
 	os.Setenv("URLS", toss(url1, url2))
 
@@ -253,7 +256,7 @@ func TestParsesEnv(t *testing.T) {
 	nonDefinedStr := "nonDefinedStr"
 	os.Setenv("NONDEFINED_STR", nonDefinedStr)
 
-	var cfg = Config{}
+	cfg := Config{}
 	require.NoError(t, Parse(&cfg))
 
 	assert.Equal(t, str1, cfg.String)
@@ -386,6 +389,39 @@ func TestParsesEnv(t *testing.T) {
 	assert.Empty(t, cfg.unexported)
 }
 
+func TestSetEnvAndTagOptsChain(t *testing.T) {
+	defer os.Clearenv()
+	type config struct {
+		Key1 string `mytag:"KEY1,required"`
+		Key2 int    `mytag:"KEY2,required"`
+	}
+	envs := map[string]string{
+		"KEY1": "VALUE1",
+		"KEY2": "3",
+	}
+
+	cfg := config{}
+	require.NoError(t, Parse(&cfg, Options{TagName: "mytag"}, Options{Environment: envs}))
+	assert.Equal(t, "VALUE1", cfg.Key1)
+	assert.Equal(t, 3, cfg.Key2)
+}
+
+func TestJSONTag(t *testing.T) {
+	defer os.Clearenv()
+	type config struct {
+		Key1 string `json:"KEY1"`
+		Key2 int    `json:"KEY2"`
+	}
+
+	os.Setenv("KEY1", "VALUE7")
+	os.Setenv("KEY2", "5")
+
+	cfg := config{}
+	require.NoError(t, Parse(&cfg, Options{TagName: "json"}))
+	assert.Equal(t, "VALUE7", cfg.Key1)
+	assert.Equal(t, 5, cfg.Key2)
+}
+
 func TestParsesEnvInner(t *testing.T) {
 	os.Setenv("innervar", "someinnervalue")
 	os.Setenv("innernum", "8")
@@ -407,7 +443,7 @@ func TestParsesEnvInnerFails(t *testing.T) {
 		}
 	}
 	os.Setenv("NUMBER", "not-a-number")
-	var cfg = config{}
+	cfg := config{}
 	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Number\" of type \"int\": strconv.ParseInt: parsing \"not-a-number\": invalid syntax")
 }
 
@@ -572,7 +608,7 @@ func TestInvalidDuration(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Duration\" of type \"time.Duration\": unable to parse duration: time: invalid duration should-be-a-valid-duration")
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Duration\" of type \"time.Duration\": unable to parse duration: time: invalid duration \"should-be-a-valid-duration\"")
 }
 
 func TestInvalidDurations(t *testing.T) {
@@ -580,7 +616,7 @@ func TestInvalidDurations(t *testing.T) {
 	defer os.Clearenv()
 
 	cfg := Config{}
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Durations\" of type \"[]time.Duration\": unable to parse duration: time: invalid duration contains-an-invalid-duration")
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"Durations\" of type \"[]time.Duration\": unable to parse duration: time: invalid duration \"contains-an-invalid-duration\"")
 }
 
 func TestParseStructWithoutEnvTag(t *testing.T) {
@@ -663,7 +699,9 @@ func TestErrorRequiredNotSetWithDefault(t *testing.T) {
 	}
 
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: required environment variable \"IS_REQUIRED\" is not set")
+
+	assert.NoError(t, Parse(cfg))
+	assert.Equal(t, "important", cfg.IsRequired)
 }
 
 func TestParseExpandOption(t *testing.T) {
@@ -988,7 +1026,7 @@ func TestTextUnmarshalerError(t *testing.T) {
 	}
 	os.Setenv("UNMARSHALER", "invalid")
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"Unmarshaler\" of type \"env.unmarshaler\": time: invalid duration invalid")
+	assert.EqualError(t, Parse(cfg), "env: parse error on field \"Unmarshaler\" of type \"env.unmarshaler\": time: invalid duration \"invalid\"")
 }
 
 func TestTextUnmarshalersError(t *testing.T) {
@@ -997,7 +1035,7 @@ func TestTextUnmarshalersError(t *testing.T) {
 	}
 	os.Setenv("UNMARSHALERS", "1s,invalid")
 	cfg := &config{}
-	assert.EqualError(t, Parse(cfg), "env: parse error on field \"Unmarshalers\" of type \"[]env.unmarshaler\": time: invalid duration invalid")
+	assert.EqualError(t, Parse(cfg), "env: parse error on field \"Unmarshalers\" of type \"[]env.unmarshaler\": time: invalid duration \"invalid\"")
 }
 
 func TestParseURL(t *testing.T) {
@@ -1015,7 +1053,7 @@ func TestParseInvalidURL(t *testing.T) {
 	}
 	var cfg config
 	os.Setenv("EXAMPLE_URL_2", "nope://s s/")
-	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable to parse URL: parse nope://s s/: invalid character \" \" in host name")
+	assert.EqualError(t, Parse(&cfg), "env: parse error on field \"ExampleURL\" of type \"url.URL\": unable to parse URL: parse \"nope://s s/\": invalid character \" \" in host name")
 }
 
 func ExampleParse() {
@@ -1099,7 +1137,7 @@ func ExampleParseWithFuncs() {
 
 	os.Setenv("THING", "my thing")
 
-	var c = conf{}
+	c := conf{}
 
 	err := ParseWithFuncs(&c, map[reflect.Type]ParserFunc{
 		reflect.TypeOf(thing{}): func(v string) (interface{}, error) {
@@ -1119,24 +1157,16 @@ func TestFile(t *testing.T) {
 		SecretKey string `env:"SECRET_KEY,file"`
 	}
 
-	file, err := ioutil.TempFile("", "sec_key_*")
-	assert.NoError(t, err)
-	err = ioutil.WriteFile(file.Name(), []byte("secret"), 0660)
-	assert.NoError(t, err)
-	defer func() {
-		err = os.Remove(file.Name())
-		assert.NoError(t, err)
-	}()
+	dir := t.TempDir()
+	file := filepath.Join(dir, "sec_key")
+	require.NoError(t, ioutil.WriteFile(file, []byte("secret"), 0o660))
 
 	defer os.Clearenv()
-	os.Setenv("SECRET_KEY", file.Name())
+	os.Setenv("SECRET_KEY", file)
 
 	cfg := config{}
-	err = Parse(&cfg)
-
-	assert.NoError(t, err)
+	assert.NoError(t, Parse(&cfg))
 	assert.Equal(t, "secret", cfg.SecretKey)
-
 }
 
 func TestFileNoParam(t *testing.T) {
@@ -1144,10 +1174,9 @@ func TestFileNoParam(t *testing.T) {
 		SecretKey string `env:"SECRET_KEY,file"`
 	}
 	defer os.Clearenv()
-	cfg := config{}
-	err := Parse(&cfg)
 
-	assert.NoError(t, err)
+	cfg := config{}
+	assert.NoError(t, Parse(&cfg))
 }
 
 func TestFileNoParamRequired(t *testing.T) {
@@ -1167,23 +1196,19 @@ func TestFileBadFile(t *testing.T) {
 		SecretKey string `env:"SECRET_KEY,file"`
 	}
 
-	file, err := ioutil.TempFile("", "sec_key_*")
-	assert.NoError(t, err)
-	err = ioutil.WriteFile(file.Name(), []byte("secret"), 0660)
-	assert.NoError(t, err)
-
-	filename := file.Name()
+	filename := "not-a-real-file"
 	defer os.Clearenv()
 	os.Setenv("SECRET_KEY", filename)
 
-	err = os.Remove(filename)
-	assert.NoError(t, err)
-
 	cfg := config{}
-	err = Parse(&cfg)
+	err := Parse(&cfg)
 
 	assert.Error(t, err)
-	assert.EqualError(t, err, fmt.Sprintf(`env: could not load content of file "%s" from variable SECRET_KEY: open %s: no such file or directory`, filename, filename))
+	oserr := "no such file or directory"
+	if runtime.GOOS == "windows" {
+		oserr = "The system cannot find the file specified."
+	}
+	assert.EqualError(t, err, fmt.Sprintf(`env: could not load content of file "%s" from variable SECRET_KEY: open %s: %s`, filename, filename, oserr))
 }
 
 func TestFileWithDefault(t *testing.T) {
@@ -1192,23 +1217,51 @@ func TestFileWithDefault(t *testing.T) {
 	}
 	defer os.Clearenv()
 
-	file, err := ioutil.TempFile("", "sec_key_*")
-	assert.NoError(t, err)
-	err = ioutil.WriteFile(file.Name(), []byte("secret"), 0660)
-	assert.NoError(t, err)
-	defer func() {
-		err = os.Remove(file.Name())
-		assert.NoError(t, err)
-	}()
+	dir := t.TempDir()
+	file := filepath.Join(dir, "sec_key")
+	require.NoError(t, ioutil.WriteFile(file, []byte("secret"), 0o660))
 
 	defer os.Clearenv()
-	os.Setenv("FILE", file.Name())
+	os.Setenv("FILE", file)
 
 	cfg := config{}
-
-	err = Parse(&cfg)
-
-	assert.NoError(t, err)
+	assert.NoError(t, Parse(&cfg))
 	assert.Equal(t, "secret", cfg.SecretKey)
+}
 
+func TestCustomSliceType(t *testing.T) {
+	type customslice []byte
+
+	type config struct {
+		SecretKey customslice `env:"SECRET_KEY"`
+	}
+
+	parsecustomsclice := func(value string) (interface{}, error) {
+		return customslice(value), nil
+	}
+
+	defer os.Clearenv()
+	os.Setenv("SECRET_KEY", "somesecretkey")
+
+	var cfg config
+	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{reflect.TypeOf(customslice{}): parsecustomsclice})
+	assert.NoError(t, err)
+}
+
+func TestBlankKey(t *testing.T) {
+	type testStruct struct {
+		Blank        string
+		BlankWithTag string `env:""`
+	}
+
+	val := testStruct{}
+
+	defer os.Clearenv()
+	os.Setenv("", "You should not see this")
+
+	err := Parse(&val)
+	require.NoError(t, err)
+
+	assert.Equal(t, "", val.Blank)
+	assert.Equal(t, "", val.BlankWithTag)
 }

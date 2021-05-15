@@ -1,8 +1,8 @@
 # env
 
-[![Build Status](https://img.shields.io/travis/caarlos0/env.svg?logo=travis&style=for-the-badge)](https://travis-ci.org/caarlos0/env)
+[![Build Status](https://img.shields.io/github/workflow/status/caarlos0/env/build?style=for-the-badge)](https://github.com/caarlos0/env/actions?workflow=build)
 [![Coverage Status](https://img.shields.io/codecov/c/gh/caarlos0/env.svg?logo=codecov&style=for-the-badge)](https://codecov.io/gh/caarlos0/env)
-[![](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](http://godoc.org/github.com/caarlos0/env)
+[![](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](http://godoc.org/github.com/caarlos0/env/v6)
 
 Simple lib to parse envs to structs in Go.
 
@@ -178,6 +178,81 @@ $ SECRET=/tmp/secret  \
 	CERTIFICATE_FILE=/tmp/certificate \
 	go run main.go
 {Secret:qwerty Password:dvorak Certificate:coleman}
+```
+
+
+## Options
+
+### Environment
+
+By setting the `Options.Environment` map you can tell `Parse` to add those `keys` and `values`
+as env vars before parsing is done. These envs are stored in the map and never actually set by `os.Setenv`.
+This option effectively makes `env` ignore the OS environment variables: only the ones provided in the option are used.
+
+This can make your testing scenarios a bit more clean and easy to handle.
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/caarlos0/env"
+)
+
+type Config struct {
+	Password string `env:"PASSWORD"`
+}
+
+func main() {
+	cfg := &Config{}
+	opts := &env.Options{Environment: map[string]string{
+		"PASSWORD": "MY_PASSWORD",
+	}}
+
+	// Load env vars.
+	if err := env.Parse(cfg, opts); err != nil {
+		log.Fatal(err)
+	}
+
+	// Print the loaded data.
+	fmt.Printf("%+v\n", cfg.envData)
+}
+```
+
+### Changing default tag name
+
+You can change what tag name to use for setting the env vars by setting the `Options.TagName`
+variable.
+
+For example
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/caarlos0/env"
+)
+
+type Config struct {
+	Password string `json:"PASSWORD"`
+}
+
+func main() {
+	cfg := &Config{}
+	opts := &env.Options{TagName: "json"}
+
+	// Load env vars.
+	if err := env.Parse(cfg, opts); err != nil {
+		log.Fatal(err)
+	}
+
+	// Print the loaded data.
+	fmt.Printf("%+v\n", cfg.envData)
+}
 ```
 
 ## Stargazers over time
