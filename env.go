@@ -135,15 +135,6 @@ func configure(opts []Options) []Options {
 	return []Options{opt}
 }
 
-func toMap(env []string) map[string]string {
-	r := map[string]string{}
-	for _, e := range env {
-		p := strings.SplitN(e, "=", 2)
-		r[p[0]] = p[1]
-	}
-	return r
-}
-
 // getTagName returns the tag name.
 func getTagName(opts []Options) string {
 	return opts[0].TagName
