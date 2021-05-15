@@ -17,7 +17,7 @@ import (
 // nolint: gochecknoglobals
 var (
 	// ErrNotAStructPtr is returned if you pass something that is not a pointer to a
-	// Struct to Parse
+	// Struct to Parse.
 	ErrNotAStructPtr = errors.New("env: expected a pointer to a Struct")
 
 	defaultBuiltInParsers = map[reflect.Kind]ParserFunc{
@@ -93,7 +93,7 @@ var (
 	}
 )
 
-// ParserFunc defines the signature of a function that can be used within `CustomParsers`
+// ParserFunc defines the signature of a function that can be used within `CustomParsers`.
 type ParserFunc func(v string) (interface{}, error)
 
 // Options for the parser.
@@ -190,7 +190,7 @@ func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, opts ...
 	if ref.Kind() != reflect.Struct {
 		return ErrNotAStructPtr
 	}
-	var parsers = defaultTypeParsers
+	parsers := defaultTypeParsers
 	for k, v := range funcMap {
 		parsers[k] = v
 	}
@@ -199,7 +199,7 @@ func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, opts ...
 }
 
 func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts []Options) error {
-	var refType = ref.Type()
+	refType := ref.Type()
 
 	for i := 0; i < refType.NumField(); i++ {
 		refField := ref.Field(i)
@@ -244,7 +244,7 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 	var required bool
 	var exists bool
 	var loadFile bool
-	var expand = strings.EqualFold(field.Tag.Get("envExpand"), "true")
+	expand := strings.EqualFold(field.Tag.Get("envExpand"), "true")
 
 	key, tags := parseKeyForOption(field.Tag.Get(getTagName(opts)))
 
@@ -307,7 +307,7 @@ func getOr(key, defaultValue string, defExists bool, envs map[string]string) (va
 }
 
 func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[reflect.Type]ParserFunc) error {
-	var tm = asTextUnmarshaler(field)
+	tm := asTextUnmarshaler(field)
 	if tm != nil {
 		if err := tm.UnmarshalText([]byte(value)); err != nil {
 			return newParseError(sf, err)
@@ -315,8 +315,8 @@ func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[
 		return nil
 	}
 
-	var typee = sf.Type
-	var fieldee = field
+	typee := sf.Type
+	fieldee := field
 	if typee.Kind() == reflect.Ptr {
 		typee = typee.Elem()
 		fieldee = field.Elem()
@@ -352,13 +352,13 @@ func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[
 }
 
 func handleSlice(field reflect.Value, value string, sf reflect.StructField, funcMap map[reflect.Type]ParserFunc) error {
-	var separator = sf.Tag.Get("envSeparator")
+	separator := sf.Tag.Get("envSeparator")
 	if separator == "" {
 		separator = ","
 	}
-	var parts = strings.Split(value, separator)
+	parts := strings.Split(value, separator)
 
-	var typee = sf.Type.Elem()
+	typee := sf.Type.Elem()
 	if typee.Kind() == reflect.Ptr {
 		typee = typee.Elem()
 	}
@@ -375,13 +375,13 @@ func handleSlice(field reflect.Value, value string, sf reflect.StructField, func
 		}
 	}
 
-	var result = reflect.MakeSlice(sf.Type, 0, len(parts))
+	result := reflect.MakeSlice(sf.Type, 0, len(parts))
 	for _, part := range parts {
 		r, err := parserFunc(part)
 		if err != nil {
 			return newParseError(sf, err)
 		}
-		var v = reflect.ValueOf(r).Convert(typee)
+		v := reflect.ValueOf(r).Convert(typee)
 		if sf.Type.Elem().Kind() == reflect.Ptr {
 			v = reflect.New(typee)
 			v.Elem().Set(reflect.ValueOf(r).Convert(typee))

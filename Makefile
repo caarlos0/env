@@ -4,8 +4,7 @@ TEST_PATTERN?=.
 export GO111MODULE := on
 
 setup:
-	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh
-	go mod download
+	go mod tidy
 .PHONY: setup
 
 build:
@@ -28,7 +27,7 @@ lint:
 	./bin/golangci-lint run ./...
 .PHONY: lint
 
-ci: build test lint
+ci: build test
 .PHONY: ci
 
 card:
