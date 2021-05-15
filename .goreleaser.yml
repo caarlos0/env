@@ -9,3 +9,5 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
+release:
+  discussion_category_name: General
