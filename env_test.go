@@ -3,7 +3,6 @@ package env
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -1193,7 +1192,7 @@ func TestFile(t *testing.T) {
 
 	dir := t.TempDir()
 	file := filepath.Join(dir, "sec_key")
-	is.NoErr(ioutil.WriteFile(file, []byte("secret"), 0o660))
+	is.NoErr(os.WriteFile(file, []byte("secret"), 0o660))
 
 	defer os.Clearenv()
 	os.Setenv("SECRET_KEY", file)
@@ -1248,7 +1247,7 @@ func TestFileWithDefault(t *testing.T) {
 
 	dir := t.TempDir()
 	file := filepath.Join(dir, "sec_key")
-	is.NoErr(ioutil.WriteFile(file, []byte("secret"), 0o660))
+	is.NoErr(os.WriteFile(file, []byte("secret"), 0o660))
 
 	defer os.Clearenv()
 	os.Setenv("FILE", file)
