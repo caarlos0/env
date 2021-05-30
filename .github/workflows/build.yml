@@ -50,7 +50,7 @@ jobs:
         if: success() && startsWith(github.ref, 'refs/tags/') && matrix.os == 'ubuntu-latest'
         with:
           version: latest
-          distribution: gorelease-pro
+          distribution: goreleaser-pro
           args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
