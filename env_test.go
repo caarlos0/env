@@ -662,6 +662,39 @@ func TestNoErrorRequiredSet(t *testing.T) {
 	is.Equal("", cfg.IsRequired)
 }
 
+func TestHook(t *testing.T) {
+	is := is.New(t)
+
+	type config struct {
+		Something string `env:"SOMETHING" envDefault:"important"`
+		Another   string `env:"ANOTHER"`
+	}
+
+	cfg := &config{}
+
+	os.Setenv("ANOTHER", "1")
+	defer os.Clearenv()
+
+	type onSetArgs struct {
+		tag       string
+		key       interface{}
+		isDefault bool
+	}
+
+	var onSetCalled []onSetArgs
+
+	is.NoErr(Parse(cfg, Options{
+		OnSet: func(tag string, value interface{}, isDefault bool) {
+			onSetCalled = append(onSetCalled, onSetArgs{tag, value, isDefault})
+		},
+	}))
+	is.Equal("important", cfg.Something)
+	is.Equal("1", cfg.Another)
+	is.Equal(2, len(onSetCalled))
+	is.Equal(onSetArgs{"SOMETHING", "important", true}, onSetCalled[0])
+	is.Equal(onSetArgs{"ANOTHER", "1", false}, onSetCalled[1])
+}
+
 func TestErrorRequiredWithDefault(t *testing.T) {
 	is := is.New(t)
 
@@ -1101,6 +1134,28 @@ func ExampleParse() {
 	}
 	fmt.Printf("%+v", cfg)
 	// Output: {Home:/tmp/fakehome Port:3000 IsProduction:false Inner:{Foo:foobar}}
+}
+
+func ExampleParse_onSet() {
+	type config struct {
+		Home         string `env:"HOME,required"`
+		Port         int    `env:"PORT" envDefault:"3000"`
+		IsProduction bool   `env:"PRODUCTION"`
+	}
+	os.Setenv("HOME", "/tmp/fakehome")
+	var cfg config
+	if err := Parse(&cfg, Options{
+		OnSet: func(tag string, value interface{}, isDefault bool) {
+			fmt.Printf("Set %s to %v (default? %v)\n", tag, value, isDefault)
+		},
+	}); err != nil {
+		fmt.Println("failed:", err)
+	}
+	fmt.Printf("%+v", cfg)
+	// Output: Set HOME to /tmp/fakehome (default? false)
+	// Set PORT to 3000 (default? true)
+	// Set PRODUCTION to  (default? false)
+	// {Home:/tmp/fakehome Port:3000 IsProduction:false}
 }
 
 func TestIgnoresUnexported(t *testing.T) {

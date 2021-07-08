@@ -95,12 +95,16 @@ var (
 // ParserFunc defines the signature of a function that can be used within `CustomParsers`.
 type ParserFunc func(v string) (interface{}, error)
 
+type OnSetFn func(tag string, value interface{}, isDefault bool)
+
 // Options for the parser.
 type Options struct {
 	// Environment keys and values that will be accessible for the service.
 	Environment map[string]string
 	// TagName specifies another tagname to use rather than the default env.
 	TagName string
+
+	OnSet OnSetFn
 
 	// Sets to true if we have already configured once.
 	configured bool
@@ -130,9 +134,16 @@ func configure(opts []Options) []Options {
 		if item.TagName != "" {
 			opt.TagName = item.TagName
 		}
+		if item.OnSet != nil {
+			opt.OnSet = item.OnSet
+		}
 	}
 
 	return []Options{opt}
+}
+
+func getOnSetFn(opts []Options) OnSetFn {
+	return opts[0].OnSet
 }
 
 // getTagName returns the tag name.
@@ -217,10 +228,10 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts []Opti
 func get(field reflect.StructField, opts []Options) (val string, err error) {
 	var required bool
 	var exists bool
+	var isDefault bool
 	var loadFile bool
 	var unset bool
 	var notEmpty bool
-	expand := strings.EqualFold(field.Tag.Get("envExpand"), "true")
 
 	key, tags := parseKeyForOption(field.Tag.Get(getTagName(opts)))
 
@@ -241,8 +252,9 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 		}
 	}
 
+	expand := strings.EqualFold(field.Tag.Get("envExpand"), "true")
 	defaultValue, defExists := field.Tag.Lookup("envDefault")
-	val, exists = getOr(key, defaultValue, defExists, getEnvironment(opts))
+	val, exists, isDefault = getOr(key, defaultValue, defExists, getEnvironment(opts))
 
 	if expand {
 		val = os.ExpandEnv(val)
@@ -268,6 +280,10 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 		}
 	}
 
+	onSetFn := getOnSetFn(opts)
+	if onSetFn != nil {
+		onSetFn(key, val, isDefault)
+	}
 	return val, err
 }
 
@@ -282,16 +298,16 @@ func getFromFile(filename string) (value string, err error) {
 	return string(b), err
 }
 
-func getOr(key, defaultValue string, defExists bool, envs map[string]string) (value string, exists bool) {
-	value, exists = envs[key]
+func getOr(key, defaultValue string, defExists bool, envs map[string]string) (string, bool, bool) {
+	value, exists := envs[key]
 	switch {
 	case (!exists || key == "") && defExists:
-		return defaultValue, true
+		return defaultValue, true, true
 	case !exists:
-		return "", false
+		return "", false, false
 	}
 
-	return value, true
+	return value, true, false
 }
 
 func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[reflect.Type]ParserFunc) error {
