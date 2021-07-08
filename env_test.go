@@ -1136,7 +1136,7 @@ func ExampleParse() {
 	// Output: {Home:/tmp/fakehome Port:3000 IsProduction:false Inner:{Foo:foobar}}
 }
 
-func ExampleParseWithOnSet() {
+func ExampleParse_onSet() {
 	type config struct {
 		Home         string `env:"HOME,required"`
 		Port         int    `env:"PORT" envDefault:"3000"`
