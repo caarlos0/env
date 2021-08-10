@@ -218,11 +218,11 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts []Opti
 }
 
 func get(field reflect.StructField, opts []Options) (val string, err error) {
-	var required bool = opts[0].RequiredIfNoDef
 	var exists bool
 	var loadFile bool
 	var unset bool
 	var notEmpty bool
+	required := opts[0].RequiredIfNoDef
 	expand := strings.EqualFold(field.Tag.Get("envExpand"), "true")
 
 	key, tags := parseKeyForOption(field.Tag.Get(getTagName(opts)))
@@ -230,7 +230,7 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 	for _, tag := range tags {
 		switch tag {
 		case "":
-			break
+			continue
 		case "file":
 			loadFile = true
 		case "required":
