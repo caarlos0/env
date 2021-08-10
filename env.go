@@ -103,6 +103,8 @@ type Options struct {
 	Environment map[string]string
 	// TagName specifies another tagname to use rather than the default env.
 	TagName string
+	// RequiredIfNoDef automatically sets all env as required if they do not declare 'envDefault'
+	RequiredIfNoDef bool
 
 	OnSet OnSetFn
 
@@ -137,6 +139,7 @@ func configure(opts []Options) []Options {
 		if item.OnSet != nil {
 			opt.OnSet = item.OnSet
 		}
+		opt.RequiredIfNoDef = item.RequiredIfNoDef
 	}
 
 	return []Options{opt}
@@ -226,7 +229,7 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts []Opti
 }
 
 func get(field reflect.StructField, opts []Options) (val string, err error) {
-	var required bool
+	var required bool = opts[0].RequiredIfNoDef
 	var exists bool
 	var isDefault bool
 	var loadFile bool
