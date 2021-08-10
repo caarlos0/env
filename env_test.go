@@ -1321,6 +1321,24 @@ func TestCustomTimeParser(t *testing.T) {
 	is.Equal(6, time.Time(cfg.SomeTime).Day())
 }
 
+func TestRequiredIfNoDefOption(t *testing.T) {
+	is := is.New(t)
+
+	type config struct {
+		Name  string `env:"NAME"`
+		Genre string `env:"GENRE" envDefault:"Unknown"`
+	}
+
+	var cfg config
+	is.NoErr(Parse(&cfg))
+	isErrorWithMessage(t, Parse(&cfg, Options{RequiredIfNoDef: true}), `env: required environment variable "NAME" is not set`)
+
+	os.Setenv("NAME", "John")
+	defer os.Clearenv()
+	// should not trigger an error for the missing 'GENRE' env because it has a default value.
+	is.NoErr(Parse(&cfg, Options{RequiredIfNoDef: true}))
+}
+
 func isErrorWithMessage(tb testing.TB, err error, msg string) {
 	tb.Helper()
 
