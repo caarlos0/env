@@ -290,6 +290,40 @@ func main() {
 }
 ```
 
+## Making all fields to required
+
+You can make all fields that don't have a default value be required by setting the `RequiredIfNoDef: true` in the `Options`.
+
+For example
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/caarlos0/env/v6"
+)
+
+type Config struct {
+	Username string `env:"USERNAME" envDefault:"admin"` // not required
+	Password string `env:"PASSWORD"`                    // required
+}
+
+func main() {
+	cfg := &Config{}
+	opts := &env.Options{RequiredIfNoDef: true}
+
+	// Load env vars.
+	if err := env.Parse(cfg, opts); err != nil {
+		log.Fatal(err)
+	}
+
+	// Print the loaded data.
+	fmt.Printf("%+v\n", cfg.envData)
+}
+```
+
 ## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/caarlos0/env.svg)](https://starchart.cc/caarlos0/env)
