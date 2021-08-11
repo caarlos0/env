@@ -150,7 +150,7 @@ type config struct {
 ## Not Empty fields
 
 While `required` demands the environment variable to be check, it doesn't check its value.
-If you want to make sure the environment is set and not emtpy, you need to use the `notEmpty` tag option instead (`env:"SOME_ENV,notEmpty"`).
+If you want to make sure the environment is set and not empty, you need to use the `notEmpty` tag option instead (`env:"SOME_ENV,notEmpty"`).
 
 Example:
 
