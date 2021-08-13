@@ -8,7 +8,13 @@ Simple lib to parse envs to structs in Go.
 
 ## Example
 
-A very basic example:
+Get the module with:
+
+```sh
+go get github.com/caarlos0/env/v6
+```
+
+The usage looks like this:
 
 ```go
 package main
