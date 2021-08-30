@@ -236,10 +236,7 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 	var notEmpty bool
 
 	required := opts[0].RequiredIfNoDef
-	expand := strings.EqualFold(field.Tag.Get("envExpand"), "true")
-
 	key, tags := parseKeyForOption(field.Tag.Get(getTagName(opts)))
-
 	for _, tag := range tags {
 		switch tag {
 		case "":
