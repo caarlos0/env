@@ -95,6 +95,7 @@ var (
 // ParserFunc defines the signature of a function that can be used within `CustomParsers`.
 type ParserFunc func(v string) (interface{}, error)
 
+// OnSetFn is a hook that can be run when a value is set.
 type OnSetFn func(tag string, value interface{}, isDefault bool)
 
 // Options for the parser.
