@@ -101,11 +101,14 @@ type OnSetFn func(tag string, value interface{}, isDefault bool)
 type Options struct {
 	// Environment keys and values that will be accessible for the service.
 	Environment map[string]string
+
 	// TagName specifies another tagname to use rather than the default env.
 	TagName string
+
 	// RequiredIfNoDef automatically sets all env as required if they do not declare 'envDefault'
 	RequiredIfNoDef bool
 
+	// OnSet allows to run a function when a value is set
 	OnSet OnSetFn
 
 	// Sets to true if we have already configured once.
@@ -282,8 +285,7 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 		}
 	}
 
-	onSetFn := getOnSetFn(opts)
-	if onSetFn != nil {
+	if onSetFn := getOnSetFn(opts); onSetFn != nil {
 		onSetFn(key, val, isDefault)
 	}
 	return val, err
