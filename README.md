@@ -296,11 +296,12 @@ func main() {
 }
 ```
 
-## Making all fields to required
 
-You can make all fields that don't have a default value be required by setting the `RequiredIfNoDef: true` in the `Options`.
+### On set hooks
 
-For example
+You might want to listen to value sets and, for example, log something or do some other kind of logic.
+You can do this by passing a `OnSet` option:
+
 ```go
 package main
 
@@ -312,8 +313,47 @@ import (
 )
 
 type Config struct {
-	Username string `env:"USERNAME" envDefault:"admin"` // not required
-	Password string `env:"PASSWORD"`                    // required
+	Username string `env:"USERNAME" envDefault:"admin"`
+	Password string `env:"PASSWORD"`
+}
+
+func main() {
+	cfg := &Config{}
+	opts := &env.Options{
+		OnSet: func(tag string, value interface{}, isDefault bool) {
+			fmt.Printf("Set %s to %v (default? %v)\n", tag, value, isDefault)
+		},
+	}
+
+	// Load env vars.
+	if err := env.Parse(cfg, opts); err != nil {
+		log.Fatal(err)
+	}
+
+	// Print the loaded data.
+	fmt.Printf("%+v\n", cfg.envData)
+}
+```
+
+## Making all fields to required
+
+You can make all fields that don't have a default value be required by setting the `RequiredIfNoDef: true` in the `Options`.
+
+For example
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/caarlos0/env/v6"
+)
+
+type Config struct {
+	Username string `env:"USERNAME" envDefault:"admin"`
+	Password string `env:"PASSWORD"`
 }
 
 func main() {
