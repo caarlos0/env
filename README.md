@@ -53,6 +53,8 @@ $ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s go run main.go
 {Home:/your/home Port:3000 IsProduction:true Hosts:[host1 host2 host3] Duration:1s}
 ```
 
+⚠️⚠️⚠️ **Attention:** _unexported fields_ will be ignored **ignored**.
+
 ## Supported types and defaults
 
 Out of the box all built-in types are supported, plus a few others that
@@ -93,8 +95,6 @@ this behavior by setting the `envSeparator` tag.
 If you set the `envExpand` tag, environment variables (either in `${var}` or
 `$var` format) in the string will be replaced according with the actual value
 of the variable.
-
-⚠️⚠️⚠️ **Unexported fields are ignored.** ⚠️⚠️⚠️
 
 ## Custom Parser Funcs
 
