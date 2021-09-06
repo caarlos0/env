@@ -270,7 +270,7 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 		defer os.Unsetenv(key)
 	}
 
-	if required && !exists {
+	if required && !exists && len(key) > 0 {
 		return "", fmt.Errorf(`env: required environment variable %q is not set`, key)
 	}
 
