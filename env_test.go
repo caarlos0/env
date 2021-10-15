@@ -1157,6 +1157,25 @@ func ExampleParse_onSet() {
 	// {Home:/tmp/fakehome Port:3000 IsProduction:false}
 }
 
+func ExampleParse_Defaults() {
+	type config struct {
+		A string `env:"FOO" envDefault:"foo"`
+		B string `env:"FOO"`
+	}
+
+	// env FOO is not set
+
+	var cfg = config{
+		A: "A",
+		B: "B",
+	}
+	if err := Parse(&cfg); err != nil {
+		fmt.Println("failed:", err)
+	}
+	fmt.Printf("%+v", cfg)
+	// Output: {A:foo B:B}
+}
+
 func TestIgnoresUnexported(t *testing.T) {
 	is := is.New(t)
 
