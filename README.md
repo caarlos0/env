@@ -370,6 +370,40 @@ func main() {
 }
 ```
 
+## Defaults from code
+
+You may define default value also in code, by initialising the config data before it's filled by `env.Parse`.  
+Default values defined as struct tags will overwrite existing values during Parse.
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/caarlos0/env/v6"
+)
+
+type Config struct {
+	Username string `env:"USERNAME" envDefault:"admin"`
+	Password string `env:"PASSWORD"`
+}
+
+func main() {
+	var cfg = Config{
+		Username: "test",
+		Password: "123456",
+	}
+
+	if err := env.Parse(&cfg); err != nil {
+		fmt.Println("failed:", err)
+	}
+
+	fmt.Printf("%+v", cfg)  // {Username:admin Password:123456}
+}
+```
+
 ## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/caarlos0/env.svg)](https://starchart.cc/caarlos0/env)
