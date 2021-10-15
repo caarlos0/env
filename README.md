@@ -372,8 +372,8 @@ func main() {
 
 ## Defaults from code
 
-You may define default value also in code, by initialising the config data before it's filled by env.Parse.  
-Default values defined as struct tags, will overwrite existing values during Parse.
+You may define default value also in code, by initialising the config data before it's filled by `env.Parse`.  
+Default values defined as struct tags will overwrite existing values during Parse.
 
 ```go
 package main
