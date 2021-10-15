@@ -1157,7 +1157,7 @@ func ExampleParse_onSet() {
 	// {Home:/tmp/fakehome Port:3000 IsProduction:false}
 }
 
-func ExampleParse_Defaults() {
+func ExampleParse_defaults() {
 	type config struct {
 		A string `env:"FOO" envDefault:"foo"`
 		B string `env:"FOO"`
@@ -1165,7 +1165,7 @@ func ExampleParse_Defaults() {
 
 	// env FOO is not set
 
-	var cfg = config{
+	cfg := config{
 		A: "A",
 		B: "B",
 	}
