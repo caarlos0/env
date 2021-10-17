@@ -336,7 +336,9 @@ func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[
 			return newParseError(sf, err)
 		}
 
-		fieldee.Set(reflect.ValueOf(val))
+		if fieldee.IsZero() {
+			fieldee.Set(reflect.ValueOf(val))
+		}
 		return nil
 	}
 
@@ -347,7 +349,9 @@ func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[
 			return newParseError(sf, err)
 		}
 
-		fieldee.Set(reflect.ValueOf(val).Convert(typee))
+		if fieldee.IsZero() {
+			fieldee.Set(reflect.ValueOf(val).Convert(typee))
+		}
 		return nil
 	}
 

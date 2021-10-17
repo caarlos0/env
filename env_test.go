@@ -1159,21 +1159,29 @@ func ExampleParse_onSet() {
 
 func ExampleParse_defaults() {
 	type config struct {
-		A string `env:"FOO" envDefault:"foo"`
-		B string `env:"FOO"`
+		Str0 string `env:"STR"`
+		Str1 string `env:"STR" envDefault:"a"`
+		Str2 string `env:"STR" envDefault:"b"`
 	}
 
 	// env FOO is not set
 
 	cfg := config{
-		A: "A",
-		B: "B",
+		// values without default tag keep initial values
+		Str0: "s",
+
+		// non-zero values will not be overwritten from tag default
+		Str1: "A",
+
+		// Zero values will be overwritten from tag default
+		Str2: "",
 	}
 	if err := Parse(&cfg); err != nil {
 		fmt.Println("failed:", err)
 	}
+
 	fmt.Printf("%+v", cfg)
-	// Output: {A:foo B:B}
+	// Output: {Str0:s Str1:a Str2:b}
 }
 
 func TestIgnoresUnexported(t *testing.T) {
