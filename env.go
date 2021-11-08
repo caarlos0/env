@@ -224,7 +224,7 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts []Opti
 		}
 		if value == "" {
 			if reflect.Struct == refField.Kind() {
-				var subOpts = make([]Options, len(opts))
+				subOpts := make([]Options, len(opts))
 				copy(subOpts, opts)
 				if prefix := refType.Field(i).Tag.Get("envPrefix"); prefix != "" {
 					subOpts[0].Prefix += prefix
