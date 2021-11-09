@@ -1422,6 +1422,52 @@ func TestRequiredIfNoDefOption(t *testing.T) {
 	})
 }
 
+func TestPrefix(t *testing.T) {
+	is := is.New(t)
+	type Config struct {
+		Home string `env:"HOME"`
+	}
+	type ComplexConfig struct {
+		Foo   Config `envPrefix:"FOO_"`
+		Bar   Config `envPrefix:"BAR_"`
+		Clean Config
+	}
+	cfg := ComplexConfig{}
+	err := Parse(&cfg, Options{Environment: map[string]string{"FOO_HOME": "/foo", "BAR_HOME": "/bar", "HOME": "/clean"}})
+	is.NoErr(err)
+	is.Equal("/foo", cfg.Foo.Home)
+	is.Equal("/bar", cfg.Bar.Home)
+	is.Equal("/clean", cfg.Clean.Home)
+}
+
+func TestComplePrefix(t *testing.T) {
+	is := is.New(t)
+	type Config struct {
+		Home string `env:"HOME"`
+	}
+	type ComplexConfig struct {
+		Foo   Config `envPrefix:"FOO_"`
+		Clean Config
+		Bar   Config `envPrefix:"BAR_"`
+		Blah  string `env:"BLAH"`
+	}
+	cfg := ComplexConfig{}
+	err := Parse(&cfg, Options{
+		Prefix: "T_",
+		Environment: map[string]string{
+			"T_FOO_HOME": "/foo",
+			"T_BAR_HOME": "/bar",
+			"T_BLAH":     "blahhh",
+			"T_HOME":     "/clean",
+		},
+	})
+	is.NoErr(err)
+	is.Equal("/foo", cfg.Foo.Home)
+	is.Equal("/bar", cfg.Bar.Home)
+	is.Equal("/clean", cfg.Clean.Home)
+	is.Equal("blahhh", cfg.Blah)
+}
+
 func isErrorWithMessage(tb testing.TB, err error, msg string) {
 	tb.Helper()
 

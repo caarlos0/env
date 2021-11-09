@@ -111,6 +111,9 @@ type Options struct {
 	// OnSet allows to run a function when a value is set
 	OnSet OnSetFn
 
+	// Prefix define a prefix for each key
+	Prefix string
+
 	// Sets to true if we have already configured once.
 	configured bool
 }
@@ -141,6 +144,9 @@ func configure(opts []Options) []Options {
 		}
 		if item.OnSet != nil {
 			opt.OnSet = item.OnSet
+		}
+		if item.Prefix != "" {
+			opt.Prefix = item.Prefix
 		}
 		opt.RequiredIfNoDef = item.RequiredIfNoDef
 	}
@@ -218,7 +224,12 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts []Opti
 		}
 		if value == "" {
 			if reflect.Struct == refField.Kind() {
-				if err := doParse(refField, funcMap, opts); err != nil {
+				subOpts := make([]Options, len(opts))
+				copy(subOpts, opts)
+				if prefix := refType.Field(i).Tag.Get("envPrefix"); prefix != "" {
+					subOpts[0].Prefix += prefix
+				}
+				if err := doParse(refField, funcMap, subOpts); err != nil {
 					return err
 				}
 			}
@@ -239,7 +250,9 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 	var notEmpty bool
 
 	required := opts[0].RequiredIfNoDef
+	prefix := opts[0].Prefix
 	key, tags := parseKeyForOption(field.Tag.Get(getTagName(opts)))
+	key = prefix + key
 	for _, tag := range tags {
 		switch tag {
 		case "":
@@ -256,7 +269,6 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 			return "", fmt.Errorf("env: tag option %q not supported", tag)
 		}
 	}
-
 	expand := strings.EqualFold(field.Tag.Get("envExpand"), "true")
 	defaultValue, defExists := field.Tag.Lookup("envDefault")
 	val, exists, isDefault = getOr(key, defaultValue, defExists, getEnvironment(opts))
