@@ -1433,11 +1433,32 @@ func TestPrefix(t *testing.T) {
 		Clean Config
 	}
 	cfg := ComplexConfig{}
-	err := Parse(&cfg, Options{Environment: map[string]string{"FOO_HOME": "/foo", "BAR_HOME": "/bar", "HOME": "/clean"}})
-	is.NoErr(err)
+	is.NoErr(Parse(&cfg, Options{Environment: map[string]string{"FOO_HOME": "/foo", "BAR_HOME": "/bar", "HOME": "/clean"}}))
 	is.Equal("/foo", cfg.Foo.Home)
 	is.Equal("/bar", cfg.Bar.Home)
 	is.Equal("/clean", cfg.Clean.Home)
+}
+
+func TestPrefixPointers(t *testing.T) {
+	is := is.New(t)
+	type Test struct {
+		Str string `env:"TEST"`
+	}
+	type ComplexConfig struct {
+		Foo   *Test `envPrefix:"FOO_"`
+		Bar   *Test `envPrefix:"BAR_"`
+		Clean *Test
+	}
+
+	cfg := ComplexConfig{
+		Foo:   &Test{},
+		Bar:   &Test{},
+		Clean: &Test{},
+	}
+	is.NoErr(Parse(&cfg, Options{Environment: map[string]string{"FOO_TEST": "kek", "BAR_TEST": "lel", "TEST": "clean"}}))
+	is.Equal("kek", cfg.Foo.Str)
+	is.Equal("lel", cfg.Bar.Str)
+	is.Equal("clean", cfg.Clean.Str)
 }
 
 func TestComplePrefix(t *testing.T) {
@@ -1452,7 +1473,7 @@ func TestComplePrefix(t *testing.T) {
 		Blah  string `env:"BLAH"`
 	}
 	cfg := ComplexConfig{}
-	err := Parse(&cfg, Options{
+	is.NoErr(Parse(&cfg, Options{
 		Prefix: "T_",
 		Environment: map[string]string{
 			"T_FOO_HOME": "/foo",
@@ -1460,8 +1481,7 @@ func TestComplePrefix(t *testing.T) {
 			"T_BLAH":     "blahhh",
 			"T_HOME":     "/clean",
 		},
-	})
-	is.NoErr(err)
+	}))
 	is.Equal("/foo", cfg.Foo.Home)
 	is.Equal("/bar", cfg.Bar.Home)
 	is.Equal("/clean", cfg.Clean.Home)
