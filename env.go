@@ -204,15 +204,19 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts []Opti
 			continue
 		}
 		if reflect.Ptr == refField.Kind() && !refField.IsNil() {
-			err := ParseWithFuncs(refField.Interface(), funcMap, opts...)
-			if err != nil {
+			if refField.Elem().Kind() == reflect.Struct {
+				if err := ParseWithFuncs(refField.Interface(), funcMap, optsWithPrefix(refType.Field(i), opts)...); err != nil {
+					return err
+				}
+				continue
+			}
+			if err := ParseWithFuncs(refField.Interface(), funcMap, opts...); err != nil {
 				return err
 			}
 			continue
 		}
 		if reflect.Struct == refField.Kind() && refField.CanAddr() && refField.Type().Name() == "" {
-			err := Parse(refField.Addr().Interface(), opts...)
-			if err != nil {
+			if err := Parse(refField.Addr().Interface(), opts...); err != nil {
 				return err
 			}
 			continue
@@ -224,12 +228,7 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts []Opti
 		}
 		if value == "" {
 			if reflect.Struct == refField.Kind() {
-				subOpts := make([]Options, len(opts))
-				copy(subOpts, opts)
-				if prefix := refType.Field(i).Tag.Get("envPrefix"); prefix != "" {
-					subOpts[0].Prefix += prefix
-				}
-				if err := doParse(refField, funcMap, subOpts); err != nil {
+				if err := doParse(refField, funcMap, optsWithPrefix(refType.Field(i), opts)); err != nil {
 					return err
 				}
 			}
@@ -474,4 +473,13 @@ func (e parseError) Error() string {
 
 func newNoParserError(sf reflect.StructField) error {
 	return fmt.Errorf(`env: no parser found for field "%s" of type "%s"`, sf.Name, sf.Type)
+}
+
+func optsWithPrefix(field reflect.StructField, opts []Options) []Options {
+	subOpts := make([]Options, len(opts))
+	copy(subOpts, opts)
+	if prefix := field.Tag.Get("envPrefix"); prefix != "" {
+		subOpts[0].Prefix += prefix
+	}
+	return subOpts
 }
