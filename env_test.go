@@ -1420,7 +1420,7 @@ func isTrue(tb testing.TB, b bool) {
 	tb.Helper()
 
 	if !b {
-		tb.Error("expected true, got false")
+		tb.Fatalf("expected true, got false")
 	}
 }
 
@@ -1428,7 +1428,7 @@ func isFalse(tb testing.TB, b bool) {
 	tb.Helper()
 
 	if b {
-		tb.Error("expected false, got true")
+		tb.Fatalf("expected false, got true")
 	}
 }
 
@@ -1462,6 +1462,7 @@ func isEqual(tb testing.TB, a, b interface{}) {
 	tb.Fatalf("expected %#v (type %T) == %#v (type %T)", a, a, b, b)
 }
 
+// copied from https://github.com/matryer/is
 func areEqual(a, b interface{}) bool {
 	if isNil(a) && isNil(b) {
 		return true
@@ -1477,6 +1478,7 @@ func areEqual(a, b interface{}) bool {
 	return aValue == bValue
 }
 
+// copied from https://github.com/matryer/is
 func isNil(object interface{}) bool {
 	if object == nil {
 		return true
