@@ -13,8 +13,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/matryer/is"
 )
 
 type unmarshaler struct {
@@ -150,8 +148,6 @@ type NestedStruct struct {
 }
 
 func TestParsesEnv(t *testing.T) {
-	is := is.New(t)
-
 	defer os.Clearenv()
 
 	tos := func(v interface{}) string {
@@ -257,141 +253,139 @@ func TestParsesEnv(t *testing.T) {
 	os.Setenv("NONDEFINED_STR", nonDefinedStr)
 
 	cfg := Config{}
-	is.NoErr(Parse(&cfg))
+	isNoErr(t, Parse(&cfg))
 
-	is.Equal(str1, cfg.String)
-	is.Equal(&str1, cfg.StringPtr)
-	is.Equal(str1, cfg.Strings[0])
-	is.Equal(str2, cfg.Strings[1])
-	is.Equal(&str1, cfg.StringPtrs[0])
-	is.Equal(&str2, cfg.StringPtrs[1])
+	isEqual(t, str1, cfg.String)
+	isEqual(t, &str1, cfg.StringPtr)
+	isEqual(t, str1, cfg.Strings[0])
+	isEqual(t, str2, cfg.Strings[1])
+	isEqual(t, &str1, cfg.StringPtrs[0])
+	isEqual(t, &str2, cfg.StringPtrs[1])
 
-	is.Equal(bool1, cfg.Bool)
-	is.Equal(&bool1, cfg.BoolPtr)
-	is.Equal(bool1, cfg.Bools[0])
-	is.Equal(bool2, cfg.Bools[1])
-	is.Equal(&bool1, cfg.BoolPtrs[0])
-	is.Equal(&bool2, cfg.BoolPtrs[1])
+	isEqual(t, bool1, cfg.Bool)
+	isEqual(t, &bool1, cfg.BoolPtr)
+	isEqual(t, bool1, cfg.Bools[0])
+	isEqual(t, bool2, cfg.Bools[1])
+	isEqual(t, &bool1, cfg.BoolPtrs[0])
+	isEqual(t, &bool2, cfg.BoolPtrs[1])
 
-	is.Equal(int1, cfg.Int)
-	is.Equal(&int1, cfg.IntPtr)
-	is.Equal(int1, cfg.Ints[0])
-	is.Equal(int2, cfg.Ints[1])
-	is.Equal(&int1, cfg.IntPtrs[0])
-	is.Equal(&int2, cfg.IntPtrs[1])
+	isEqual(t, int1, cfg.Int)
+	isEqual(t, &int1, cfg.IntPtr)
+	isEqual(t, int1, cfg.Ints[0])
+	isEqual(t, int2, cfg.Ints[1])
+	isEqual(t, &int1, cfg.IntPtrs[0])
+	isEqual(t, &int2, cfg.IntPtrs[1])
 
-	is.Equal(int81, cfg.Int8)
-	is.Equal(&int81, cfg.Int8Ptr)
-	is.Equal(int81, cfg.Int8s[0])
-	is.Equal(int82, cfg.Int8s[1])
-	is.Equal(&int81, cfg.Int8Ptrs[0])
-	is.Equal(&int82, cfg.Int8Ptrs[1])
+	isEqual(t, int81, cfg.Int8)
+	isEqual(t, &int81, cfg.Int8Ptr)
+	isEqual(t, int81, cfg.Int8s[0])
+	isEqual(t, int82, cfg.Int8s[1])
+	isEqual(t, &int81, cfg.Int8Ptrs[0])
+	isEqual(t, &int82, cfg.Int8Ptrs[1])
 
-	is.Equal(int161, cfg.Int16)
-	is.Equal(&int161, cfg.Int16Ptr)
-	is.Equal(int161, cfg.Int16s[0])
-	is.Equal(int162, cfg.Int16s[1])
-	is.Equal(&int161, cfg.Int16Ptrs[0])
-	is.Equal(&int162, cfg.Int16Ptrs[1])
+	isEqual(t, int161, cfg.Int16)
+	isEqual(t, &int161, cfg.Int16Ptr)
+	isEqual(t, int161, cfg.Int16s[0])
+	isEqual(t, int162, cfg.Int16s[1])
+	isEqual(t, &int161, cfg.Int16Ptrs[0])
+	isEqual(t, &int162, cfg.Int16Ptrs[1])
 
-	is.Equal(int321, cfg.Int32)
-	is.Equal(&int321, cfg.Int32Ptr)
-	is.Equal(int321, cfg.Int32s[0])
-	is.Equal(int322, cfg.Int32s[1])
-	is.Equal(&int321, cfg.Int32Ptrs[0])
-	is.Equal(&int322, cfg.Int32Ptrs[1])
+	isEqual(t, int321, cfg.Int32)
+	isEqual(t, &int321, cfg.Int32Ptr)
+	isEqual(t, int321, cfg.Int32s[0])
+	isEqual(t, int322, cfg.Int32s[1])
+	isEqual(t, &int321, cfg.Int32Ptrs[0])
+	isEqual(t, &int322, cfg.Int32Ptrs[1])
 
-	is.Equal(int641, cfg.Int64)
-	is.Equal(&int641, cfg.Int64Ptr)
-	is.Equal(int641, cfg.Int64s[0])
-	is.Equal(int642, cfg.Int64s[1])
-	is.Equal(&int641, cfg.Int64Ptrs[0])
-	is.Equal(&int642, cfg.Int64Ptrs[1])
+	isEqual(t, int641, cfg.Int64)
+	isEqual(t, &int641, cfg.Int64Ptr)
+	isEqual(t, int641, cfg.Int64s[0])
+	isEqual(t, int642, cfg.Int64s[1])
+	isEqual(t, &int641, cfg.Int64Ptrs[0])
+	isEqual(t, &int642, cfg.Int64Ptrs[1])
 
-	is.Equal(uint1, cfg.Uint)
-	is.Equal(&uint1, cfg.UintPtr)
-	is.Equal(uint1, cfg.Uints[0])
-	is.Equal(uint2, cfg.Uints[1])
-	is.Equal(&uint1, cfg.UintPtrs[0])
-	is.Equal(&uint2, cfg.UintPtrs[1])
+	isEqual(t, uint1, cfg.Uint)
+	isEqual(t, &uint1, cfg.UintPtr)
+	isEqual(t, uint1, cfg.Uints[0])
+	isEqual(t, uint2, cfg.Uints[1])
+	isEqual(t, &uint1, cfg.UintPtrs[0])
+	isEqual(t, &uint2, cfg.UintPtrs[1])
 
-	is.Equal(uint81, cfg.Uint8)
-	is.Equal(&uint81, cfg.Uint8Ptr)
-	is.Equal(uint81, cfg.Uint8s[0])
-	is.Equal(uint82, cfg.Uint8s[1])
-	is.Equal(&uint81, cfg.Uint8Ptrs[0])
-	is.Equal(&uint82, cfg.Uint8Ptrs[1])
+	isEqual(t, uint81, cfg.Uint8)
+	isEqual(t, &uint81, cfg.Uint8Ptr)
+	isEqual(t, uint81, cfg.Uint8s[0])
+	isEqual(t, uint82, cfg.Uint8s[1])
+	isEqual(t, &uint81, cfg.Uint8Ptrs[0])
+	isEqual(t, &uint82, cfg.Uint8Ptrs[1])
 
-	is.Equal(uint161, cfg.Uint16)
-	is.Equal(&uint161, cfg.Uint16Ptr)
-	is.Equal(uint161, cfg.Uint16s[0])
-	is.Equal(uint162, cfg.Uint16s[1])
-	is.Equal(&uint161, cfg.Uint16Ptrs[0])
-	is.Equal(&uint162, cfg.Uint16Ptrs[1])
+	isEqual(t, uint161, cfg.Uint16)
+	isEqual(t, &uint161, cfg.Uint16Ptr)
+	isEqual(t, uint161, cfg.Uint16s[0])
+	isEqual(t, uint162, cfg.Uint16s[1])
+	isEqual(t, &uint161, cfg.Uint16Ptrs[0])
+	isEqual(t, &uint162, cfg.Uint16Ptrs[1])
 
-	is.Equal(uint321, cfg.Uint32)
-	is.Equal(&uint321, cfg.Uint32Ptr)
-	is.Equal(uint321, cfg.Uint32s[0])
-	is.Equal(uint322, cfg.Uint32s[1])
-	is.Equal(&uint321, cfg.Uint32Ptrs[0])
-	is.Equal(&uint322, cfg.Uint32Ptrs[1])
+	isEqual(t, uint321, cfg.Uint32)
+	isEqual(t, &uint321, cfg.Uint32Ptr)
+	isEqual(t, uint321, cfg.Uint32s[0])
+	isEqual(t, uint322, cfg.Uint32s[1])
+	isEqual(t, &uint321, cfg.Uint32Ptrs[0])
+	isEqual(t, &uint322, cfg.Uint32Ptrs[1])
 
-	is.Equal(uint641, cfg.Uint64)
-	is.Equal(&uint641, cfg.Uint64Ptr)
-	is.Equal(uint641, cfg.Uint64s[0])
-	is.Equal(uint642, cfg.Uint64s[1])
-	is.Equal(&uint641, cfg.Uint64Ptrs[0])
-	is.Equal(&uint642, cfg.Uint64Ptrs[1])
+	isEqual(t, uint641, cfg.Uint64)
+	isEqual(t, &uint641, cfg.Uint64Ptr)
+	isEqual(t, uint641, cfg.Uint64s[0])
+	isEqual(t, uint642, cfg.Uint64s[1])
+	isEqual(t, &uint641, cfg.Uint64Ptrs[0])
+	isEqual(t, &uint642, cfg.Uint64Ptrs[1])
 
-	is.Equal(float321, cfg.Float32)
-	is.Equal(&float321, cfg.Float32Ptr)
-	is.Equal(float321, cfg.Float32s[0])
-	is.Equal(float322, cfg.Float32s[1])
-	is.Equal(&float321, cfg.Float32Ptrs[0])
-	is.Equal(&float322, cfg.Float32Ptrs[1])
+	isEqual(t, float321, cfg.Float32)
+	isEqual(t, &float321, cfg.Float32Ptr)
+	isEqual(t, float321, cfg.Float32s[0])
+	isEqual(t, float322, cfg.Float32s[1])
+	isEqual(t, &float321, cfg.Float32Ptrs[0])
+	isEqual(t, &float322, cfg.Float32Ptrs[1])
 
-	is.Equal(float641, cfg.Float64)
-	is.Equal(&float641, cfg.Float64Ptr)
-	is.Equal(float641, cfg.Float64s[0])
-	is.Equal(float642, cfg.Float64s[1])
-	is.Equal(&float641, cfg.Float64Ptrs[0])
-	is.Equal(&float642, cfg.Float64Ptrs[1])
+	isEqual(t, float641, cfg.Float64)
+	isEqual(t, &float641, cfg.Float64Ptr)
+	isEqual(t, float641, cfg.Float64s[0])
+	isEqual(t, float642, cfg.Float64s[1])
+	isEqual(t, &float641, cfg.Float64Ptrs[0])
+	isEqual(t, &float642, cfg.Float64Ptrs[1])
 
-	is.Equal(duration1, cfg.Duration)
-	is.Equal(&duration1, cfg.DurationPtr)
-	is.Equal(duration1, cfg.Durations[0])
-	is.Equal(duration2, cfg.Durations[1])
-	is.Equal(&duration1, cfg.DurationPtrs[0])
-	is.Equal(&duration2, cfg.DurationPtrs[1])
+	isEqual(t, duration1, cfg.Duration)
+	isEqual(t, &duration1, cfg.DurationPtr)
+	isEqual(t, duration1, cfg.Durations[0])
+	isEqual(t, duration2, cfg.Durations[1])
+	isEqual(t, &duration1, cfg.DurationPtrs[0])
+	isEqual(t, &duration2, cfg.DurationPtrs[1])
 
-	is.Equal(unmarshaler1, cfg.Unmarshaler)
-	is.Equal(&unmarshaler1, cfg.UnmarshalerPtr)
-	is.Equal(unmarshaler1, cfg.Unmarshalers[0])
-	is.Equal(unmarshaler2, cfg.Unmarshalers[1])
-	is.Equal(&unmarshaler1, cfg.UnmarshalerPtrs[0])
-	is.Equal(&unmarshaler2, cfg.UnmarshalerPtrs[1])
+	isEqual(t, unmarshaler1, cfg.Unmarshaler)
+	isEqual(t, &unmarshaler1, cfg.UnmarshalerPtr)
+	isEqual(t, unmarshaler1, cfg.Unmarshalers[0])
+	isEqual(t, unmarshaler2, cfg.Unmarshalers[1])
+	isEqual(t, &unmarshaler1, cfg.UnmarshalerPtrs[0])
+	isEqual(t, &unmarshaler2, cfg.UnmarshalerPtrs[1])
 
-	is.Equal(url1, cfg.URL.String())
-	is.Equal(url1, cfg.URLPtr.String())
-	is.Equal(url1, cfg.URLs[0].String())
-	is.Equal(url2, cfg.URLs[1].String())
-	is.Equal(url1, cfg.URLPtrs[0].String())
-	is.Equal(url2, cfg.URLPtrs[1].String())
+	isEqual(t, url1, cfg.URL.String())
+	isEqual(t, url1, cfg.URLPtr.String())
+	isEqual(t, url1, cfg.URLs[0].String())
+	isEqual(t, url2, cfg.URLs[1].String())
+	isEqual(t, url1, cfg.URLPtrs[0].String())
+	isEqual(t, url2, cfg.URLPtrs[1].String())
 
-	is.Equal("postgres://localhost:5432/db", cfg.StringWithdefault)
-	is.Equal(nonDefinedStr, cfg.NonDefined.String)
+	isEqual(t, "postgres://localhost:5432/db", cfg.StringWithdefault)
+	isEqual(t, nonDefinedStr, cfg.NonDefined.String)
 
-	is.Equal(str1, cfg.CustomSeparator[0])
-	is.Equal(str2, cfg.CustomSeparator[1])
+	isEqual(t, str1, cfg.CustomSeparator[0])
+	isEqual(t, str2, cfg.CustomSeparator[1])
 
-	is.Equal(cfg.NotAnEnv, "")
+	isEqual(t, cfg.NotAnEnv, "")
 
-	is.Equal(cfg.unexported, "")
+	isEqual(t, cfg.unexported, "")
 }
 
 func TestSetEnvAndTagOptsChain(t *testing.T) {
-	is := is.New(t)
-
 	defer os.Clearenv()
 	type config struct {
 		Key1 string `mytag:"KEY1,required"`
@@ -403,14 +397,12 @@ func TestSetEnvAndTagOptsChain(t *testing.T) {
 	}
 
 	cfg := config{}
-	is.NoErr(Parse(&cfg, Options{TagName: "mytag"}, Options{Environment: envs}))
-	is.Equal("VALUE1", cfg.Key1)
-	is.Equal(3, cfg.Key2)
+	isNoErr(t, Parse(&cfg, Options{TagName: "mytag"}, Options{Environment: envs}))
+	isEqual(t, "VALUE1", cfg.Key1)
+	isEqual(t, 3, cfg.Key2)
 }
 
 func TestJSONTag(t *testing.T) {
-	is := is.New(t)
-
 	defer os.Clearenv()
 	type config struct {
 		Key1 string `json:"KEY1"`
@@ -421,14 +413,12 @@ func TestJSONTag(t *testing.T) {
 	os.Setenv("KEY2", "5")
 
 	cfg := config{}
-	is.NoErr(Parse(&cfg, Options{TagName: "json"}))
-	is.Equal("VALUE7", cfg.Key1)
-	is.Equal(5, cfg.Key2)
+	isNoErr(t, Parse(&cfg, Options{TagName: "json"}))
+	isEqual(t, "VALUE7", cfg.Key1)
+	isEqual(t, 5, cfg.Key2)
 }
 
 func TestParsesEnvInner(t *testing.T) {
-	is := is.New(t)
-
 	os.Setenv("innervar", "someinnervalue")
 	os.Setenv("innernum", "8")
 	defer os.Clearenv()
@@ -436,9 +426,9 @@ func TestParsesEnvInner(t *testing.T) {
 		InnerStruct: &InnerStruct{},
 		unexported:  &InnerStruct{},
 	}
-	is.NoErr(Parse(&cfg))
-	is.Equal("someinnervalue", cfg.InnerStruct.Inner)
-	is.Equal(uint(8), cfg.InnerStruct.Number)
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, "someinnervalue", cfg.InnerStruct.Inner)
+	isEqual(t, uint(8), cfg.InnerStruct.Number)
 }
 
 func TestParsesEnvInnerFails(t *testing.T) {
@@ -453,12 +443,10 @@ func TestParsesEnvInnerFails(t *testing.T) {
 }
 
 func TestParsesEnvInnerNil(t *testing.T) {
-	is := is.New(t)
-
 	os.Setenv("innervar", "someinnervalue")
 	defer os.Clearenv()
 	cfg := ParentStruct{}
-	is.NoErr(Parse(&cfg))
+	isNoErr(t, Parse(&cfg))
 }
 
 func TestParsesEnvInnerInvalid(t *testing.T) {
@@ -471,31 +459,27 @@ func TestParsesEnvInnerInvalid(t *testing.T) {
 }
 
 func TestParsesEnvNested(t *testing.T) {
-	is := is.New(t)
-
 	os.Setenv("nestedvar", "somenestedvalue")
 	defer os.Clearenv()
 	var cfg ForNestedStruct
-	is.NoErr(Parse(&cfg))
-	is.Equal("somenestedvalue", cfg.NestedVar)
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, "somenestedvalue", cfg.NestedVar)
 }
 
 func TestEmptyVars(t *testing.T) {
-	is := is.New(t)
-
 	os.Clearenv()
 	cfg := Config{}
-	is.NoErr(Parse(&cfg))
-	is.Equal("", cfg.String)
-	is.Equal(false, cfg.Bool)
-	is.Equal(0, cfg.Int)
-	is.Equal(uint(0), cfg.Uint)
-	is.Equal(uint64(0), cfg.Uint64)
-	is.Equal(int64(0), cfg.Int64)
-	is.Equal(0, len(cfg.Strings))
-	is.Equal(0, len(cfg.CustomSeparator))
-	is.Equal(0, len(cfg.Ints))
-	is.Equal(0, len(cfg.Bools))
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, "", cfg.String)
+	isEqual(t, false, cfg.Bool)
+	isEqual(t, 0, cfg.Int)
+	isEqual(t, uint(0), cfg.Uint)
+	isEqual(t, uint64(0), cfg.Uint64)
+	isEqual(t, int64(0), cfg.Int64)
+	isEqual(t, 0, len(cfg.Strings))
+	isEqual(t, 0, len(cfg.CustomSeparator))
+	isEqual(t, 0, len(cfg.Ints))
+	isEqual(t, 0, len(cfg.Bools))
 }
 
 func TestPassAnInvalidPtr(t *testing.T) {
@@ -609,11 +593,9 @@ func TestInvalidDurations(t *testing.T) {
 }
 
 func TestParseStructWithoutEnvTag(t *testing.T) {
-	is := is.New(t)
-
 	cfg := Config{}
-	is.NoErr(Parse(&cfg))
-	is.Equal(cfg.NotAnEnv, "")
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, cfg.NotAnEnv, "")
 }
 
 func TestParseStructWithInvalidFieldKind(t *testing.T) {
@@ -647,8 +629,6 @@ func TestBadSeparator(t *testing.T) {
 }
 
 func TestNoErrorRequiredSet(t *testing.T) {
-	is := is.New(t)
-
 	type config struct {
 		IsRequired string `env:"IS_REQUIRED,required"`
 	}
@@ -657,13 +637,11 @@ func TestNoErrorRequiredSet(t *testing.T) {
 
 	os.Setenv("IS_REQUIRED", "")
 	defer os.Clearenv()
-	is.NoErr(Parse(cfg))
-	is.Equal("", cfg.IsRequired)
+	isNoErr(t, Parse(cfg))
+	isEqual(t, "", cfg.IsRequired)
 }
 
 func TestHook(t *testing.T) {
-	is := is.New(t)
-
 	type config struct {
 		Something string `env:"SOMETHING" envDefault:"important"`
 		Another   string `env:"ANOTHER"`
@@ -682,21 +660,19 @@ func TestHook(t *testing.T) {
 
 	var onSetCalled []onSetArgs
 
-	is.NoErr(Parse(cfg, Options{
+	isNoErr(t, Parse(cfg, Options{
 		OnSet: func(tag string, value interface{}, isDefault bool) {
 			onSetCalled = append(onSetCalled, onSetArgs{tag, value, isDefault})
 		},
 	}))
-	is.Equal("important", cfg.Something)
-	is.Equal("1", cfg.Another)
-	is.Equal(2, len(onSetCalled))
-	is.Equal(onSetArgs{"SOMETHING", "important", true}, onSetCalled[0])
-	is.Equal(onSetArgs{"ANOTHER", "1", false}, onSetCalled[1])
+	isEqual(t, "important", cfg.Something)
+	isEqual(t, "1", cfg.Another)
+	isEqual(t, 2, len(onSetCalled))
+	isEqual(t, onSetArgs{"SOMETHING", "important", true}, onSetCalled[0])
+	isEqual(t, onSetArgs{"ANOTHER", "1", false}, onSetCalled[1])
 }
 
 func TestErrorRequiredWithDefault(t *testing.T) {
-	is := is.New(t)
-
 	type config struct {
 		IsRequired string `env:"IS_REQUIRED,required" envDefault:"important"`
 	}
@@ -705,8 +681,8 @@ func TestErrorRequiredWithDefault(t *testing.T) {
 
 	os.Setenv("IS_REQUIRED", "")
 	defer os.Clearenv()
-	is.NoErr(Parse(cfg))
-	is.Equal("", cfg.IsRequired)
+	isNoErr(t, Parse(cfg))
+	isEqual(t, "", cfg.IsRequired)
 }
 
 func TestErrorRequiredNotSet(t *testing.T) {
@@ -717,23 +693,21 @@ func TestErrorRequiredNotSet(t *testing.T) {
 }
 
 func TestNoErrorNotEmptySet(t *testing.T) {
-	is := is.New(t)
 	os.Setenv("IS_REQUIRED", "1")
 	defer os.Clearenv()
 	type config struct {
 		IsRequired string `env:"IS_REQUIRED,notEmpty"`
 	}
-	is.NoErr(Parse(&config{}))
+	isNoErr(t, Parse(&config{}))
 }
 
 func TestNoErrorRequiredAndNotEmptySet(t *testing.T) {
-	is := is.New(t)
 	os.Setenv("IS_REQUIRED", "1")
 	defer os.Clearenv()
 	type config struct {
 		IsRequired string `env:"IS_REQUIRED,required,notEmpty"`
 	}
-	is.NoErr(Parse(&config{}))
+	isNoErr(t, Parse(&config{}))
 }
 
 func TestErrorNotEmptySet(t *testing.T) {
@@ -755,21 +729,16 @@ func TestErrorRequiredAndNotEmptySet(t *testing.T) {
 }
 
 func TestErrorRequiredNotSetWithDefault(t *testing.T) {
-	is := is.New(t)
-
 	type config struct {
 		IsRequired string `env:"IS_REQUIRED,required" envDefault:"important"`
 	}
 
 	cfg := &config{}
-
-	is.NoErr(Parse(cfg))
-	is.Equal("important", cfg.IsRequired)
+	isNoErr(t, Parse(cfg))
+	isEqual(t, "important", cfg.IsRequired)
 }
 
 func TestParseExpandOption(t *testing.T) {
-	is := is.New(t)
-
 	type config struct {
 		Host        string `env:"HOST" envDefault:"localhost"`
 		Port        int    `env:"PORT" envDefault:"3000" envExpand:"True"`
@@ -788,18 +757,16 @@ func TestParseExpandOption(t *testing.T) {
 	cfg := config{}
 	err := Parse(&cfg)
 
-	is.NoErr(err)
-	is.Equal("localhost", cfg.Host)
-	is.Equal(3000, cfg.Port)
-	is.Equal("qwerty12345", cfg.SecretKey)
-	is.Equal("qwerty12345", cfg.ExpandKey)
-	is.Equal("localhost:3000", cfg.CompoundKey)
-	is.Equal("def1", cfg.Default)
+	isNoErr(t, err)
+	isEqual(t, "localhost", cfg.Host)
+	isEqual(t, 3000, cfg.Port)
+	isEqual(t, "qwerty12345", cfg.SecretKey)
+	isEqual(t, "qwerty12345", cfg.ExpandKey)
+	isEqual(t, "localhost:3000", cfg.CompoundKey)
+	isEqual(t, "def1", cfg.Default)
 }
 
 func TestParseUnsetRequireOptions(t *testing.T) {
-	is := is.New(t)
-
 	type config struct {
 		Password string `env:"PASSWORD,unset,required"`
 	}
@@ -808,17 +775,15 @@ func TestParseUnsetRequireOptions(t *testing.T) {
 
 	isErrorWithMessage(t, Parse(&cfg), `env: required environment variable "PASSWORD" is not set`)
 	os.Setenv("PASSWORD", "superSecret")
-	is.NoErr(Parse(&cfg))
+	isNoErr(t, Parse(&cfg))
 
-	is.Equal("superSecret", cfg.Password)
+	isEqual(t, "superSecret", cfg.Password)
 	unset, exists := os.LookupEnv("PASSWORD")
-	is.Equal("", unset)
-	is.Equal(false, exists)
+	isEqual(t, "", unset)
+	isEqual(t, false, exists)
 }
 
 func TestCustomParser(t *testing.T) {
-	is := is.New(t)
-
 	type foo struct {
 		name string
 	}
@@ -850,11 +815,11 @@ func TestCustomParser(t *testing.T) {
 		},
 	})
 
-	is.NoErr(err)
-	is.Equal(cfg.Var.name, "test")
-	is.Equal(cfg.Foo.name, "test3")
-	is.Equal(cfg.Other.Name, "test2")
-	is.Equal(cfg.Other.Foo.name, "test3")
+	isNoErr(t, err)
+	isEqual(t, cfg.Var.name, "test")
+	isEqual(t, cfg.Foo.name, "test3")
+	isEqual(t, cfg.Other.Name, "test2")
+	isEqual(t, cfg.Other.Foo.name, "test3")
 }
 
 func TestParseWithFuncsNoPtr(t *testing.T) {
@@ -877,8 +842,6 @@ func TestCustomParserError(t *testing.T) {
 	}
 
 	t.Run("single", func(t *testing.T) {
-		is := is.New(t)
-
 		type config struct {
 			Var foo `env:"VAR"`
 		}
@@ -889,13 +852,11 @@ func TestCustomParserError(t *testing.T) {
 			reflect.TypeOf(foo{}): customParserFunc,
 		})
 
-		is.Equal(cfg.Var.name, "")
+		isEqual(t, cfg.Var.name, "")
 		isErrorWithMessage(t, err, `env: parse error on field "Var" of type "env.foo": something broke`)
 	})
 
 	t.Run("slice", func(t *testing.T) {
-		is := is.New(t)
-
 		type config struct {
 			Var []foo `env:"VAR2"`
 		}
@@ -906,14 +867,12 @@ func TestCustomParserError(t *testing.T) {
 			reflect.TypeOf(foo{}): customParserFunc,
 		})
 
-		is.Equal(cfg.Var, nil)
+		isEqual(t, cfg.Var, nil)
 		isErrorWithMessage(t, err, `env: parse error on field "Var" of type "[]env.foo": something broke`)
 	})
 }
 
 func TestCustomParserBasicType(t *testing.T) {
-	is := is.New(t)
-
 	type ConstT int32
 
 	type config struct {
@@ -937,13 +896,11 @@ func TestCustomParserBasicType(t *testing.T) {
 		reflect.TypeOf(ConstT(0)): customParserFunc,
 	})
 
-	is.NoErr(err)
-	is.Equal(exp, cfg.Const)
+	isNoErr(t, err)
+	isEqual(t, exp, cfg.Const)
 }
 
 func TestCustomParserUint64Alias(t *testing.T) {
-	is := is.New(t)
-
 	type T uint64
 
 	var one T = 1
@@ -970,14 +927,12 @@ func TestCustomParserUint64Alias(t *testing.T) {
 		reflect.TypeOf(one): tParser,
 	})
 
-	is.True(parserCalled) // tParser should have been called
-	is.NoErr(err)
-	is.Equal(T(1), cfg.Val)
+	isTrue(t, parserCalled)
+	isNoErr(t, err)
+	isEqual(t, T(1), cfg.Val)
 }
 
 func TestTypeCustomParserBasicInvalid(t *testing.T) {
-	is := is.New(t)
-
 	type ConstT int32
 
 	type config struct {
@@ -995,13 +950,11 @@ func TestTypeCustomParserBasicInvalid(t *testing.T) {
 		reflect.TypeOf(ConstT(0)): customParserFunc,
 	})
 
-	is.Equal(cfg.Const, ConstT(0))
+	isEqual(t, cfg.Const, ConstT(0))
 	isErrorWithMessage(t, err, `env: parse error on field "Const" of type "env.ConstT": random error`)
 }
 
 func TestCustomParserNotCalledForNonAlias(t *testing.T) {
-	is := is.New(t)
-
 	type T uint64
 	type U uint64
 
@@ -1023,15 +976,13 @@ func TestCustomParserNotCalledForNonAlias(t *testing.T) {
 		reflect.TypeOf(T(0)): tParser,
 	})
 
-	is.True(!tParserCalled) // tParser should not have been called
-	is.NoErr(err)
-	is.Equal(uint64(33), cfg.Val)
-	is.Equal(U(44), cfg.Other)
+	isFalse(t, tParserCalled)
+	isNoErr(t, err)
+	isEqual(t, uint64(33), cfg.Val)
+	isEqual(t, U(44), cfg.Other)
 }
 
 func TestCustomParserBasicUnsupported(t *testing.T) {
-	is := is.New(t)
-
 	type ConstT struct {
 		A int
 	}
@@ -1045,7 +996,7 @@ func TestCustomParserBasicUnsupported(t *testing.T) {
 	cfg := &config{}
 	err := Parse(cfg)
 
-	is.Equal(cfg.Const, ConstT{0})
+	isEqual(t, cfg.Const, ConstT{0})
 	isErrorWithMessage(t, err, `env: no parser found for field "Const" of type "env.ConstT"`)
 }
 
@@ -1059,8 +1010,6 @@ func TestUnsupportedStructType(t *testing.T) {
 }
 
 func TestEmptyOption(t *testing.T) {
-	is := is.New(t)
-
 	type config struct {
 		Var string `env:"VAR,"`
 	}
@@ -1069,8 +1018,8 @@ func TestEmptyOption(t *testing.T) {
 
 	os.Setenv("VAR", "")
 	defer os.Clearenv()
-	is.NoErr(Parse(cfg))
-	is.Equal("", cfg.Var)
+	isNoErr(t, Parse(cfg))
+	isEqual(t, "", cfg.Var)
 }
 
 func TestErrorOptionNotRecognized(t *testing.T) {
@@ -1097,14 +1046,12 @@ func TestTextUnmarshalersError(t *testing.T) {
 }
 
 func TestParseURL(t *testing.T) {
-	is := is.New(t)
-
 	type config struct {
 		ExampleURL url.URL `env:"EXAMPLE_URL" envDefault:"https://google.com"`
 	}
 	var cfg config
-	is.NoErr(Parse(&cfg))
-	is.Equal("https://google.com", cfg.ExampleURL.String())
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, "https://google.com", cfg.ExampleURL.String())
 }
 
 func TestParseInvalidURL(t *testing.T) {
@@ -1177,8 +1124,6 @@ func ExampleParse_defaults() {
 }
 
 func TestIgnoresUnexported(t *testing.T) {
-	is := is.New(t)
-
 	type unexportedConfig struct {
 		home  string `env:"HOME"`
 		Home2 string `env:"HOME"`
@@ -1186,9 +1131,9 @@ func TestIgnoresUnexported(t *testing.T) {
 	cfg := unexportedConfig{}
 
 	os.Setenv("HOME", "/tmp/fakehome")
-	is.NoErr(Parse(&cfg))
-	is.Equal(cfg.home, "")
-	is.Equal("/tmp/fakehome", cfg.Home2)
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, cfg.home, "")
+	isEqual(t, "/tmp/fakehome", cfg.Home2)
 }
 
 type LogLevel int8
@@ -1213,8 +1158,6 @@ const (
 )
 
 func TestPrecedenceUnmarshalText(t *testing.T) {
-	is := is.New(t)
-
 	os.Setenv("LOG_LEVEL", "debug")
 	os.Setenv("LOG_LEVELS", "debug,info")
 	defer os.Unsetenv("LOG_LEVEL")
@@ -1226,9 +1169,9 @@ func TestPrecedenceUnmarshalText(t *testing.T) {
 	}
 	var cfg config
 
-	is.NoErr(Parse(&cfg))
-	is.Equal(DebugLevel, cfg.LogLevel)
-	is.Equal([]LogLevel{DebugLevel, InfoLevel}, cfg.LogLevels)
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, DebugLevel, cfg.LogLevel)
+	isEqual(t, []LogLevel{DebugLevel, InfoLevel}, cfg.LogLevels)
 }
 
 func ExampleParseWithFuncs() {
@@ -1258,34 +1201,30 @@ func ExampleParseWithFuncs() {
 }
 
 func TestFile(t *testing.T) {
-	is := is.New(t)
-
 	type config struct {
 		SecretKey string `env:"SECRET_KEY,file"`
 	}
 
 	dir := t.TempDir()
 	file := filepath.Join(dir, "sec_key")
-	is.NoErr(os.WriteFile(file, []byte("secret"), 0o660))
+	isNoErr(t, os.WriteFile(file, []byte("secret"), 0o660))
 
 	defer os.Clearenv()
 	os.Setenv("SECRET_KEY", file)
 
 	cfg := config{}
-	is.NoErr(Parse(&cfg))
-	is.Equal("secret", cfg.SecretKey)
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, "secret", cfg.SecretKey)
 }
 
 func TestFileNoParam(t *testing.T) {
-	is := is.New(t)
-
 	type config struct {
 		SecretKey string `env:"SECRET_KEY,file"`
 	}
 	defer os.Clearenv()
 
 	cfg := config{}
-	is.NoErr(Parse(&cfg))
+	isNoErr(t, Parse(&cfg))
 }
 
 func TestFileNoParamRequired(t *testing.T) {
@@ -1312,8 +1251,6 @@ func TestFileBadFile(t *testing.T) {
 }
 
 func TestFileWithDefault(t *testing.T) {
-	is := is.New(t)
-
 	type config struct {
 		SecretKey string `env:"SECRET_KEY,file" envDefault:"${FILE}" envExpand:"true"`
 	}
@@ -1321,19 +1258,17 @@ func TestFileWithDefault(t *testing.T) {
 
 	dir := t.TempDir()
 	file := filepath.Join(dir, "sec_key")
-	is.NoErr(os.WriteFile(file, []byte("secret"), 0o660))
+	isNoErr(t, os.WriteFile(file, []byte("secret"), 0o660))
 
 	defer os.Clearenv()
 	os.Setenv("FILE", file)
 
 	cfg := config{}
-	is.NoErr(Parse(&cfg))
-	is.Equal("secret", cfg.SecretKey)
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, "secret", cfg.SecretKey)
 }
 
 func TestCustomSliceType(t *testing.T) {
-	is := is.New(t)
-
 	type customslice []byte
 
 	type config struct {
@@ -1348,12 +1283,10 @@ func TestCustomSliceType(t *testing.T) {
 	os.Setenv("SECRET_KEY", "somesecretkey")
 
 	var cfg config
-	is.NoErr(ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{reflect.TypeOf(customslice{}): parsecustomsclice}))
+	isNoErr(t, ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{reflect.TypeOf(customslice{}): parsecustomsclice}))
 }
 
 func TestBlankKey(t *testing.T) {
-	is := is.New(t)
-
 	type testStruct struct {
 		Blank        string
 		BlankWithTag string `env:""`
@@ -1364,9 +1297,9 @@ func TestBlankKey(t *testing.T) {
 	defer os.Clearenv()
 	os.Setenv("", "You should not see this")
 
-	is.NoErr(Parse(&val))
-	is.Equal("", val.Blank)
-	is.Equal("", val.BlankWithTag)
+	isNoErr(t, Parse(&val))
+	isEqual(t, "", val.Blank)
+	isEqual(t, "", val.BlankWithTag)
 }
 
 type MyTime time.Time
@@ -1378,8 +1311,6 @@ func (t *MyTime) UnmarshalText(text []byte) error {
 }
 
 func TestCustomTimeParser(t *testing.T) {
-	is := is.New(t)
-
 	type config struct {
 		SomeTime MyTime `env:"SOME_TIME"`
 	}
@@ -1388,10 +1319,10 @@ func TestCustomTimeParser(t *testing.T) {
 	defer os.Unsetenv("SOME_TIME")
 
 	var cfg config
-	is.NoErr(Parse(&cfg))
-	is.Equal(2021, time.Time(cfg.SomeTime).Year())
-	is.Equal(time.Month(5), time.Time(cfg.SomeTime).Month())
-	is.Equal(6, time.Time(cfg.SomeTime).Day())
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, 2021, time.Time(cfg.SomeTime).Year())
+	isEqual(t, time.Month(5), time.Time(cfg.SomeTime).Month())
+	isEqual(t, 6, time.Time(cfg.SomeTime).Day())
 }
 
 func TestRequiredIfNoDefOption(t *testing.T) {
@@ -1418,12 +1349,11 @@ func TestRequiredIfNoDefOption(t *testing.T) {
 		t.Cleanup(os.Clearenv)
 
 		// should not trigger an error for the missing 'GENRE' env because it has a default value.
-		is.New(t).NoErr(Parse(&cfg, Options{RequiredIfNoDef: true}))
+		isNoErr(t, Parse(&cfg, Options{RequiredIfNoDef: true}))
 	})
 }
 
 func TestPrefix(t *testing.T) {
-	is := is.New(t)
 	type Config struct {
 		Home string `env:"HOME"`
 	}
@@ -1433,14 +1363,13 @@ func TestPrefix(t *testing.T) {
 		Clean Config
 	}
 	cfg := ComplexConfig{}
-	is.NoErr(Parse(&cfg, Options{Environment: map[string]string{"FOO_HOME": "/foo", "BAR_HOME": "/bar", "HOME": "/clean"}}))
-	is.Equal("/foo", cfg.Foo.Home)
-	is.Equal("/bar", cfg.Bar.Home)
-	is.Equal("/clean", cfg.Clean.Home)
+	isNoErr(t, Parse(&cfg, Options{Environment: map[string]string{"FOO_HOME": "/foo", "BAR_HOME": "/bar", "HOME": "/clean"}}))
+	isEqual(t, "/foo", cfg.Foo.Home)
+	isEqual(t, "/bar", cfg.Bar.Home)
+	isEqual(t, "/clean", cfg.Clean.Home)
 }
 
 func TestPrefixPointers(t *testing.T) {
-	is := is.New(t)
 	type Test struct {
 		Str string `env:"TEST"`
 	}
@@ -1455,14 +1384,13 @@ func TestPrefixPointers(t *testing.T) {
 		Bar:   &Test{},
 		Clean: &Test{},
 	}
-	is.NoErr(Parse(&cfg, Options{Environment: map[string]string{"FOO_TEST": "kek", "BAR_TEST": "lel", "TEST": "clean"}}))
-	is.Equal("kek", cfg.Foo.Str)
-	is.Equal("lel", cfg.Bar.Str)
-	is.Equal("clean", cfg.Clean.Str)
+	isNoErr(t, Parse(&cfg, Options{Environment: map[string]string{"FOO_TEST": "kek", "BAR_TEST": "lel", "TEST": "clean"}}))
+	isEqual(t, "kek", cfg.Foo.Str)
+	isEqual(t, "lel", cfg.Bar.Str)
+	isEqual(t, "clean", cfg.Clean.Str)
 }
 
 func TestComplePrefix(t *testing.T) {
-	is := is.New(t)
 	type Config struct {
 		Home string `env:"HOME"`
 	}
@@ -1473,7 +1401,7 @@ func TestComplePrefix(t *testing.T) {
 		Blah  string `env:"BLAH"`
 	}
 	cfg := ComplexConfig{}
-	is.NoErr(Parse(&cfg, Options{
+	isNoErr(t, Parse(&cfg, Options{
 		Prefix: "T_",
 		Environment: map[string]string{
 			"T_FOO_HOME": "/foo",
@@ -1482,16 +1410,83 @@ func TestComplePrefix(t *testing.T) {
 			"T_HOME":     "/clean",
 		},
 	}))
-	is.Equal("/foo", cfg.Foo.Home)
-	is.Equal("/bar", cfg.Bar.Home)
-	is.Equal("/clean", cfg.Clean.Home)
-	is.Equal("blahhh", cfg.Blah)
+	isEqual(t, "/foo", cfg.Foo.Home)
+	isEqual(t, "/bar", cfg.Bar.Home)
+	isEqual(t, "/clean", cfg.Clean.Home)
+	isEqual(t, "blahhh", cfg.Blah)
+}
+
+func isTrue(tb testing.TB, b bool) {
+	tb.Helper()
+
+	if !b {
+		tb.Fatalf("expected true, got false")
+	}
+}
+
+func isFalse(tb testing.TB, b bool) {
+	tb.Helper()
+
+	if b {
+		tb.Fatalf("expected false, got true")
+	}
 }
 
 func isErrorWithMessage(tb testing.TB, err error, msg string) {
 	tb.Helper()
 
-	is := is.New(tb)
-	is.True(err != nil)        // should have failed
-	is.Equal(err.Error(), msg) // should have the expected message
+	if err == nil {
+		tb.Fatalf("expected error, got nil")
+	}
+
+	if msg != err.Error() {
+		tb.Fatalf("expected error message %q, got %q", msg, err.Error())
+	}
+}
+
+func isNoErr(tb testing.TB, err error) {
+	tb.Helper()
+
+	if err != nil {
+		tb.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func isEqual(tb testing.TB, a, b interface{}) {
+	tb.Helper()
+
+	if areEqual(a, b) {
+		return
+	}
+
+	tb.Fatalf("expected %#v (type %T) == %#v (type %T)", a, a, b, b)
+}
+
+// copied from https://github.com/matryer/is
+func areEqual(a, b interface{}) bool {
+	if isNil(a) && isNil(b) {
+		return true
+	}
+	if isNil(a) || isNil(b) {
+		return false
+	}
+	if reflect.DeepEqual(a, b) {
+		return true
+	}
+	aValue := reflect.ValueOf(a)
+	bValue := reflect.ValueOf(b)
+	return aValue == bValue
+}
+
+// copied from https://github.com/matryer/is
+func isNil(object interface{}) bool {
+	if object == nil {
+		return true
+	}
+	value := reflect.ValueOf(object)
+	kind := value.Kind()
+	if kind >= reflect.Chan && kind <= reflect.Slice && value.IsNil() {
+		return true
+	}
+	return false
 }
