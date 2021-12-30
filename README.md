@@ -4,7 +4,7 @@
 [![Coverage Status](https://img.shields.io/codecov/c/gh/caarlos0/env.svg?logo=codecov&style=for-the-badge)](https://codecov.io/gh/caarlos0/env)
 [![](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://pkg.go.dev/github.com/caarlos0/env/v6)
 
-Simple lib to parse envs to structs in Go.
+A simple and zero-dependencies library to parse environment variables into structs.
 
 ## Example
 
