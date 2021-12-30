@@ -124,6 +124,12 @@ type Config struct {
 		String string `env:"NONDEFINED_STR"`
 	}
 
+	NestedNonDefined struct {
+		NonDefined struct {
+			String string `env:"STR"`
+		} `envPrefix:"NONDEFINED_"`
+	} `envPrefix:"PRF_"`
+
 	NotAnEnv   string
 	unexported string `env:"FOO"`
 }
@@ -251,6 +257,7 @@ func TestParsesEnv(t *testing.T) {
 
 	nonDefinedStr := "nonDefinedStr"
 	os.Setenv("NONDEFINED_STR", nonDefinedStr)
+	os.Setenv("PRF_NONDEFINED_STR", nonDefinedStr)
 
 	cfg := Config{}
 	isNoErr(t, Parse(&cfg))
@@ -376,6 +383,7 @@ func TestParsesEnv(t *testing.T) {
 
 	isEqual(t, "postgres://localhost:5432/db", cfg.StringWithdefault)
 	isEqual(t, nonDefinedStr, cfg.NonDefined.String)
+	isEqual(t, nonDefinedStr, cfg.NestedNonDefined.NonDefined.String)
 
 	isEqual(t, str1, cfg.CustomSeparator[0])
 	isEqual(t, str2, cfg.CustomSeparator[1])
@@ -1388,6 +1396,30 @@ func TestPrefixPointers(t *testing.T) {
 	isEqual(t, "kek", cfg.Foo.Str)
 	isEqual(t, "lel", cfg.Bar.Str)
 	isEqual(t, "clean", cfg.Clean.Str)
+}
+
+func TestNestedPrefixPointer(t *testing.T) {
+	type ComplexConfig struct {
+		Foo struct {
+			Str string `env:"STR"`
+		} `envPrefix:"FOO_"`
+	}
+	cfg := ComplexConfig{}
+	isNoErr(t, Parse(&cfg, Options{Environment: map[string]string{"FOO_STR": "foo_str"}}))
+	isEqual(t, "foo_str", cfg.Foo.Str)
+
+	type ComplexConfig2 struct {
+		Foo struct {
+			Bar struct {
+				Str string `env:"STR"`
+			} `envPrefix:"BAR_"`
+			Bar2 string `env:"BAR2"`
+		} `envPrefix:"FOO_"`
+	}
+	cfg2 := ComplexConfig2{}
+	isNoErr(t, Parse(&cfg2, Options{Environment: map[string]string{"FOO_BAR_STR": "kek", "FOO_BAR2": "lel"}}))
+	isEqual(t, "lel", cfg2.Foo.Bar2)
+	isEqual(t, "kek", cfg2.Foo.Bar.Str)
 }
 
 func TestComplePrefix(t *testing.T) {

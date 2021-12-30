@@ -216,7 +216,7 @@ func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts []Opti
 			continue
 		}
 		if reflect.Struct == refField.Kind() && refField.CanAddr() && refField.Type().Name() == "" {
-			if err := Parse(refField.Addr().Interface(), opts...); err != nil {
+			if err := Parse(refField.Addr().Interface(), optsWithPrefix(refType.Field(i), opts)...); err != nil {
 				return err
 			}
 			continue
