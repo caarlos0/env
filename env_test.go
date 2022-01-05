@@ -1361,6 +1361,17 @@ func TestRequiredIfNoDefOption(t *testing.T) {
 	})
 }
 
+func TestIgnoreDefaultOption(t *testing.T) {
+
+	type config struct {
+		SomeValue string `env:"SOME_VALUE" envDefault:"value"`
+	}
+
+	var cfg config
+	isNoErr(t, Parse(&cfg, Options{IgnoreDefault: true}))
+	isEqual(t, "", cfg.SomeValue)
+}
+
 func TestPrefix(t *testing.T) {
 	type Config struct {
 		Home string `env:"HOME"`

@@ -114,6 +114,9 @@ type Options struct {
 	// Prefix define a prefix for each key
 	Prefix string
 
+	// Ignore envDefault tags
+	IgnoreDefault bool
+
 	// Sets to true if we have already configured once.
 	configured bool
 }
@@ -149,6 +152,7 @@ func configure(opts []Options) []Options {
 			opt.Prefix = item.Prefix
 		}
 		opt.RequiredIfNoDef = item.RequiredIfNoDef
+		opt.IgnoreDefault = item.IgnoreDefault
 	}
 
 	return []Options{opt}
@@ -166,6 +170,10 @@ func getTagName(opts []Options) string {
 // getEnvironment returns the environment map.
 func getEnvironment(opts []Options) map[string]string {
 	return opts[0].Environment
+}
+
+func getIgnoreDefault(opts []Options) bool {
+	return opts[0].IgnoreDefault
 }
 
 // Parse parses a struct containing `env` tags and loads its values from
@@ -269,7 +277,13 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 		}
 	}
 	expand := strings.EqualFold(field.Tag.Get("envExpand"), "true")
-	defaultValue, defExists := field.Tag.Lookup("envDefault")
+
+	defaultValue := ""
+	defExists := false
+
+	if !getIgnoreDefault(opts) {
+		defaultValue, defExists = field.Tag.Lookup("envDefault")
+	}
 	val, exists, isDefault = getOr(key, defaultValue, defExists, getEnvironment(opts))
 
 	if expand {
