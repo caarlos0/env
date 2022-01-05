@@ -114,7 +114,7 @@ type Options struct {
 	// Prefix define a prefix for each key
 	Prefix string
 
-	// Ignore envDefault tags
+	// Ignore all envDefault tags
 	IgnoreDefault bool
 
 	// Sets to true if we have already configured once.
