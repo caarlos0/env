@@ -260,6 +260,8 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 			loadFile = true
 		case "required":
 			required = true
+		case "optional":
+			required = false
 		case "unset":
 			unset = true
 		case "notEmpty":

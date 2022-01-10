@@ -1338,8 +1338,9 @@ func TestRequiredIfNoDefOption(t *testing.T) {
 		Fruit string `env:"FRUIT"`
 	}
 	type config struct {
-		Name  string `env:"NAME"`
-		Genre string `env:"GENRE" envDefault:"Unknown"`
+		Name     string `env:"NAME"`
+		Category string `env:"CATEGORY,optional"`
+		Genre    string `env:"GENRE" envDefault:"Unknown"`
 		Tree
 	}
 	var cfg config
@@ -1357,6 +1358,7 @@ func TestRequiredIfNoDefOption(t *testing.T) {
 		t.Cleanup(os.Clearenv)
 
 		// should not trigger an error for the missing 'GENRE' env because it has a default value.
+		// should not trigger an error for the missing 'CATEGORY' as it is set as optional.
 		isNoErr(t, Parse(&cfg, Options{RequiredIfNoDef: true}))
 	})
 }
