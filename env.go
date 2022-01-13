@@ -453,9 +453,6 @@ func parseTextUnmarshalers(field reflect.Value, data []string, sf reflect.Struct
 }
 
 func newParseError(sf reflect.StructField, err error) error {
-	if err == nil {
-		return nil
-	}
 	return parseError{
 		sf:  sf,
 		err: err,
