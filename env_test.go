@@ -154,8 +154,6 @@ type NestedStruct struct {
 }
 
 func TestParsesEnv(t *testing.T) {
-	defer os.Clearenv()
-
 	tos := func(v interface{}) string {
 		return fmt.Sprintf("%v", v)
 	}
@@ -170,94 +168,94 @@ func TestParsesEnv(t *testing.T) {
 
 	str1 := "str1"
 	str2 := "str2"
-	os.Setenv("STRING", str1)
-	os.Setenv("STRINGS", toss(str1, str2))
+	setEnv(t, "STRING", str1)
+	setEnv(t, "STRINGS", toss(str1, str2))
 
 	bool1 := true
 	bool2 := false
-	os.Setenv("BOOL", tos(bool1))
-	os.Setenv("BOOLS", toss(bool1, bool2))
+	setEnv(t, "BOOL", tos(bool1))
+	setEnv(t, "BOOLS", toss(bool1, bool2))
 
 	int1 := -1
 	int2 := 2
-	os.Setenv("INT", tos(int1))
-	os.Setenv("INTS", toss(int1, int2))
+	setEnv(t, "INT", tos(int1))
+	setEnv(t, "INTS", toss(int1, int2))
 
 	var int81 int8 = -2
 	var int82 int8 = 5
-	os.Setenv("INT8", tos(int81))
-	os.Setenv("INT8S", toss(int81, int82))
+	setEnv(t, "INT8", tos(int81))
+	setEnv(t, "INT8S", toss(int81, int82))
 
 	var int161 int16 = -24
 	var int162 int16 = 15
-	os.Setenv("INT16", tos(int161))
-	os.Setenv("INT16S", toss(int161, int162))
+	setEnv(t, "INT16", tos(int161))
+	setEnv(t, "INT16S", toss(int161, int162))
 
 	var int321 int32 = -14
 	var int322 int32 = 154
-	os.Setenv("INT32", tos(int321))
-	os.Setenv("INT32S", toss(int321, int322))
+	setEnv(t, "INT32", tos(int321))
+	setEnv(t, "INT32S", toss(int321, int322))
 
 	var int641 int64 = -12
 	var int642 int64 = 150
-	os.Setenv("INT64", tos(int641))
-	os.Setenv("INT64S", toss(int641, int642))
+	setEnv(t, "INT64", tos(int641))
+	setEnv(t, "INT64S", toss(int641, int642))
 
 	var uint1 uint = 1
 	var uint2 uint = 2
-	os.Setenv("UINT", tos(uint1))
-	os.Setenv("UINTS", toss(uint1, uint2))
+	setEnv(t, "UINT", tos(uint1))
+	setEnv(t, "UINTS", toss(uint1, uint2))
 
 	var uint81 uint8 = 15
 	var uint82 uint8 = 51
-	os.Setenv("UINT8", tos(uint81))
-	os.Setenv("UINT8S", toss(uint81, uint82))
+	setEnv(t, "UINT8", tos(uint81))
+	setEnv(t, "UINT8S", toss(uint81, uint82))
 
 	var uint161 uint16 = 532
 	var uint162 uint16 = 123
-	os.Setenv("UINT16", tos(uint161))
-	os.Setenv("UINT16S", toss(uint161, uint162))
+	setEnv(t, "UINT16", tos(uint161))
+	setEnv(t, "UINT16S", toss(uint161, uint162))
 
 	var uint321 uint32 = 93
 	var uint322 uint32 = 14
-	os.Setenv("UINT32", tos(uint321))
-	os.Setenv("UINT32S", toss(uint321, uint322))
+	setEnv(t, "UINT32", tos(uint321))
+	setEnv(t, "UINT32S", toss(uint321, uint322))
 
 	var uint641 uint64 = 5
 	var uint642 uint64 = 43
-	os.Setenv("UINT64", tos(uint641))
-	os.Setenv("UINT64S", toss(uint641, uint642))
+	setEnv(t, "UINT64", tos(uint641))
+	setEnv(t, "UINT64S", toss(uint641, uint642))
 
 	var float321 float32 = 9.3
 	var float322 float32 = 1.1
-	os.Setenv("FLOAT32", tos(float321))
-	os.Setenv("FLOAT32S", toss(float321, float322))
+	setEnv(t, "FLOAT32", tos(float321))
+	setEnv(t, "FLOAT32S", toss(float321, float322))
 
 	float641 := 1.53
 	float642 := 0.5
-	os.Setenv("FLOAT64", tos(float641))
-	os.Setenv("FLOAT64S", toss(float641, float642))
+	setEnv(t, "FLOAT64", tos(float641))
+	setEnv(t, "FLOAT64S", toss(float641, float642))
 
 	duration1 := time.Second
 	duration2 := time.Second * 4
-	os.Setenv("DURATION", tos(duration1))
-	os.Setenv("DURATIONS", toss(duration1, duration2))
+	setEnv(t, "DURATION", tos(duration1))
+	setEnv(t, "DURATIONS", toss(duration1, duration2))
 
 	unmarshaler1 := unmarshaler{time.Minute}
 	unmarshaler2 := unmarshaler{time.Millisecond * 1232}
-	os.Setenv("UNMARSHALER", tos(unmarshaler1.Duration))
-	os.Setenv("UNMARSHALERS", toss(unmarshaler1.Duration, unmarshaler2.Duration))
+	setEnv(t, "UNMARSHALER", tos(unmarshaler1.Duration))
+	setEnv(t, "UNMARSHALERS", toss(unmarshaler1.Duration, unmarshaler2.Duration))
 
 	url1 := "https://goreleaser.com"
 	url2 := "https://caarlos0.dev"
-	os.Setenv("URL", tos(url1))
-	os.Setenv("URLS", toss(url1, url2))
+	setEnv(t, "URL", tos(url1))
+	setEnv(t, "URLS", toss(url1, url2))
 
-	os.Setenv("SEPSTRINGS", strings.Join([]string{str1, str2}, ":"))
+	setEnv(t, "SEPSTRINGS", strings.Join([]string{str1, str2}, ":"))
 
 	nonDefinedStr := "nonDefinedStr"
-	os.Setenv("NONDEFINED_STR", nonDefinedStr)
-	os.Setenv("PRF_NONDEFINED_STR", nonDefinedStr)
+	setEnv(t, "NONDEFINED_STR", nonDefinedStr)
+	setEnv(t, "PRF_NONDEFINED_STR", nonDefinedStr)
 
 	cfg := Config{}
 	isNoErr(t, Parse(&cfg))
@@ -394,7 +392,6 @@ func TestParsesEnv(t *testing.T) {
 }
 
 func TestSetEnvAndTagOptsChain(t *testing.T) {
-	defer os.Clearenv()
 	type config struct {
 		Key1 string `mytag:"KEY1,required"`
 		Key2 int    `mytag:"KEY2,required"`
@@ -411,14 +408,13 @@ func TestSetEnvAndTagOptsChain(t *testing.T) {
 }
 
 func TestJSONTag(t *testing.T) {
-	defer os.Clearenv()
 	type config struct {
 		Key1 string `json:"KEY1"`
 		Key2 int    `json:"KEY2"`
 	}
 
-	os.Setenv("KEY1", "VALUE7")
-	os.Setenv("KEY2", "5")
+	setEnv(t, "KEY1", "VALUE7")
+	setEnv(t, "KEY2", "5")
 
 	cfg := config{}
 	isNoErr(t, Parse(&cfg, Options{TagName: "json"}))
@@ -427,9 +423,8 @@ func TestJSONTag(t *testing.T) {
 }
 
 func TestParsesEnvInner(t *testing.T) {
-	os.Setenv("innervar", "someinnervalue")
-	os.Setenv("innernum", "8")
-	defer os.Clearenv()
+	setEnv(t, "innervar", "someinnervalue")
+	setEnv(t, "innernum", "8")
 	cfg := ParentStruct{
 		InnerStruct: &InnerStruct{},
 		unexported:  &InnerStruct{},
@@ -440,26 +435,23 @@ func TestParsesEnvInner(t *testing.T) {
 }
 
 func TestParsesEnvInnerFails(t *testing.T) {
-	defer os.Clearenv()
 	type config struct {
 		Foo struct {
 			Number int `env:"NUMBER"`
 		}
 	}
-	os.Setenv("NUMBER", "not-a-number")
+	setEnv(t, "NUMBER", "not-a-number")
 	isErrorWithMessage(t, Parse(&config{}), `env: parse error on field "Number" of type "int": strconv.ParseInt: parsing "not-a-number": invalid syntax`)
 }
 
 func TestParsesEnvInnerNil(t *testing.T) {
-	os.Setenv("innervar", "someinnervalue")
-	defer os.Clearenv()
+	setEnv(t, "innervar", "someinnervalue")
 	cfg := ParentStruct{}
 	isNoErr(t, Parse(&cfg))
 }
 
 func TestParsesEnvInnerInvalid(t *testing.T) {
-	os.Setenv("innernum", "-547")
-	defer os.Clearenv()
+	setEnv(t, "innernum", "-547")
 	cfg := ParentStruct{
 		InnerStruct: &InnerStruct{},
 	}
@@ -467,15 +459,13 @@ func TestParsesEnvInnerInvalid(t *testing.T) {
 }
 
 func TestParsesEnvNested(t *testing.T) {
-	os.Setenv("nestedvar", "somenestedvalue")
-	defer os.Clearenv()
+	setEnv(t, "nestedvar", "somenestedvalue")
 	var cfg ForNestedStruct
 	isNoErr(t, Parse(&cfg))
 	isEqual(t, "somenestedvalue", cfg.NestedVar)
 }
 
 func TestEmptyVars(t *testing.T) {
-	os.Clearenv()
 	cfg := Config{}
 	isNoErr(t, Parse(&cfg))
 	isEqual(t, "", cfg.String)
@@ -501,51 +491,42 @@ func TestPassReference(t *testing.T) {
 }
 
 func TestInvalidBool(t *testing.T) {
-	os.Setenv("BOOL", "should-be-a-bool")
-	defer os.Clearenv()
+	setEnv(t, "BOOL", "should-be-a-bool")
 	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Bool" of type "bool": strconv.ParseBool: parsing "should-be-a-bool": invalid syntax`)
 }
 
 func TestInvalidInt(t *testing.T) {
-	os.Setenv("INT", "should-be-an-int")
-	defer os.Clearenv()
+	setEnv(t, "INT", "should-be-an-int")
 	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Int" of type "int": strconv.ParseInt: parsing "should-be-an-int": invalid syntax`)
 }
 
 func TestInvalidUint(t *testing.T) {
-	os.Setenv("UINT", "-44")
-	defer os.Clearenv()
+	setEnv(t, "UINT", "-44")
 	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Uint" of type "uint": strconv.ParseUint: parsing "-44": invalid syntax`)
 }
 
 func TestInvalidFloat32(t *testing.T) {
-	os.Setenv("FLOAT32", "AAA")
-	defer os.Clearenv()
-
+	setEnv(t, "FLOAT32", "AAA")
 	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Float32" of type "float32": strconv.ParseFloat: parsing "AAA": invalid syntax`)
 }
 
 func TestInvalidFloat64(t *testing.T) {
-	os.Setenv("FLOAT64", "AAA")
-	defer os.Clearenv()
+	setEnv(t, "FLOAT64", "AAA")
 	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Float64" of type "float64": strconv.ParseFloat: parsing "AAA": invalid syntax`)
 }
 
 func TestInvalidUint64(t *testing.T) {
-	os.Setenv("UINT64", "AAA")
-	defer os.Clearenv()
+	setEnv(t, "UINT64", "AAA")
 	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Uint64" of type "uint64": strconv.ParseUint: parsing "AAA": invalid syntax`)
 }
 
 func TestInvalidInt64(t *testing.T) {
-	os.Setenv("INT64", "AAA")
-	defer os.Clearenv()
+	setEnv(t, "INT64", "AAA")
 	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Int64" of type "int64": strconv.ParseInt: parsing "AAA": invalid syntax`)
 }
 
 func TestInvalidInt64Slice(t *testing.T) {
-	os.Setenv("BADINTS", "A,2,3")
-	defer os.Clearenv()
+	setEnv(t, "BADINTS", "A,2,3")
 	type config struct {
 		BadFloats []int64 `env:"BADINTS"`
 	}
@@ -553,8 +534,7 @@ func TestInvalidInt64Slice(t *testing.T) {
 }
 
 func TestInvalidUInt64Slice(t *testing.T) {
-	os.Setenv("BADINTS", "A,2,3")
-	defer os.Clearenv()
+	setEnv(t, "BADINTS", "A,2,3")
 	type config struct {
 		BadFloats []uint64 `env:"BADINTS"`
 	}
@@ -562,8 +542,7 @@ func TestInvalidUInt64Slice(t *testing.T) {
 }
 
 func TestInvalidFloat32Slice(t *testing.T) {
-	os.Setenv("BADFLOATS", "A,2.0,3.0")
-	defer os.Clearenv()
+	setEnv(t, "BADFLOATS", "A,2.0,3.0")
 	type config struct {
 		BadFloats []float32 `env:"BADFLOATS"`
 	}
@@ -571,8 +550,7 @@ func TestInvalidFloat32Slice(t *testing.T) {
 }
 
 func TestInvalidFloat64Slice(t *testing.T) {
-	os.Setenv("BADFLOATS", "A,2.0,3.0")
-	defer os.Clearenv()
+	setEnv(t, "BADFLOATS", "A,2.0,3.0")
 	type config struct {
 		BadFloats []float64 `env:"BADFLOATS"`
 	}
@@ -580,8 +558,7 @@ func TestInvalidFloat64Slice(t *testing.T) {
 }
 
 func TestInvalidBoolsSlice(t *testing.T) {
-	os.Setenv("BADBOOLS", "t,f,TRUE,faaaalse")
-	defer os.Clearenv()
+	setEnv(t, "BADBOOLS", "t,f,TRUE,faaaalse")
 	type config struct {
 		BadBools []bool `env:"BADBOOLS"`
 	}
@@ -589,14 +566,12 @@ func TestInvalidBoolsSlice(t *testing.T) {
 }
 
 func TestInvalidDuration(t *testing.T) {
-	os.Setenv("DURATION", "should-be-a-valid-duration")
-	defer os.Clearenv()
+	setEnv(t, "DURATION", "should-be-a-valid-duration")
 	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Duration" of type "time.Duration": unable to parse duration: time: invalid duration "should-be-a-valid-duration"`)
 }
 
 func TestInvalidDurations(t *testing.T) {
-	os.Setenv("DURATIONS", "1s,contains-an-invalid-duration,3s")
-	defer os.Clearenv()
+	setEnv(t, "DURATIONS", "1s,contains-an-invalid-duration,3s")
 	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Durations" of type "[]time.Duration": unable to parse duration: time: invalid duration "contains-an-invalid-duration"`)
 }
 
@@ -610,7 +585,7 @@ func TestParseStructWithInvalidFieldKind(t *testing.T) {
 	type config struct {
 		WontWorkByte byte `env:"BLAH"`
 	}
-	os.Setenv("BLAH", "a")
+	setEnv(t, "BLAH", "a")
 	isErrorWithMessage(t, Parse(&config{}), `env: parse error on field "WontWorkByte" of type "uint8": strconv.ParseUint: parsing "a": invalid syntax`)
 }
 
@@ -619,9 +594,7 @@ func TestUnsupportedSliceType(t *testing.T) {
 		WontWork []map[int]int `env:"WONTWORK"`
 	}
 
-	os.Setenv("WONTWORK", "1,2,3")
-	defer os.Clearenv()
-
+	setEnv(t, "WONTWORK", "1,2,3")
 	isErrorWithMessage(t, Parse(&config{}), `env: no parser found for field "WontWork" of type "[]map[int]int"`)
 }
 
@@ -630,9 +603,7 @@ func TestBadSeparator(t *testing.T) {
 		WontWork []int `env:"WONTWORK" envSeparator:":"`
 	}
 
-	os.Setenv("WONTWORK", "1,2,3,4")
-	defer os.Clearenv()
-
+	setEnv(t, "WONTWORK", "1,2,3,4")
 	isErrorWithMessage(t, Parse(&config{}), `env: parse error on field "WontWork" of type "[]int": strconv.ParseInt: parsing "1,2,3,4": invalid syntax`)
 }
 
@@ -643,8 +614,7 @@ func TestNoErrorRequiredSet(t *testing.T) {
 
 	cfg := &config{}
 
-	os.Setenv("IS_REQUIRED", "")
-	defer os.Clearenv()
+	setEnv(t, "IS_REQUIRED", "")
 	isNoErr(t, Parse(cfg))
 	isEqual(t, "", cfg.IsRequired)
 }
@@ -656,9 +626,7 @@ func TestHook(t *testing.T) {
 	}
 
 	cfg := &config{}
-
-	os.Setenv("ANOTHER", "1")
-	defer os.Clearenv()
+	setEnv(t, "ANOTHER", "1")
 
 	type onSetArgs struct {
 		tag       string
@@ -687,8 +655,7 @@ func TestErrorRequiredWithDefault(t *testing.T) {
 
 	cfg := &config{}
 
-	os.Setenv("IS_REQUIRED", "")
-	defer os.Clearenv()
+	setEnv(t, "IS_REQUIRED", "")
 	isNoErr(t, Parse(cfg))
 	isEqual(t, "", cfg.IsRequired)
 }
@@ -701,8 +668,7 @@ func TestErrorRequiredNotSet(t *testing.T) {
 }
 
 func TestNoErrorNotEmptySet(t *testing.T) {
-	os.Setenv("IS_REQUIRED", "1")
-	defer os.Clearenv()
+	setEnv(t, "IS_REQUIRED", "1")
 	type config struct {
 		IsRequired string `env:"IS_REQUIRED,notEmpty"`
 	}
@@ -710,8 +676,7 @@ func TestNoErrorNotEmptySet(t *testing.T) {
 }
 
 func TestNoErrorRequiredAndNotEmptySet(t *testing.T) {
-	os.Setenv("IS_REQUIRED", "1")
-	defer os.Clearenv()
+	setEnv(t, "IS_REQUIRED", "1")
 	type config struct {
 		IsRequired string `env:"IS_REQUIRED,required,notEmpty"`
 	}
@@ -719,8 +684,7 @@ func TestNoErrorRequiredAndNotEmptySet(t *testing.T) {
 }
 
 func TestErrorNotEmptySet(t *testing.T) {
-	os.Setenv("IS_REQUIRED", "")
-	defer os.Clearenv()
+	setEnv(t, "IS_REQUIRED", "")
 	type config struct {
 		IsRequired string `env:"IS_REQUIRED,notEmpty"`
 	}
@@ -728,8 +692,7 @@ func TestErrorNotEmptySet(t *testing.T) {
 }
 
 func TestErrorRequiredAndNotEmptySet(t *testing.T) {
-	os.Setenv("IS_REQUIRED", "")
-	defer os.Clearenv()
+	setEnv(t, "IS_REQUIRED", "")
 	type config struct {
 		IsRequired string `env:"IS_REQUIRED,notEmpty,required"`
 	}
@@ -755,12 +718,11 @@ func TestParseExpandOption(t *testing.T) {
 		CompoundKey string `env:"HOST_PORT" envDefault:"${HOST}:${PORT}" envExpand:"True"`
 		Default     string `env:"DEFAULT" envDefault:"def1"  envExpand:"True"`
 	}
-	defer os.Clearenv()
 
-	os.Setenv("HOST", "localhost")
-	os.Setenv("PORT", "3000")
-	os.Setenv("EXPAND_KEY", "qwerty12345")
-	os.Setenv("SECRET_KEY", "${EXPAND_KEY}")
+	setEnv(t, "HOST", "localhost")
+	setEnv(t, "PORT", "3000")
+	setEnv(t, "EXPAND_KEY", "qwerty12345")
+	setEnv(t, "SECRET_KEY", "${EXPAND_KEY}")
 
 	cfg := config{}
 	err := Parse(&cfg)
@@ -778,11 +740,10 @@ func TestParseUnsetRequireOptions(t *testing.T) {
 	type config struct {
 		Password string `env:"PASSWORD,unset,required"`
 	}
-	defer os.Clearenv()
 	cfg := config{}
 
 	isErrorWithMessage(t, Parse(&cfg), `env: required environment variable "PASSWORD" is not set`)
-	os.Setenv("PASSWORD", "superSecret")
+	setEnv(t, "PASSWORD", "superSecret")
 	isNoErr(t, Parse(&cfg))
 
 	isEqual(t, "superSecret", cfg.Password)
@@ -797,37 +758,45 @@ func TestCustomParser(t *testing.T) {
 	}
 
 	type bar struct {
-		Name string `env:"OTHER"`
-		Foo  *foo   `env:"BLAH"`
+		Name string `env:"OTHER_CUSTOM"`
+		Foo  *foo   `env:"BLAH_CUSTOM"`
 	}
 
 	type config struct {
-		Var   foo  `env:"VAR"`
-		Foo   *foo `env:"BLAH"`
+		Var   foo  `env:"VAR_CUSTOM"`
+		Foo   *foo `env:"BLAH_CUSTOM"`
 		Other *bar
 	}
 
-	os.Setenv("VAR", "test")
-	defer os.Unsetenv("VAR")
-	os.Setenv("OTHER", "test2")
-	defer os.Unsetenv("OTHER")
-	os.Setenv("BLAH", "test3")
-	defer os.Unsetenv("BLAH")
+	setEnv(t, "VAR_CUSTOM", "test")
+	setEnv(t, "OTHER_CUSTOM", "test2")
+	setEnv(t, "BLAH_CUSTOM", "test3")
 
-	cfg := &config{
-		Other: &bar{},
+	runtest := func(t *testing.T) {
+		t.Helper()
+		cfg := &config{
+			Other: &bar{},
+		}
+		err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
+			reflect.TypeOf(foo{}): func(v string) (interface{}, error) {
+				return foo{name: v}, nil
+			},
+		})
+
+		isNoErr(t, err)
+		isEqual(t, cfg.Var.name, "test")
+		isEqual(t, cfg.Foo.name, "test3")
+		isEqual(t, cfg.Other.Name, "test2")
+		isEqual(t, cfg.Other.Foo.name, "test3")
 	}
-	err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
-		reflect.TypeOf(foo{}): func(v string) (interface{}, error) {
-			return foo{name: v}, nil
-		},
-	})
 
-	isNoErr(t, err)
-	isEqual(t, cfg.Var.name, "test")
-	isEqual(t, cfg.Foo.name, "test3")
-	isEqual(t, cfg.Other.Name, "test2")
-	isEqual(t, cfg.Other.Foo.name, "test3")
+	t.Parallel()
+	for i := 0; i < 10; i++ {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			t.Parallel()
+			runtest(t)
+		})
+	}
 }
 
 func TestParseWithFuncsNoPtr(t *testing.T) {
@@ -854,7 +823,7 @@ func TestCustomParserError(t *testing.T) {
 			Var foo `env:"VAR"`
 		}
 
-		os.Setenv("VAR", "single")
+		setEnv(t, "VAR", "single")
 		cfg := &config{}
 		err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
 			reflect.TypeOf(foo{}): customParserFunc,
@@ -868,7 +837,7 @@ func TestCustomParserError(t *testing.T) {
 		type config struct {
 			Var []foo `env:"VAR2"`
 		}
-		os.Setenv("VAR2", "slice,slace")
+		setEnv(t, "VAR2", "slice,slace")
 
 		cfg := &config{}
 		err := ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
@@ -888,7 +857,7 @@ func TestCustomParserBasicType(t *testing.T) {
 	}
 
 	exp := ConstT(123)
-	os.Setenv("CONST_", fmt.Sprintf("%d", exp))
+	setEnv(t, "CONST_", fmt.Sprintf("%d", exp))
 
 	customParserFunc := func(v string) (interface{}, error) {
 		i, err := strconv.Atoi(v)
@@ -947,7 +916,7 @@ func TestTypeCustomParserBasicInvalid(t *testing.T) {
 		Const ConstT `env:"CONST_"`
 	}
 
-	os.Setenv("CONST_", "foobar")
+	setEnv(t, "CONST_", "foobar")
 
 	customParserFunc := func(_ string) (interface{}, error) {
 		return nil, errors.New("random error")
@@ -968,7 +937,7 @@ func TestCustomParserNotCalledForNonAlias(t *testing.T) {
 
 	type config struct {
 		Val   uint64 `env:"" envDefault:"33"`
-		Other U      `env:"OTHER" envDefault:"44"`
+		Other U      `env:"OTHER_NAME" envDefault:"44"`
 	}
 
 	tParserCalled := false
@@ -999,7 +968,7 @@ func TestCustomParserBasicUnsupported(t *testing.T) {
 		Const ConstT `env:"CONST_"`
 	}
 
-	os.Setenv("CONST_", "42")
+	setEnv(t, "CONST_", "42")
 
 	cfg := &config{}
 	err := Parse(cfg)
@@ -1012,8 +981,7 @@ func TestUnsupportedStructType(t *testing.T) {
 	type config struct {
 		Foo http.Client `env:"FOO"`
 	}
-	os.Setenv("FOO", "foo")
-	defer os.Clearenv()
+	setEnv(t, "FOO", "foo")
 	isErrorWithMessage(t, Parse(&config{}), `env: no parser found for field "Foo" of type "http.Client"`)
 }
 
@@ -1024,8 +992,7 @@ func TestEmptyOption(t *testing.T) {
 
 	cfg := &config{}
 
-	os.Setenv("VAR", "")
-	defer os.Clearenv()
+	setEnv(t, "VAR", "")
 	isNoErr(t, Parse(cfg))
 	isEqual(t, "", cfg.Var)
 }
@@ -1041,7 +1008,7 @@ func TestTextUnmarshalerError(t *testing.T) {
 	type config struct {
 		Unmarshaler unmarshaler `env:"UNMARSHALER"`
 	}
-	os.Setenv("UNMARSHALER", "invalid")
+	setEnv(t, "UNMARSHALER", "invalid")
 	isErrorWithMessage(t, Parse(&config{}), `env: parse error on field "Unmarshaler" of type "env.unmarshaler": time: invalid duration "invalid"`)
 }
 
@@ -1049,7 +1016,7 @@ func TestTextUnmarshalersError(t *testing.T) {
 	type config struct {
 		Unmarshalers []unmarshaler `env:"UNMARSHALERS"`
 	}
-	os.Setenv("UNMARSHALERS", "1s,invalid")
+	setEnv(t, "UNMARSHALERS", "1s,invalid")
 	isErrorWithMessage(t, Parse(&config{}), `env: parse error on field "Unmarshalers" of type "[]env.unmarshaler": time: invalid duration "invalid"`)
 }
 
@@ -1066,7 +1033,7 @@ func TestParseInvalidURL(t *testing.T) {
 	type config struct {
 		ExampleURL url.URL `env:"EXAMPLE_URL_2"`
 	}
-	os.Setenv("EXAMPLE_URL_2", "nope://s s/")
+	setEnv(t, "EXAMPLE_URL_2", "nope://s s/")
 
 	isErrorWithMessage(t, Parse(&config{}), `env: parse error on field "ExampleURL" of type "url.URL": unable to parse URL: parse "nope://s s/": invalid character " " in host name`)
 }
@@ -1138,7 +1105,7 @@ func TestIgnoresUnexported(t *testing.T) {
 	}
 	cfg := unexportedConfig{}
 
-	os.Setenv("HOME", "/tmp/fakehome")
+	setEnv(t, "HOME", "/tmp/fakehome")
 	isNoErr(t, Parse(&cfg))
 	isEqual(t, cfg.home, "")
 	isEqual(t, "/tmp/fakehome", cfg.Home2)
@@ -1166,10 +1133,8 @@ const (
 )
 
 func TestPrecedenceUnmarshalText(t *testing.T) {
-	os.Setenv("LOG_LEVEL", "debug")
-	os.Setenv("LOG_LEVELS", "debug,info")
-	defer os.Unsetenv("LOG_LEVEL")
-	defer os.Unsetenv("LOG_LEVELS")
+	setEnv(t, "LOG_LEVEL", "debug")
+	setEnv(t, "LOG_LEVELS", "debug,info")
 
 	type config struct {
 		LogLevel  LogLevel   `env:"LOG_LEVEL"`
@@ -1217,8 +1182,7 @@ func TestFile(t *testing.T) {
 	file := filepath.Join(dir, "sec_key")
 	isNoErr(t, os.WriteFile(file, []byte("secret"), 0o660))
 
-	defer os.Clearenv()
-	os.Setenv("SECRET_KEY", file)
+	setEnv(t, "SECRET_KEY", file)
 
 	cfg := config{}
 	isNoErr(t, Parse(&cfg))
@@ -1229,7 +1193,6 @@ func TestFileNoParam(t *testing.T) {
 	type config struct {
 		SecretKey string `env:"SECRET_KEY,file"`
 	}
-	defer os.Clearenv()
 
 	cfg := config{}
 	isNoErr(t, Parse(&cfg))
@@ -1248,8 +1211,7 @@ func TestFileBadFile(t *testing.T) {
 	}
 
 	filename := "not-a-real-file"
-	defer os.Clearenv()
-	os.Setenv("SECRET_KEY", filename)
+	setEnv(t, "SECRET_KEY", filename)
 
 	oserr := "no such file or directory"
 	if runtime.GOOS == "windows" {
@@ -1262,14 +1224,12 @@ func TestFileWithDefault(t *testing.T) {
 	type config struct {
 		SecretKey string `env:"SECRET_KEY,file" envDefault:"${FILE}" envExpand:"true"`
 	}
-	defer os.Clearenv()
 
 	dir := t.TempDir()
 	file := filepath.Join(dir, "sec_key")
 	isNoErr(t, os.WriteFile(file, []byte("secret"), 0o660))
 
-	defer os.Clearenv()
-	os.Setenv("FILE", file)
+	setEnv(t, "FILE", file)
 
 	cfg := config{}
 	isNoErr(t, Parse(&cfg))
@@ -1283,15 +1243,14 @@ func TestCustomSliceType(t *testing.T) {
 		SecretKey customslice `env:"SECRET_KEY"`
 	}
 
-	parsecustomsclice := func(value string) (interface{}, error) {
-		return customslice(value), nil
-	}
-
-	defer os.Clearenv()
-	os.Setenv("SECRET_KEY", "somesecretkey")
+	setEnv(t, "SECRET_KEY", "somesecretkey")
 
 	var cfg config
-	isNoErr(t, ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{reflect.TypeOf(customslice{}): parsecustomsclice}))
+	isNoErr(t, ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{
+		reflect.TypeOf(customslice{}): func(value string) (interface{}, error) {
+			return customslice(value), nil
+		},
+	}))
 }
 
 func TestBlankKey(t *testing.T) {
@@ -1302,8 +1261,7 @@ func TestBlankKey(t *testing.T) {
 
 	val := testStruct{}
 
-	defer os.Clearenv()
-	os.Setenv("", "You should not see this")
+	setEnv(t, "", "You should not see this")
 
 	isNoErr(t, Parse(&val))
 	isEqual(t, "", val.Blank)
@@ -1323,8 +1281,7 @@ func TestCustomTimeParser(t *testing.T) {
 		SomeTime MyTime `env:"SOME_TIME"`
 	}
 
-	os.Setenv("SOME_TIME", "2021-05-06")
-	defer os.Unsetenv("SOME_TIME")
+	setEnv(t, "SOME_TIME", "2021-05-06")
 
 	var cfg config
 	isNoErr(t, Parse(&cfg))
@@ -1346,15 +1303,13 @@ func TestRequiredIfNoDefOption(t *testing.T) {
 
 	t.Run("missing", func(t *testing.T) {
 		isErrorWithMessage(t, Parse(&cfg, Options{RequiredIfNoDef: true}), `env: required environment variable "NAME" is not set`)
-		os.Setenv("NAME", "John")
-		t.Cleanup(os.Clearenv)
+		setEnv(t, "NAME", "John")
 		isErrorWithMessage(t, Parse(&cfg, Options{RequiredIfNoDef: true}), `env: required environment variable "FRUIT" is not set`)
 	})
 
 	t.Run("all set", func(t *testing.T) {
-		os.Setenv("NAME", "John")
-		os.Setenv("FRUIT", "Apple")
-		t.Cleanup(os.Clearenv)
+		setEnv(t, "NAME", "John")
+		setEnv(t, "FRUIT", "Apple")
 
 		// should not trigger an error for the missing 'GENRE' env because it has a default value.
 		isNoErr(t, Parse(&cfg, Options{RequiredIfNoDef: true}))
@@ -1521,4 +1476,10 @@ func isNil(object interface{}) bool {
 		return true
 	}
 	return false
+}
+
+func setEnv(tb testing.TB, key, value string) {
+	tb.Helper()
+	tb.Cleanup(func() { _ = os.Unsetenv(key) })
+	_ = os.Setenv(key, value)
 }
