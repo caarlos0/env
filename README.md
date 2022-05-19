@@ -268,6 +268,7 @@ You can change what tag name to use for setting the env vars by setting the `Opt
 variable.
 
 For example
+
 ```go
 package main
 
@@ -451,6 +452,43 @@ func main() {
 	}
 
 	fmt.Printf("%+v", cfg)  // {Username:admin Password:123456}
+}
+```
+
+## Custom Loaders
+
+You may want to load value from a custom location or make some changes before filling the config value.
+Loaders will retrieve the string value and send it to the parser to deal with it.
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/caarlos0/env/v6"
+)
+
+type Config struct {
+		DatabaseURI string `env:"DATABASE_URI,secret"`
+}
+
+
+func main() {
+	opts := Options{
+		CustomLoaders: map[string]LoaderFunc{
+			"secret": func(key string) (string, error) {
+				//Do anything to retrieve the value based on the key
+				return "jdbc:mydb://root:123@127.0.0.1/test", nil
+			},
+		},
+	}
+	var cfg config
+
+	if err := env.Parse(&cfg, opts); err != nil {
+		fmt.Println("failed:", err)
+	}
+	fmt.Printf("%+v", cfg)  // {DatabaseURI:"jdbc:mydb://root:123@127.0.0.1/test"}
 }
 ```
 
