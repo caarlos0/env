@@ -1038,6 +1038,61 @@ func TestParseInvalidURL(t *testing.T) {
 	isErrorWithMessage(t, Parse(&config{}), `env: parse error on field "ExampleURL" of type "url.URL": unable to parse URL: parse "nope://s s/": invalid character " " in host name`)
 }
 
+func TestCustomLoader(t *testing.T) {
+	type config struct {
+		Dog  string `env:"dog,animal"`
+		Cat  string `env:"cat,animal"`
+		Duck string `env:"duck,animal"`
+		Foo  string `env:"any-key,foo"`
+	}
+
+	opts := Options{
+		CustomLoaders: map[string]LoaderFunc{
+			"foo": func(key string) (string, error) {
+				return "foo", nil
+			},
+			"animal": func(key string) (val string, err error) {
+				switch key {
+				case "dog":
+					val = "woof"
+				case "cat":
+					val = "meow"
+				case "duck":
+					val = "quack"
+				default:
+					err = errors.New("Not found")
+				}
+				return
+			},
+		},
+	}
+
+	var cfg config
+	isNoErr(t, Parse(&cfg, opts))
+	isEqual(t, "woof", cfg.Dog)
+	isEqual(t, "meow", cfg.Cat)
+	isEqual(t, "quack", cfg.Duck)
+	isEqual(t, "foo", cfg.Foo)
+
+}
+
+func TestCustomLoaderError(t *testing.T) {
+	type config struct {
+		Foo string `env:"page,willFail"`
+	}
+
+	opts := Options{
+		CustomLoaders: map[string]LoaderFunc{
+			"willFail": func(key string) (string, error) {
+				return "", errors.New("fail")
+			},
+		},
+	}
+
+	var cfg config
+	isErrorWithMessage(t, Parse(&cfg, opts), `env: could not load from custom loader "willFail" for variable page: fail`)
+}
+
 func ExampleParse() {
 	type inner struct {
 		Foo string `env:"FOO" envDefault:"foobar"`

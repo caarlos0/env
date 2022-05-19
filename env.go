@@ -99,6 +99,9 @@ type ParserFunc func(v string) (interface{}, error)
 // OnSetFn is a hook that can be run when a value is set.
 type OnSetFn func(tag string, value interface{}, isDefault bool)
 
+// LoaderFunc defines the signature of a function that can load values from custom location.
+type LoaderFunc func(v string) (string, error)
+
 // Options for the parser.
 type Options struct {
 	// Environment keys and values that will be accessible for the service.
@@ -115,6 +118,9 @@ type Options struct {
 
 	// Prefix define a prefix for each key
 	Prefix string
+
+	// CustomLoaders allows to extend how variables should be loaded
+	CustomLoaders map[string]LoaderFunc
 
 	// Sets to true if we have already configured once.
 	configured bool
@@ -151,6 +157,9 @@ func configure(opts []Options) []Options {
 			opt.Prefix = item.Prefix
 		}
 		opt.RequiredIfNoDef = item.RequiredIfNoDef
+		if item.CustomLoaders != nil {
+			opt.CustomLoaders = item.CustomLoaders
+		}
 	}
 
 	return []Options{opt}
@@ -249,9 +258,13 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 	var loadFile bool
 	var unset bool
 	var notEmpty bool
+	var customLoader string
+	var customLoaderFunc LoaderFunc
 
 	required := opts[0].RequiredIfNoDef
 	prefix := opts[0].Prefix
+	customLoaders := opts[0].CustomLoaders
+
 	key, tags := parseKeyForOption(field.Tag.Get(getTagName(opts)))
 	key = prefix + key
 	for _, tag := range tags {
@@ -267,7 +280,14 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 		case "notEmpty":
 			notEmpty = true
 		default:
-			return "", fmt.Errorf("env: tag option %q not supported", tag)
+			// Calling the function customFn.
+			customFn, ok := customLoaders[tag]
+			if ok {
+				customLoaderFunc = customFn
+				customLoader = tag
+			} else {
+				return "", fmt.Errorf("env: tag option %q not supported", tag)
+			}
 		}
 	}
 	expand := strings.EqualFold(field.Tag.Get("envExpand"), "true")
@@ -295,6 +315,13 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 		val, err = getFromFile(filename)
 		if err != nil {
 			return "", fmt.Errorf(`env: could not load content of file "%s" from variable %s: %v`, filename, key, err)
+		}
+	}
+
+	if customLoader != "" {
+		val, err = customLoaderFunc(key)
+		if err != nil {
+			return "", fmt.Errorf(`env: could not load from custom loader "%s" for variable %s: %v`, customLoader, key, err)
 		}
 	}
 
