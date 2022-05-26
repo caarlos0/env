@@ -801,18 +801,25 @@ func TestCustomParser(t *testing.T) {
 
 func TestIssue226(t *testing.T) {
 	type config struct {
+		Ghi   []byte `env:"Ghi" envDefault:"a"`
 		Inner struct {
 			Abc []byte `env:"ABC" envDefault:"asdasd"`
+			Def []byte `env:"DEF" envDefault:"a"`
 		}
 	}
 
 	cfg := &config{}
 	isNoErr(t, ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
 		reflect.TypeOf([]byte{0}): func(v string) (interface{}, error) {
+			if v == "a" {
+				return []byte("nope"), nil
+			}
 			return []byte(v), nil
 		},
 	}))
 	isEqual(t, cfg.Inner.Abc, []byte("asdasd"))
+	isEqual(t, cfg.Inner.Def, []byte("nope"))
+	isEqual(t, cfg.Ghi, []byte("nope"))
 }
 
 func TestParseWithFuncsNoPtr(t *testing.T) {
