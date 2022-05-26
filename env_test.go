@@ -799,6 +799,22 @@ func TestCustomParser(t *testing.T) {
 	}
 }
 
+func TestIssue226(t *testing.T) {
+	type config struct {
+		Inner struct {
+			Abc []byte `env:"ABC" envDefault:"asdasd"`
+		}
+	}
+
+	cfg := &config{}
+	isNoErr(t, ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
+		reflect.TypeOf([]byte{0}): func(v string) (interface{}, error) {
+			return []byte(v), nil
+		},
+	}))
+	isEqual(t, cfg.Inner.Abc, []byte("asdasd"))
+}
+
 func TestParseWithFuncsNoPtr(t *testing.T) {
 	type foo struct{}
 	isErrorWithMessage(t, ParseWithFuncs(foo{}, nil), "env: expected a pointer to a Struct")
