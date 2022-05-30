@@ -799,6 +799,34 @@ func TestCustomParser(t *testing.T) {
 	}
 }
 
+func TestIssue226(t *testing.T) {
+	type config struct {
+		Inner struct {
+			Abc []byte `env:"ABC" envDefault:"asdasd"`
+			Def []byte `env:"DEF" envDefault:"a"`
+		}
+		Hij []byte `env:"HIJ"`
+		Lmn []byte `env:"LMN"`
+	}
+
+	setEnv(t, "HIJ", "a")
+	setEnv(t, "LMN", "b")
+
+	cfg := &config{}
+	isNoErr(t, ParseWithFuncs(cfg, map[reflect.Type]ParserFunc{
+		reflect.TypeOf([]byte{0}): func(v string) (interface{}, error) {
+			if v == "a" {
+				return []byte("nope"), nil
+			}
+			return []byte(v), nil
+		},
+	}))
+	isEqual(t, cfg.Inner.Abc, []byte("asdasd"))
+	isEqual(t, cfg.Inner.Def, []byte("nope"))
+	isEqual(t, cfg.Hij, []byte("nope"))
+	isEqual(t, cfg.Lmn, []byte("b"))
+}
+
 func TestParseWithFuncsNoPtr(t *testing.T) {
 	type foo struct{}
 	isErrorWithMessage(t, ParseWithFuncs(foo{}, nil), "env: expected a pointer to a Struct")
