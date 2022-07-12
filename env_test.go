@@ -1372,7 +1372,6 @@ func TestRequiredIfNoDefNested(t *testing.T) {
 
 		isNoErr(t, Parse(&cfg, Options{RequiredIfNoDef: true}))
 	})
-
 }
 
 func TestPrefix(t *testing.T) {
