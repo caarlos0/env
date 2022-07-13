@@ -1344,6 +1344,36 @@ func TestRequiredIfNoDefOption(t *testing.T) {
 	})
 }
 
+func TestRequiredIfNoDefNested(t *testing.T) {
+	type Server struct {
+		Host string `env:"HOST"`
+		Port uint16 `env:"PORT"`
+	}
+	type API struct {
+		Server
+		Token string `env:"TOKEN"`
+	}
+	type config struct {
+		API API `envPrefix:"SERVER_"`
+	}
+	var cfg config
+
+	t.Run("missing", func(t *testing.T) {
+		setEnv(t, "SERVER_HOST", "https://google.com")
+		setEnv(t, "SERVER_TOKEN", "0xdeadfood")
+
+		isErrorWithMessage(t, Parse(&cfg, Options{RequiredIfNoDef: true}), `env: required environment variable "SERVER_PORT" is not set`)
+	})
+
+	t.Run("all set", func(t *testing.T) {
+		setEnv(t, "SERVER_HOST", "https://google.com")
+		setEnv(t, "SERVER_PORT", "443")
+		setEnv(t, "SERVER_TOKEN", "0xdeadfood")
+
+		isNoErr(t, Parse(&cfg, Options{RequiredIfNoDef: true}))
+	})
+}
+
 func TestPrefix(t *testing.T) {
 	type Config struct {
 		Home string `env:"HOME"`

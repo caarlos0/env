@@ -252,8 +252,8 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 
 	required := opts[0].RequiredIfNoDef
 	prefix := opts[0].Prefix
-	key, tags := parseKeyForOption(field.Tag.Get(getTagName(opts)))
-	key = prefix + key
+	ownKey, tags := parseKeyForOption(field.Tag.Get(getTagName(opts)))
+	key := prefix + ownKey
 	for _, tag := range tags {
 		switch tag {
 		case "":
@@ -282,7 +282,7 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 		defer os.Unsetenv(key)
 	}
 
-	if required && !exists && len(key) > 0 {
+	if required && !exists && len(ownKey) > 0 {
 		return "", fmt.Errorf(`env: required environment variable %q is not set`, key)
 	}
 
