@@ -105,16 +105,10 @@ to the `env.ParseWithFuncs()` function.
 In addition to accepting a struct pointer (same as `Parse()`), this function
 also accepts a `map[reflect.Type]env.ParserFunc`.
 
-`env` also ships with some pre-built custom parser funcs for common types. You
-can check them out [here](parsers/).
-
 If you add a custom parser for, say `Foo`, it will also be used to parse
 `*Foo` and `[]Foo` types.
 
-This directory contains pre-built, custom parsers that can be used with `env.ParseWithFuncs`
-to facilitate the parsing of envs that are not basic types.
-
-Check the example in the [go doc](http://godoc.org/github.com/caarlos0/env)
+Check the examples in the [go doc](http://pkg.go.dev/github.com/caarlos0/env/v6)
 for more info.
 
 ### A note about `TextUnmarshaler` and `time.Time`
