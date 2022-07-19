@@ -20,11 +20,11 @@ cover: test
 .PHONY: cover
 
 fmt:
-	find . -name '*.go' -not -wholename './vendor/*' | while read -r file; do gofmt -w -s "$$file"; goimports -w "$$file"; done
+	gofumpt -w -l .
 .PHONY: fmt
 
 lint:
-	./bin/golangci-lint run ./...
+	golangci-lint run ./...
 .PHONY: lint
 
 ci: build test
