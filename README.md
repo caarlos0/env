@@ -76,7 +76,6 @@ Complete list:
 - `uint64`
 - `float32`
 - `float64`
-- `string`
 - `time.Duration`
 - `encoding.TextUnmarshaler`
 - `url.URL`
