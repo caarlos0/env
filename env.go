@@ -200,46 +200,51 @@ func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, opts ...
 func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts []Options) error {
 	refType := ref.Type()
 
+	var agrErrs error
+
 	for i := 0; i < refType.NumField(); i++ {
 		refField := ref.Field(i)
-		if !refField.CanSet() {
-			continue
-		}
-		if reflect.Ptr == refField.Kind() && !refField.IsNil() {
-			if refField.Elem().Kind() == reflect.Struct {
-				if err := ParseWithFuncs(refField.Interface(), funcMap, optsWithPrefix(refType.Field(i), opts)...); err != nil {
-					return err
-				}
-				continue
-			}
-			if err := ParseWithFuncs(refField.Interface(), funcMap, opts...); err != nil {
-				return err
-			}
-			continue
-		}
-		if reflect.Struct == refField.Kind() && refField.CanAddr() && refField.Type().Name() == "" {
-			if err := ParseWithFuncs(refField.Addr().Interface(), funcMap, optsWithPrefix(refType.Field(i), opts)...); err != nil {
-				return err
-			}
-			continue
-		}
 		refTypeField := refType.Field(i)
-		value, err := get(refTypeField, opts)
-		if err != nil {
-			return err
-		}
-		if value == "" {
-			if reflect.Struct == refField.Kind() {
-				if err := doParse(refField, funcMap, optsWithPrefix(refType.Field(i), opts)); err != nil {
-					return err
-				}
+
+		if err := doParseField(refField, refTypeField, funcMap, opts); err != nil {
+			if agrErrs == nil {
+				agrErrs = fmt.Errorf("%v", err)
+			} else {
+				agrErrs = fmt.Errorf("%v; %v", agrErrs, err)
 			}
-			continue
-		}
-		if err := set(refField, refTypeField, value, funcMap); err != nil {
-			return err
 		}
 	}
+
+	return agrErrs
+}
+
+func doParseField(refField reflect.Value, refTypeField reflect.StructField, funcMap map[reflect.Type]ParserFunc, opts []Options) error {
+	if !refField.CanSet() {
+		return nil
+	}
+	if reflect.Ptr == refField.Kind() && !refField.IsNil() {
+		if refField.Elem().Kind() == reflect.Struct {
+			return ParseWithFuncs(refField.Interface(), funcMap, optsWithPrefix(refTypeField, opts)...)
+		}
+
+		return ParseWithFuncs(refField.Interface(), funcMap, opts...)
+	}
+	if reflect.Struct == refField.Kind() && refField.CanAddr() && refField.Type().Name() == "" {
+		return ParseWithFuncs(refField.Addr().Interface(), funcMap, optsWithPrefix(refTypeField, opts)...)
+	}
+	value, err := get(refTypeField, opts)
+	if err != nil {
+		return err
+	}
+
+	if value != "" {
+		return set(refField, refTypeField, value, funcMap)
+	}
+
+	if reflect.Struct == refField.Kind() {
+		return doParse(refField, funcMap, optsWithPrefix(refTypeField, opts))
+	}
+
 	return nil
 }
 
