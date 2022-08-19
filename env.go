@@ -200,22 +200,26 @@ func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, opts ...
 func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts []Options) error {
 	refType := ref.Type()
 
-	var agrErrs error
+	var agrErr aggregateError
 
 	for i := 0; i < refType.NumField(); i++ {
 		refField := ref.Field(i)
 		refTypeField := refType.Field(i)
 
 		if err := doParseField(refField, refTypeField, funcMap, opts); err != nil {
-			if agrErrs == nil {
-				agrErrs = fmt.Errorf("%v", err)
+			if val, ok := err.(aggregateError); ok {
+				agrErr.errors = append(agrErr.errors, val.errors...)
 			} else {
-				agrErrs = fmt.Errorf("%v; %v", agrErrs, err)
+				agrErr.errors = append(agrErr.errors, err)
 			}
 		}
 	}
 
-	return agrErrs
+	if len(agrErr.errors) == 0 {
+		return nil
+	}
+
+	return agrErr
 }
 
 func doParseField(refField reflect.Value, refTypeField reflect.StructField, funcMap map[reflect.Type]ParserFunc, opts []Options) error {
@@ -272,7 +276,7 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 		case "notEmpty":
 			notEmpty = true
 		default:
-			return "", fmt.Errorf("env: tag option %q not supported", tag)
+			return "", fmt.Errorf("tag option %q not supported", tag)
 		}
 	}
 	expand := strings.EqualFold(field.Tag.Get("envExpand"), "true")
@@ -288,18 +292,18 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 	}
 
 	if required && !exists && len(ownKey) > 0 {
-		return "", fmt.Errorf(`env: required environment variable %q is not set`, key)
+		return "", fmt.Errorf(`required environment variable %q is not set`, key)
 	}
 
 	if notEmpty && val == "" {
-		return "", fmt.Errorf("env: environment variable %q should not be empty", key)
+		return "", fmt.Errorf("environment variable %q should not be empty", key)
 	}
 
 	if loadFile && val != "" {
 		filename := val
 		val, err = getFromFile(filename)
 		if err != nil {
-			return "", fmt.Errorf(`env: could not load content of file "%s" from variable %s: %v`, filename, key, err)
+			return "", fmt.Errorf(`could not load content of file "%s" from variable %s: %v`, filename, key, err)
 		}
 	}
 
@@ -472,11 +476,11 @@ type parseError struct {
 }
 
 func (e parseError) Error() string {
-	return fmt.Sprintf(`env: parse error on field "%s" of type "%s": %v`, e.sf.Name, e.sf.Type, e.err)
+	return fmt.Sprintf(`parse error on field "%s" of type "%s": %v`, e.sf.Name, e.sf.Type, e.err)
 }
 
 func newNoParserError(sf reflect.StructField) error {
-	return fmt.Errorf(`env: no parser found for field "%s" of type "%s"`, sf.Name, sf.Type)
+	return fmt.Errorf(`no parser found for field "%s" of type "%s"`, sf.Name, sf.Type)
 }
 
 func optsWithPrefix(field reflect.StructField, opts []Options) []Options {
@@ -486,4 +490,19 @@ func optsWithPrefix(field reflect.StructField, opts []Options) []Options {
 		subOpts[0].Prefix += prefix
 	}
 	return subOpts
+}
+
+type aggregateError struct {
+	errors []error
+}
+
+func (e aggregateError) Error() string {
+	var sb strings.Builder
+	sb.WriteString("env:")
+
+	for _, err := range e.errors {
+		sb.WriteString(fmt.Sprintf(" %v;", err.Error()))
+	}
+
+	return strings.TrimRight(sb.String(), ";")
 }
