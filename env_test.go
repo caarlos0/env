@@ -444,6 +444,20 @@ func TestParsesEnvInnerFails(t *testing.T) {
 	isErrorWithMessage(t, Parse(&config{}), `env: parse error on field "Number" of type "int": strconv.ParseInt: parsing "not-a-number": invalid syntax`)
 }
 
+func TestParsesEnvInnerFailsMultipleErrors(t *testing.T) {
+	type config struct {
+		Foo struct {
+			Name   string `env:"NAME,required"`
+			Number int    `env:"NUMBER"`
+			Bar    struct {
+				Age int `env:"AGE,required"`
+			}
+		}
+	}
+	setEnv(t, "NUMBER", "not-a-number")
+	isErrorWithMessage(t, Parse(&config{}), `env: required environment variable "NAME" is not set; parse error on field "Number" of type "int": strconv.ParseInt: parsing "not-a-number": invalid syntax; required environment variable "AGE" is not set`)
+}
+
 func TestParsesEnvInnerNil(t *testing.T) {
 	setEnv(t, "innervar", "someinnervalue")
 	cfg := ParentStruct{}
@@ -492,37 +506,37 @@ func TestPassReference(t *testing.T) {
 
 func TestInvalidBool(t *testing.T) {
 	setEnv(t, "BOOL", "should-be-a-bool")
-	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Bool" of type "bool": strconv.ParseBool: parsing "should-be-a-bool": invalid syntax`)
+	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Bool" of type "bool": strconv.ParseBool: parsing "should-be-a-bool": invalid syntax; parse error on field "BoolPtr" of type "*bool": strconv.ParseBool: parsing "should-be-a-bool": invalid syntax`)
 }
 
 func TestInvalidInt(t *testing.T) {
 	setEnv(t, "INT", "should-be-an-int")
-	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Int" of type "int": strconv.ParseInt: parsing "should-be-an-int": invalid syntax`)
+	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Int" of type "int": strconv.ParseInt: parsing "should-be-an-int": invalid syntax; parse error on field "IntPtr" of type "*int": strconv.ParseInt: parsing "should-be-an-int": invalid syntax`)
 }
 
 func TestInvalidUint(t *testing.T) {
 	setEnv(t, "UINT", "-44")
-	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Uint" of type "uint": strconv.ParseUint: parsing "-44": invalid syntax`)
+	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Uint" of type "uint": strconv.ParseUint: parsing "-44": invalid syntax; parse error on field "UintPtr" of type "*uint": strconv.ParseUint: parsing "-44": invalid syntax`)
 }
 
 func TestInvalidFloat32(t *testing.T) {
 	setEnv(t, "FLOAT32", "AAA")
-	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Float32" of type "float32": strconv.ParseFloat: parsing "AAA": invalid syntax`)
+	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Float32" of type "float32": strconv.ParseFloat: parsing "AAA": invalid syntax; parse error on field "Float32Ptr" of type "*float32": strconv.ParseFloat: parsing "AAA": invalid syntax`)
 }
 
 func TestInvalidFloat64(t *testing.T) {
 	setEnv(t, "FLOAT64", "AAA")
-	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Float64" of type "float64": strconv.ParseFloat: parsing "AAA": invalid syntax`)
+	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Float64" of type "float64": strconv.ParseFloat: parsing "AAA": invalid syntax; parse error on field "Float64Ptr" of type "*float64": strconv.ParseFloat: parsing "AAA": invalid syntax`)
 }
 
 func TestInvalidUint64(t *testing.T) {
 	setEnv(t, "UINT64", "AAA")
-	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Uint64" of type "uint64": strconv.ParseUint: parsing "AAA": invalid syntax`)
+	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Uint64" of type "uint64": strconv.ParseUint: parsing "AAA": invalid syntax; parse error on field "Uint64Ptr" of type "*uint64": strconv.ParseUint: parsing "AAA": invalid syntax`)
 }
 
 func TestInvalidInt64(t *testing.T) {
 	setEnv(t, "INT64", "AAA")
-	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Int64" of type "int64": strconv.ParseInt: parsing "AAA": invalid syntax`)
+	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Int64" of type "int64": strconv.ParseInt: parsing "AAA": invalid syntax; parse error on field "Int64Ptr" of type "*int64": strconv.ParseInt: parsing "AAA": invalid syntax`)
 }
 
 func TestInvalidInt64Slice(t *testing.T) {
@@ -567,12 +581,12 @@ func TestInvalidBoolsSlice(t *testing.T) {
 
 func TestInvalidDuration(t *testing.T) {
 	setEnv(t, "DURATION", "should-be-a-valid-duration")
-	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Duration" of type "time.Duration": unable to parse duration: time: invalid duration "should-be-a-valid-duration"`)
+	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Duration" of type "time.Duration": unable to parse duration: time: invalid duration "should-be-a-valid-duration"; parse error on field "DurationPtr" of type "*time.Duration": unable to parse duration: time: invalid duration "should-be-a-valid-duration"`)
 }
 
 func TestInvalidDurations(t *testing.T) {
 	setEnv(t, "DURATIONS", "1s,contains-an-invalid-duration,3s")
-	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Durations" of type "[]time.Duration": unable to parse duration: time: invalid duration "contains-an-invalid-duration"`)
+	isErrorWithMessage(t, Parse(&Config{}), `env: parse error on field "Durations" of type "[]time.Duration": unable to parse duration: time: invalid duration "contains-an-invalid-duration"; parse error on field "DurationPtrs" of type "[]*time.Duration": unable to parse duration: time: invalid duration "contains-an-invalid-duration"`)
 }
 
 func TestParseStructWithoutEnvTag(t *testing.T) {
@@ -1330,7 +1344,7 @@ func TestRequiredIfNoDefOption(t *testing.T) {
 	var cfg config
 
 	t.Run("missing", func(t *testing.T) {
-		isErrorWithMessage(t, Parse(&cfg, Options{RequiredIfNoDef: true}), `env: required environment variable "NAME" is not set`)
+		isErrorWithMessage(t, Parse(&cfg, Options{RequiredIfNoDef: true}), `env: required environment variable "NAME" is not set; required environment variable "FRUIT" is not set`)
 		setEnv(t, "NAME", "John")
 		isErrorWithMessage(t, Parse(&cfg, Options{RequiredIfNoDef: true}), `env: required environment variable "FRUIT" is not set`)
 	})
