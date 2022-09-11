@@ -226,12 +226,8 @@ func doParseField(refField reflect.Value, refTypeField reflect.StructField, func
 	if !refField.CanSet() {
 		return nil
 	}
-	if reflect.Ptr == refField.Kind() && !refField.IsNil() {
-		if refField.Elem().Kind() == reflect.Struct {
-			return ParseWithFuncs(refField.Interface(), funcMap, optsWithPrefix(refTypeField, opts)...)
-		}
-
-		return ParseWithFuncs(refField.Interface(), funcMap, opts...)
+	if reflect.Ptr == refField.Kind() && refField.Elem().Kind() == reflect.Struct {
+		return ParseWithFuncs(refField.Interface(), funcMap, optsWithPrefix(refTypeField, opts)...)
 	}
 	if reflect.Struct == refField.Kind() && refField.CanAddr() && refField.Type().Name() == "" {
 		return ParseWithFuncs(refField.Addr().Interface(), funcMap, optsWithPrefix(refTypeField, opts)...)

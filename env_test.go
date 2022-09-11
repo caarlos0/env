@@ -1475,6 +1475,52 @@ func TestComplePrefix(t *testing.T) {
 	isEqual(t, "blahhh", cfg.Blah)
 }
 
+func TestNonStructPtrValues(t *testing.T) {
+	type Foo struct {
+		FltPtr *float64 `env:"FLT_PRT"`
+	}
+
+	type ComplexConfig struct {
+		StrPtr *string `env:"STR_PTR"`
+		Foo    Foo     `env:"FOO_"`
+	}
+
+	cfg1 := ComplexConfig{}
+
+	isNoErr(t, Parse(&cfg1))
+	isEqual(t, nil, cfg1.StrPtr)
+	isEqual(t, nil, cfg1.Foo.FltPtr)
+
+	strPtr := "str_ptr"
+	fltPtr := 3.16
+	cfg2 := ComplexConfig{
+		StrPtr: &strPtr,
+		Foo: Foo{
+			FltPtr: &fltPtr,
+		},
+	}
+
+	setEnv(t, "STR_PTR", "env_str_ptr")
+	setEnv(t, "FLT_PRT", "5.16")
+
+	isNoErr(t, Parse(&cfg2))
+	isEqual(t, "env_str_ptr", *cfg2.StrPtr)
+	isEqual(t, 5.16, *cfg2.Foo.FltPtr)
+
+	var strPtrNill *string
+	var fltPtrNill *float64
+	cfg3 := ComplexConfig{
+		StrPtr: strPtrNill,
+		Foo: Foo{
+			FltPtr: fltPtrNill,
+		},
+	}
+
+	isNoErr(t, Parse(&cfg3))
+	isEqual(t, "env_str_ptr", *cfg3.StrPtr)
+	isEqual(t, 5.16, *cfg3.Foo.FltPtr)
+}
+
 func isTrue(tb testing.TB, b bool) {
 	tb.Helper()
 
