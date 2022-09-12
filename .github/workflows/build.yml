@@ -9,6 +9,12 @@ on:
   pull_request:
 
 jobs:
+  govulncheck:
+    uses: caarlos0/meta/.github/workflows/govulncheck.yml@main
+  semgrep:
+    uses: caarlos0/meta/.github/workflows/semgrep.yml@main
+  ruleguard:
+    uses: caarlos0/meta/.github/workflows/ruleguard.yml@main
   build:
     strategy:
       matrix:
