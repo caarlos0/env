@@ -7,14 +7,14 @@ import (
 )
 
 // List of available errors
-// 	AggregateError - aggregates and contains errors below:
-// 		ParseError
-//		NotStructPtrErrorType
-//  	NoParserError
-//		NoSupportedTagOptionError
-//		EnvVarIsNotSetError
-//		LoadFileContentError
-// 		ParseValueError
+// AggregateError - aggregates and contains errors below:
+// ParseError
+// NotStructPtrErrorType
+// NoParserError
+// NoSupportedTagOptionError
+// EnvVarIsNotSetError
+// LoadFileContentError
+// ParseValueError
 
 type AggregateError struct {
 	Errors []error
