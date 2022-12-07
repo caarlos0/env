@@ -2,7 +2,6 @@ package env
 
 import (
 	"encoding"
-	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -14,10 +13,6 @@ import (
 
 // nolint: gochecknoglobals
 var (
-	// ErrNotAStructPtr is returned if you pass something that is not a pointer to a
-	// Struct to Parse.
-	ErrNotAStructPtr = errors.New("env: expected a pointer to a Struct")
-
 	defaultBuiltInParsers = map[reflect.Kind]ParserFunc{
 		reflect.Bool: func(v string) (interface{}, error) {
 			return strconv.ParseBool(v)
@@ -79,14 +74,14 @@ func defaultTypeParsers() map[reflect.Type]ParserFunc {
 		reflect.TypeOf(url.URL{}): func(v string) (interface{}, error) {
 			u, err := url.Parse(v)
 			if err != nil {
-				return nil, fmt.Errorf("unable to parse URL: %v", err)
+				return nil, newParseValueError(fmt.Sprintf("unable to parse URL: %v", err))
 			}
 			return *u, nil
 		},
 		reflect.TypeOf(time.Nanosecond): func(v string) (interface{}, error) {
 			s, err := time.ParseDuration(v)
 			if err != nil {
-				return nil, fmt.Errorf("unable to parse duration: %v", err)
+				return nil, newParseValueError(fmt.Sprintf("unable to parse duration: %v", err))
 			}
 			return s, err
 		},
@@ -183,11 +178,11 @@ func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, opts ...
 
 	ptrRef := reflect.ValueOf(v)
 	if ptrRef.Kind() != reflect.Ptr {
-		return ErrNotAStructPtr
+		return newAggregateError(newNotStructPtrError())
 	}
 	ref := ptrRef.Elem()
 	if ref.Kind() != reflect.Struct {
-		return ErrNotAStructPtr
+		return newAggregateError(newNotStructPtrError())
 	}
 	parsers := defaultTypeParsers()
 	for k, v := range funcMap {
@@ -200,22 +195,22 @@ func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, opts ...
 func doParse(ref reflect.Value, funcMap map[reflect.Type]ParserFunc, opts []Options) error {
 	refType := ref.Type()
 
-	var agrErr aggregateError
+	var agrErr AggregateError
 
 	for i := 0; i < refType.NumField(); i++ {
 		refField := ref.Field(i)
 		refTypeField := refType.Field(i)
 
 		if err := doParseField(refField, refTypeField, funcMap, opts); err != nil {
-			if val, ok := err.(aggregateError); ok {
-				agrErr.errors = append(agrErr.errors, val.errors...)
+			if val, ok := err.(AggregateError); ok {
+				agrErr.Errors = append(agrErr.Errors, val.Errors...)
 			} else {
-				agrErr.errors = append(agrErr.errors, err)
+				agrErr.Errors = append(agrErr.Errors, err)
 			}
 		}
 	}
 
-	if len(agrErr.errors) == 0 {
+	if len(agrErr.Errors) == 0 {
 		return nil
 	}
 
@@ -276,7 +271,7 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 		case "notEmpty":
 			notEmpty = true
 		default:
-			return "", fmt.Errorf("tag option %q not supported", tag)
+			return "", newNoSupportedTagOptionError(tag)
 		}
 	}
 	expand := strings.EqualFold(field.Tag.Get("envExpand"), "true")
@@ -292,18 +287,18 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 	}
 
 	if required && !exists && len(ownKey) > 0 {
-		return "", fmt.Errorf(`required environment variable %q is not set`, key)
+		return "", newEnvVarIsNotSet(key)
 	}
 
 	if notEmpty && val == "" {
-		return "", fmt.Errorf("environment variable %q should not be empty", key)
+		return "", newEmptyEnvVarError(key)
 	}
 
 	if loadFile && val != "" {
 		filename := val
 		val, err = getFromFile(filename)
 		if err != nil {
-			return "", fmt.Errorf(`could not load content of file "%s" from variable %s: %v`, filename, key, err)
+			return "", newLoadFileContentError(filename, key, err)
 		}
 	}
 
@@ -463,26 +458,6 @@ func parseTextUnmarshalers(field reflect.Value, data []string, sf reflect.Struct
 	return nil
 }
 
-func newParseError(sf reflect.StructField, err error) error {
-	return parseError{
-		sf:  sf,
-		err: err,
-	}
-}
-
-type parseError struct {
-	sf  reflect.StructField
-	err error
-}
-
-func (e parseError) Error() string {
-	return fmt.Sprintf(`parse error on field "%s" of type "%s": %v`, e.sf.Name, e.sf.Type, e.err)
-}
-
-func newNoParserError(sf reflect.StructField) error {
-	return fmt.Errorf(`no parser found for field "%s" of type "%s"`, sf.Name, sf.Type)
-}
-
 func optsWithPrefix(field reflect.StructField, opts []Options) []Options {
 	subOpts := make([]Options, len(opts))
 	copy(subOpts, opts)
@@ -490,19 +465,4 @@ func optsWithPrefix(field reflect.StructField, opts []Options) []Options {
 		subOpts[0].Prefix += prefix
 	}
 	return subOpts
-}
-
-type aggregateError struct {
-	errors []error
-}
-
-func (e aggregateError) Error() string {
-	var sb strings.Builder
-	sb.WriteString("env:")
-
-	for _, err := range e.errors {
-		sb.WriteString(fmt.Sprintf(" %v;", err.Error()))
-	}
-
-	return strings.TrimRight(sb.String(), ";")
 }
