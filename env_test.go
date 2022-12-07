@@ -1574,6 +1574,8 @@ func isFalse(tb testing.TB, b bool) {
 }
 
 func isErrorWithType(tb testing.TB, err error, expErrs []error) {
+	tb.Helper()
+
 	innerErrs := err.(AggregateError).Errors
 
 	if len(innerErrs) != len(expErrs) {
@@ -1592,6 +1594,23 @@ func isErrorWithMessage(tb testing.TB, err error, msg string) {
 
 	if err == nil {
 		tb.Fatalf("expected error, got nil")
+	}
+
+	if e, ok := err.(*AggregateError); ok {
+		for _, er := range e.Errors {
+			switch v := er.(type) {
+			case ParseError:
+				// handle it
+			case NotStructPtrError:
+				// handle it
+			case NoParserError:
+				// handle it
+			case NoSupportedTagOptionError:
+				// handle it
+			default:
+				fmt.Printf("Unknown type %v", v)
+			}
+		}
 	}
 
 	if msg != err.Error() {
