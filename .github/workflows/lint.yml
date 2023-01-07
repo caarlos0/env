@@ -14,5 +14,3 @@ jobs:
           cache: true
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
-        with:
-          skip-go-installation: true
