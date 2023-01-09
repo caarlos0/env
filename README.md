@@ -1,6 +1,6 @@
 # env
 
-[![Build Status](https://img.shields.io/github/workflow/status/caarlos0/env/build?style=for-the-badge)](https://github.com/caarlos0/env/actions?workflow=build)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/caarlos0/env/build.yml?branch=main&style=for-the-badge)](https://github.com/caarlos0/env/actions?workflow=build)
 [![Coverage Status](https://img.shields.io/codecov/c/gh/caarlos0/env.svg?logo=codecov&style=for-the-badge)](https://codecov.io/gh/caarlos0/env)
 [![](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://pkg.go.dev/github.com/caarlos0/env/v6)
 
@@ -53,7 +53,9 @@ $ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s go run main.go
 {Home:/your/home Port:3000 IsProduction:true Hosts:[host1 host2 host3] Duration:1s}
 ```
 
-⚠️⚠️⚠️ **Attention:** _unexported fields_ will be **ignored**.
+> **Warning**
+>
+> _Unexported fields_ are **ignored** by `env`.
 
 ## Supported types and defaults
 
@@ -148,7 +150,7 @@ type config struct {
 
 ## Not Empty fields
 
-While `required` demands the environment variable to be check, it doesn't check its value.
+While `required` demands the environment variable to be set, it doesn't check its value.
 If you want to make sure the environment is set and not empty, you need to use the `notEmpty` tag option instead (`env:"SOME_ENV,notEmpty"`).
 
 Example:

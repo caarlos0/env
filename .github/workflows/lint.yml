@@ -1,21 +1,16 @@
 name: golangci-lint
 on:
   push:
-    tags:
-      - v*
-    branches:
-      - main
   pull_request:
 jobs:
   golangci:
     name: lint
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
         with:
-          go-version: ~1.16
-      - uses: actions/checkout@v3
+          go-version: ~1.19
+          cache: true
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
-        with:
-          skip-go-installation: true
