@@ -28,7 +28,6 @@ import (
 // 	}
 // }
 //
-//
 // List of the available errors
 // ParseError
 // NotStructPtrError
