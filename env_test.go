@@ -391,6 +391,39 @@ func TestParsesEnv(t *testing.T) {
 	isEqual(t, cfg.unexported, "")
 }
 
+func TestParsesEnv_Map(t *testing.T) {
+	type config struct {
+		MapStringString map[string]string `env:"MAP_STRING_STRING" envSeparator:","`
+		MapStringInt64  map[string]int64  `env:"MAP_STRING_INT64"`
+		MapStringBool   map[string]bool   `env:"MAP_STRING_BOOL" envSeparator:";"`
+	}
+
+	mss := map[string]string{
+		"k1": "v1",
+		"k2": "v2",
+	}
+	setEnv(t, "MAP_STRING_STRING", "k1:v1,k2:v2")
+
+	msi := map[string]int64{
+		"k1": 1,
+		"k2": 2,
+	}
+	setEnv(t, "MAP_STRING_INT64", "k1:1,k2:2")
+
+	msb := map[string]bool{
+		"k1": true,
+		"k2": false,
+	}
+	setEnv(t, "MAP_STRING_BOOL", "k1:true;k2:false")
+
+	var cfg config
+	isNoErr(t, Parse(&cfg))
+
+	isEqual(t, mss, cfg.MapStringString)
+	isEqual(t, msi, cfg.MapStringInt64)
+	isEqual(t, msb, cfg.MapStringBool)
+}
+
 func TestSetEnvAndTagOptsChain(t *testing.T) {
 	type config struct {
 		Key1 string `mytag:"KEY1,required"`
