@@ -6,28 +6,7 @@ import (
 	"strings"
 )
 
-// An aggregated error wrapper to combine gathered errors. This allows either to display all errors or convert them individually.
-//
-//
-// An example of converting errors by type:
-//
-// if e, ok := err.(*AggregateError); ok {
-// 	for _, er := range e.Errors {
-// 		switch v := er.(type) {
-// 		case ParseError:
-// 			// handle it
-// 		case NotStructPtrError:
-// 			// handle it
-// 		case NoParserError:
-// 			// handle it
-// 		case NoSupportedTagOptionError:
-// 			// handle it
-// 		default:
-// 			fmt.Printf("Unknown type %v", v)
-// 		}
-// 	}
-// }
-//
+// An aggregated error wrapper to combine gathered errors. This allows either to display all errors or convert them individually
 // List of the available errors
 // ParseError
 // NotStructPtrError
@@ -37,8 +16,6 @@ import (
 // EmptyEnvVarError
 // LoadFileContentError
 // ParseValueError
-//
-//
 type AggregateError struct {
 	Errors []error
 }
