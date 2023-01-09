@@ -1596,23 +1596,6 @@ func isErrorWithMessage(tb testing.TB, err error, msg string) {
 		tb.Fatalf("expected error, got nil")
 	}
 
-	if e, ok := err.(*AggregateError); ok {
-		for _, er := range e.Errors {
-			switch v := er.(type) {
-			case ParseError:
-				// handle it
-			case NotStructPtrError:
-				// handle it
-			case NoParserError:
-				// handle it
-			case NoSupportedTagOptionError:
-				// handle it
-			default:
-				fmt.Printf("Unknown type %v", v)
-			}
-		}
-	}
-
 	if msg != err.Error() {
 		tb.Fatalf("expected error message %q, got %q", msg, err.Error())
 	}

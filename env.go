@@ -178,11 +178,11 @@ func ParseWithFuncs(v interface{}, funcMap map[reflect.Type]ParserFunc, opts ...
 
 	ptrRef := reflect.ValueOf(v)
 	if ptrRef.Kind() != reflect.Ptr {
-		return newAggregateError(newNotStructPtrError())
+		return newAggregateError(NotStructPtrError{})
 	}
 	ref := ptrRef.Elem()
 	if ref.Kind() != reflect.Struct {
-		return newAggregateError(newNotStructPtrError())
+		return newAggregateError(NotStructPtrError{})
 	}
 	parsers := defaultTypeParsers()
 	for k, v := range funcMap {
