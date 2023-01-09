@@ -2,7 +2,6 @@ package env
 
 import (
 	"encoding"
-	"fmt"
 	"net/url"
 	"os"
 	"reflect"
@@ -74,14 +73,14 @@ func defaultTypeParsers() map[reflect.Type]ParserFunc {
 		reflect.TypeOf(url.URL{}): func(v string) (interface{}, error) {
 			u, err := url.Parse(v)
 			if err != nil {
-				return nil, newParseValueError(fmt.Sprintf("unable to parse URL: %v", err))
+				return nil, newParseValueError("unable to parse URL", err)
 			}
 			return *u, nil
 		},
 		reflect.TypeOf(time.Nanosecond): func(v string) (interface{}, error) {
 			s, err := time.ParseDuration(v)
 			if err != nil {
-				return nil, newParseValueError(fmt.Sprintf("unable to parse duration: %v", err))
+				return nil, newParseValueError("unable to parse duration", err)
 			}
 			return s, err
 		},

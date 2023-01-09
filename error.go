@@ -84,7 +84,7 @@ type NotStructPtrError struct {
 }
 
 func (e NotStructPtrError) Error() string {
-	return fmt.Sprintf("expected a pointer to a Struct")
+	return "expected a pointer to a Struct"
 }
 
 // This error occurs when there is no parser provided for given type
@@ -167,12 +167,13 @@ func (e LoadFileContentError) Error() string {
 // How to create a custom parser: https://github.com/caarlos0/env#custom-parser-funcs
 type ParseValueError struct {
 	Msg string
+	Err error
 }
 
-func newParseValueError(message string) error {
-	return ParseValueError{message}
+func newParseValueError(message string, err error) error {
+	return ParseValueError{message, err}
 }
 
 func (e ParseValueError) Error() string {
-	return e.Msg
+	return fmt.Sprintf("%s: %v", e.Msg, e.Err)
 }
