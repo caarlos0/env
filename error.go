@@ -80,8 +80,7 @@ func (e ParseError) Error() string {
 }
 
 // The error occurs when pass something that is not a pointer to a Struct to Parse
-type NotStructPtrError struct {
-}
+type NotStructPtrError struct{}
 
 func (e NotStructPtrError) Error() string {
 	return "expected a pointer to a Struct"
