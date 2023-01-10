@@ -54,7 +54,7 @@ $ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s go run main.go
 ```
 
 > **Warning**
->
+> 
 > _Unexported fields_ are **ignored** by `env`.
 
 ## Supported types and defaults
