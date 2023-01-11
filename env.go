@@ -116,6 +116,9 @@ type Options struct {
 	// Prefix define a prefix for each key
 	Prefix string
 
+	// IfEmptySetDefault on true , default value will assigned if the environment variable value is empty
+	IfEmptySetDefault bool
+
 	// Sets to true if we have already configured once.
 	configured bool
 }
@@ -257,6 +260,7 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 
 	required := opts[0].RequiredIfNoDef
 	prefix := opts[0].Prefix
+	ifEmptySetDefault := opts[0].IfEmptySetDefault
 	ownKey, tags := parseKeyForOption(field.Tag.Get(getTagName(opts)))
 	key := prefix + ownKey
 	for _, tag := range tags {
@@ -277,7 +281,7 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 	}
 	expand := strings.EqualFold(field.Tag.Get("envExpand"), "true")
 	defaultValue, defExists := field.Tag.Lookup("envDefault")
-	val, exists, isDefault = getOr(key, defaultValue, defExists, getEnvironment(opts))
+	val, exists, isDefault = getOr(key, defaultValue, defExists, getEnvironment(opts), ifEmptySetDefault)
 
 	if expand {
 		val = os.ExpandEnv(val)
@@ -320,10 +324,10 @@ func getFromFile(filename string) (value string, err error) {
 	return string(b), err
 }
 
-func getOr(key, defaultValue string, defExists bool, envs map[string]string) (string, bool, bool) {
+func getOr(key, defaultValue string, defExists bool, envs map[string]string, ifEmptySetDefault bool) (string, bool, bool) {
 	value, exists := envs[key]
 	switch {
-	case (!exists || key == "") && defExists:
+	case ((!exists || key == "") || (value == "" && ifEmptySetDefault)) && defExists:
 		return defaultValue, true, true
 	case !exists:
 		return "", false, false
