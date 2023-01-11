@@ -116,9 +116,6 @@ type Options struct {
 	// Prefix define a prefix for each key
 	Prefix string
 
-	// IfEmptySetDefault on true , default value will assigned if the environment variable value is empty
-	IfEmptySetDefault bool
-
 	// Sets to true if we have already configured once.
 	configured bool
 }
@@ -257,10 +254,10 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 	var loadFile bool
 	var unset bool
 	var notEmpty bool
+	var ifEmptySetDefault bool
 
 	required := opts[0].RequiredIfNoDef
 	prefix := opts[0].Prefix
-	ifEmptySetDefault := opts[0].IfEmptySetDefault
 	ownKey, tags := parseKeyForOption(field.Tag.Get(getTagName(opts)))
 	key := prefix + ownKey
 	for _, tag := range tags {
@@ -275,6 +272,8 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 			unset = true
 		case "notEmpty":
 			notEmpty = true
+		case "ifEmptySetDefault":
+			ifEmptySetDefault = true
 		default:
 			return "", fmt.Errorf("tag option %q not supported", tag)
 		}
