@@ -325,6 +325,8 @@ func getOr(key, defaultValue string, defExists bool, envs map[string]string) (st
 	switch {
 	case (!exists || key == "") && defExists:
 		return defaultValue, true, true
+	case exists && value == "" && defExists:
+		return defaultValue, true, true
 	case !exists:
 		return "", false, false
 	}
