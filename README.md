@@ -164,7 +164,7 @@ type config struct {
 ## If Empty Set Default fields
 
 The `notEmpty` option ensures that the environment variable is set and not empty, it returns error if environment variable is empty.  
-Instead, If you want to set default values to struct, you need to use the `ifEmptySetDefault` tag option instead (`env:"SOME_ENV,ifEmptySetDefault"`).
+Instead, If you want to set default values to struct, you need to use the `ifEmptySetDefault` tag option (`env:"SOME_ENV,ifEmptySetDefault"`).
 
 Example:
 
