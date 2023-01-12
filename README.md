@@ -161,6 +161,20 @@ type config struct {
 }
 ```
 
+## If Empty Set Default fields
+
+The `notEmpty` option ensures that the environment variable is set and not empty, it returns error if environment variable is empty.  
+Instead, If you want to set default values to struct, you need to use the `ifEmptySetDefault` tag option instead (`env:"SOME_ENV,ifEmptySetDefault"`).
+
+Example:
+
+```go
+type config struct {
+	SecretKey string `env:"NAME,notEmpty" envDefault:"foobar"`
+}
+```
+
+
 ## Unset environment variable after reading it
 
 The `env` tag option `unset` (e.g., `env:"tagKey,unset"`) can be added
