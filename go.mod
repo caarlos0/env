@@ -1,3 +1,3 @@
-module github.com/caarlos0/env/v6
+module github.com/caarlos0/env/v7
 
 go 1.17
