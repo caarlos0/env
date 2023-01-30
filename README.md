@@ -2,7 +2,7 @@
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/caarlos0/env/build.yml?branch=main&style=for-the-badge)](https://github.com/caarlos0/env/actions?workflow=build)
 [![Coverage Status](https://img.shields.io/codecov/c/gh/caarlos0/env.svg?logo=codecov&style=for-the-badge)](https://codecov.io/gh/caarlos0/env)
-[![](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://pkg.go.dev/github.com/caarlos0/env/v6)
+[![](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://pkg.go.dev/github.com/caarlos0/env/v7)
 
 A simple and zero-dependencies library to parse environment variables into structs.
 
@@ -11,7 +11,7 @@ A simple and zero-dependencies library to parse environment variables into struc
 Get the module with:
 
 ```sh
-go get github.com/caarlos0/env/v6
+go get github.com/caarlos0/env/v7
 ```
 
 The usage looks like this:
@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/caarlos0/env/v6"
+	"github.com/caarlos0/env/v7"
 )
 
 type config struct {
@@ -54,7 +54,7 @@ $ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s go run main.go
 ```
 
 > **Warning**
-> 
+>
 > _Unexported fields_ are **ignored** by `env`.
 
 ## Supported types and defaults
@@ -109,7 +109,7 @@ also accepts a `map[reflect.Type]env.ParserFunc`.
 If you add a custom parser for, say `Foo`, it will also be used to parse
 `*Foo` and `[]Foo` types.
 
-Check the examples in the [go doc](http://pkg.go.dev/github.com/caarlos0/env/v6)
+Check the examples in the [go doc](http://pkg.go.dev/github.com/caarlos0/env/v7)
 for more info.
 
 ### A note about `TextUnmarshaler` and `time.Time`
@@ -187,7 +187,7 @@ package main
 import (
 	"fmt"
 	"time"
-	"github.com/caarlos0/env/v6"
+	"github.com/caarlos0/env/v7"
 )
 
 type config struct {
@@ -234,7 +234,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v6"
+	"github.com/caarlos0/env/v7"
 )
 
 type Config struct {
@@ -270,7 +270,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v6"
+	"github.com/caarlos0/env/v7"
 )
 
 type Config struct {
@@ -304,7 +304,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v6"
+	"github.com/caarlos0/env/v7"
 )
 
 type Config struct {
@@ -320,7 +320,7 @@ type ComplexConfig struct {
 
 func main() {
 	cfg := ComplexConfig{}
-	if 	err := Parse(&cfg, Options{
+	if err := Parse(&cfg, Options{
 		Prefix: "T_",
 		Environment: map[string]string{
 			"T_FOO_HOME": "/foo",
@@ -354,7 +354,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v6"
+	"github.com/caarlos0/env/v7"
 )
 
 type Config struct {
@@ -393,7 +393,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v6"
+	"github.com/caarlos0/env/v7"
 )
 
 type Config struct {
@@ -427,7 +427,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v6"
+	"github.com/caarlos0/env/v7"
 )
 
 type Config struct {
