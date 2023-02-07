@@ -449,6 +449,49 @@ func main() {
 }
 ```
 
+## Error handling
+
+You can handle the errors the library throws like so:
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/caarlos0/env/v7"
+)
+
+type Config struct {
+	Username string `env:"USERNAME" envDefault:"admin"`
+	Password string `env:"PASSWORD"`
+}
+
+func main() {
+	var cfg Config
+	err := env.Parse(&cfg)
+	if e, ok := err.(*env.AggregateError); ok {
+		for _, er := range e.Errors {
+			switch v := er.(type) {
+			case env.ParseError:
+				// handle it
+			case env.NotStructPtrError:
+				// handle it
+			case env.NoParserError:
+				// handle it
+			case env.NoSupportedTagOptionError:
+				// handle it
+			default:
+				fmt.Printf("Unknown error type %v", v)
+			}
+		}
+	}
+
+	fmt.Printf("%+v", cfg)  // {Username:admin Password:123456}
+}
+```
+
 ## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/caarlos0/env.svg)](https://starchart.cc/caarlos0/env)
