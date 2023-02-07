@@ -412,19 +412,19 @@ func TestParsesEnv_Map(t *testing.T) {
 		"k1": "v1",
 		"k2": "v2",
 	}
-	setEnv(t, "MAP_STRING_STRING", "k1:v1,k2:v2")
+	t.Setenv("MAP_STRING_STRING", "k1:v1,k2:v2")
 
 	msi := map[string]int64{
 		"k1": 1,
 		"k2": 2,
 	}
-	setEnv(t, "MAP_STRING_INT64", "k1:1,k2:2")
+	t.Setenv("MAP_STRING_INT64", "k1:1,k2:2")
 
 	msb := map[string]bool{
 		"k1": true,
 		"k2": false,
 	}
-	setEnv(t, "MAP_STRING_BOOL", "k1:true;k2:false")
+	t.Setenv("MAP_STRING_BOOL", "k1:true;k2:false")
 
 	var cfg config
 	isNoErr(t, Parse(&cfg))
@@ -434,7 +434,117 @@ func TestParsesEnv_Map(t *testing.T) {
 	isEqual(t, msb, cfg.MapStringBool)
 }
 
-func TestSetEnvAndTagOptsChain(t *testing.T) {
+func TestParsesEnvInvalidMap(t *testing.T) {
+	type config struct {
+		MapStringString map[string]string `env:"MAP_STRING_STRING" envSeparator:","`
+	}
+
+	t.Setenv("MAP_STRING_STRING", "k1,k2:v2")
+
+	var cfg config
+	err := Parse(&cfg)
+	isErrorWithType(t, err, []error{ParseError{}})
+}
+
+func TestParseCustomMapType(t *testing.T) {
+	type custommap map[string]bool
+
+	type config struct {
+		SecretKey custommap `env:"SECRET_KEY"`
+	}
+
+	t.Setenv("SECRET_KEY", "somesecretkey:1")
+
+	var cfg config
+	isNoErr(t, ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{
+		reflect.TypeOf(custommap{}): func(value string) (interface{}, error) {
+			return custommap(map[string]bool{}), nil
+		},
+	}))
+}
+
+func TestParseMapCustomKeyType(t *testing.T) {
+	type CustomKey string
+
+	type config struct {
+		SecretKey map[CustomKey]bool `env:"SECRET"`
+	}
+
+	t.Setenv("SECRET", "somesecretkey:1")
+
+	var cfg config
+	isNoErr(t, ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{
+		reflect.TypeOf(CustomKey("")): func(value string) (interface{}, error) {
+			return CustomKey(value), nil
+		},
+	}))
+}
+
+func TestParseMapCustomKeyNoParser(t *testing.T) {
+	type CustomKey struct{}
+
+	type config struct {
+		SecretKey map[CustomKey]bool `env:"SECRET"`
+	}
+
+	t.Setenv("SECRET", "somesecretkey:1")
+
+	var cfg config
+	err := Parse(&cfg)
+	isErrorWithType(t, err, []error{NoParserError{}})
+}
+
+func TestParseMapCustomValueNoParser(t *testing.T) {
+	type Customval struct{}
+
+	type config struct {
+		SecretKey map[string]Customval `env:"SECRET"`
+	}
+
+	t.Setenv("SECRET", "somesecretkey:1")
+
+	var cfg config
+	err := Parse(&cfg)
+	isErrorWithType(t, err, []error{NoParserError{}})
+}
+
+func TestParseMapCustomKeyTypeError(t *testing.T) {
+	type CustomKey string
+
+	type config struct {
+		SecretKey map[CustomKey]bool `env:"SECRET"`
+	}
+
+	t.Setenv("SECRET", "somesecretkey:1")
+
+	var cfg config
+	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{
+		reflect.TypeOf(CustomKey("")): func(value string) (interface{}, error) {
+			return nil, fmt.Errorf("custom error")
+		},
+	})
+	isErrorWithType(t, err, []error{ParseError{}})
+}
+
+func TestParseMapCustomValueTypeError(t *testing.T) {
+	type Customval string
+
+	type config struct {
+		SecretKey map[string]Customval `env:"SECRET"`
+	}
+
+	t.Setenv("SECRET", "somesecretkey:1")
+
+	var cfg config
+	err := ParseWithFuncs(&cfg, map[reflect.Type]ParserFunc{
+		reflect.TypeOf(Customval("")): func(value string) (interface{}, error) {
+			return nil, fmt.Errorf("custom error")
+		},
+	})
+	isErrorWithType(t, err, []error{ParseError{}})
+}
+
+func TestSetenvAndTagOptsChain(t *testing.T) {
 	type config struct {
 		Key1 string `mytag:"KEY1,required"`
 		Key2 int    `mytag:"KEY2,required"`

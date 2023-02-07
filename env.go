@@ -2,6 +2,7 @@ package env
 
 import (
 	"encoding"
+	"fmt"
 	"net/url"
 	"os"
 	"reflect"
@@ -444,7 +445,7 @@ func handleMap(field reflect.Value, value string, sf reflect.StructField, funcMa
 	for _, part := range strings.Split(value, separator) {
 		pairs := strings.Split(part, ":")
 		if len(pairs) != 2 {
-			return fmt.Errorf("map pair: want 2 got %d", len(pairs))
+			return newParseError(sf, fmt.Errorf(`%q should be in "key:value" format`, part))
 		}
 
 		key, err := keyParserFunc(pairs[0])
