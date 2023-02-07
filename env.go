@@ -365,8 +365,11 @@ func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[
 		return nil
 	}
 
-	if field.Kind() == reflect.Slice {
+	switch field.Kind() {
+	case reflect.Slice:
 		return handleSlice(field, value, sf, funcMap)
+	case reflect.Map:
+		return handleMap(field, value, sf, funcMap)
 	}
 
 	return newNoParserError(sf)
@@ -409,6 +412,54 @@ func handleSlice(field reflect.Value, value string, sf reflect.StructField, func
 		}
 		result = reflect.Append(result, v)
 	}
+	field.Set(result)
+	return nil
+}
+
+func handleMap(field reflect.Value, value string, sf reflect.StructField, funcMap map[reflect.Type]ParserFunc) error {
+	keyType := sf.Type.Key()
+	keyParserFunc, ok := funcMap[keyType]
+	if !ok {
+		keyParserFunc, ok = defaultBuiltInParsers[keyType.Kind()]
+		if !ok {
+			return newNoParserError(sf)
+		}
+	}
+
+	elemType := sf.Type.Elem()
+	elemParserFunc, ok := funcMap[elemType]
+	if !ok {
+		elemParserFunc, ok = defaultBuiltInParsers[elemType.Kind()]
+		if !ok {
+			return newNoParserError(sf)
+		}
+	}
+
+	separator := sf.Tag.Get("envSeparator")
+	if separator == "" {
+		separator = ","
+	}
+
+	result := reflect.MakeMap(sf.Type)
+	for _, part := range strings.Split(value, separator) {
+		pairs := strings.Split(part, ":")
+		if len(pairs) != 2 {
+			return fmt.Errorf("map pair: want 2 got %d", len(pairs))
+		}
+
+		key, err := keyParserFunc(pairs[0])
+		if err != nil {
+			return newParseError(sf, err)
+		}
+
+		elem, err := elemParserFunc(pairs[1])
+		if err != nil {
+			return newParseError(sf, err)
+		}
+
+		result.SetMapIndex(reflect.ValueOf(key).Convert(keyType), reflect.ValueOf(elem).Convert(elemType))
+	}
+
 	field.Set(result)
 	return nil
 }
