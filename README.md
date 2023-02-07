@@ -82,10 +82,14 @@ Complete list:
 - `encoding.TextUnmarshaler`
 - `url.URL`
 
-Pointers, slices and slices of pointers of those types are also supported.
+Pointers, slices and slices of pointers, and maps of those types are also
+supported.
 
 You can also use/define a [custom parser func](#custom-parser-funcs) for any
 other type you want.
+
+You can also use custom keys and values in your maps, as long as you provide a
+parser function for them.
 
 If you set the `envDefault` tag for something, this value will be used in the
 case of absence of it in the environment.
