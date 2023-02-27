@@ -53,9 +53,14 @@ $ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s go run main.go
 {Home:/your/home Port:3000 IsProduction:true Hosts:[host1 host2 host3] Duration:1s}
 ```
 
+## Caveats
+
 > **Warning**
 >
-> _Unexported fields_ are **ignored** by `env`.
+> **This is important!**
+
+- _Unexported fields_ are **ignored**
+
 
 ## Supported types and defaults
 
