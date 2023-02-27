@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // nolint: gochecknoglobals
@@ -102,14 +103,19 @@ type Options struct {
 	// TagName specifies another tagname to use rather than the default env.
 	TagName string
 
-	// RequiredIfNoDef automatically sets all env as required if they do not declare 'envDefault'
+	// RequiredIfNoDef automatically sets all env as required if they do not
+	// declare 'envDefault'.
 	RequiredIfNoDef bool
 
-	// OnSet allows to run a function when a value is set
+	// OnSet allows to run a function when a value is set.
 	OnSet OnSetFn
 
-	// Prefix define a prefix for each key
+	// Prefix define a prefix for each key.
 	Prefix string
+
+	// UseFieldNameByDefault defines whether or not env should use the field
+	// name by default if the `env` key is missing.
+	UseFieldNameByDefault bool
 
 	// Sets to true if we have already configured once.
 	configured bool
@@ -145,6 +151,7 @@ func configure(opts []Options) []Options {
 		if item.Prefix != "" {
 			opt.Prefix = item.Prefix
 		}
+		opt.UseFieldNameByDefault = item.UseFieldNameByDefault
 		opt.RequiredIfNoDef = item.RequiredIfNoDef
 	}
 
@@ -243,6 +250,19 @@ func doParseField(refField reflect.Value, refTypeField reflect.StructField, func
 	return nil
 }
 
+const underscore rune = '_'
+
+func toEnvName(input string) string {
+	var output []rune
+	for i, c := range input {
+		if i > 0 && output[i-1] != underscore && c != underscore && unicode.ToUpper(c) == c {
+			output = append(output, underscore)
+		}
+		output = append(output, unicode.ToUpper(c))
+	}
+	return string(output)
+}
+
 func get(field reflect.StructField, opts []Options) (val string, err error) {
 	var exists bool
 	var isDefault bool
@@ -253,6 +273,9 @@ func get(field reflect.StructField, opts []Options) (val string, err error) {
 	required := opts[0].RequiredIfNoDef
 	prefix := opts[0].Prefix
 	ownKey, tags := parseKeyForOption(field.Tag.Get(getTagName(opts)))
+	if ownKey == "" && opts[0].UseFieldNameByDefault {
+		ownKey = toEnvName(field.Name)
+	}
 	key := prefix + ownKey
 	for _, tag := range tags {
 		switch tag {
