@@ -541,6 +541,11 @@ func main() {
 }
 ```
 
+> **Info**
+>
+> If you want to check if an specific error is in the chain, you can also use
+> `errors.Is()`.
+
 ## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/caarlos0/env.svg)](https://starchart.cc/caarlos0/env)
