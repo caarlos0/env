@@ -1691,6 +1691,37 @@ func TestComplePrefix(t *testing.T) {
 	isEqual(t, "blahhh", cfg.Blah)
 }
 
+func TestNoEnvKey(t *testing.T) {
+	type Config struct {
+		Foo    string
+		FooBar string
+		bar    string
+	}
+	var cfg Config
+	isNoErr(t, Parse(&cfg, Options{
+		UseFieldNameByDefault: true,
+		Environment: map[string]string{
+			"FOO":     "fooval",
+			"FOO_BAR": "foobarval",
+		},
+	}))
+	isEqual(t, "fooval", cfg.Foo)
+	isEqual(t, "foobarval", cfg.FooBar)
+	isEqual(t, "", cfg.bar)
+}
+
+func TestToEnv(t *testing.T) {
+	for in, out := range map[string]string{
+		"Foo":      "FOO",
+		"FooBar":   "FOO_BAR",
+		"fooBar":   "FOO_BAR",
+		"Foo_Bar":  "FOO_BAR",
+		"Foo__Bar": "FOO__BAR",
+	} {
+		isEqual(t, out, toEnvName(in))
+	}
+}
+
 func isTrue(tb testing.TB, b bool) {
 	tb.Helper()
 
