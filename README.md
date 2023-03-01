@@ -228,6 +228,46 @@ $ SECRET=/tmp/secret  \
 
 ## Options
 
+### Use field names as environment variables by default
+
+If you don't want to set the `env` tag on every field, you can use the
+`UseFieldNameByDefault` option.
+
+It will use the field name as environment variable name.
+
+Here's an example:
+
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/caarlos0/env/v7"
+)
+
+type Config struct {
+	Username     string // will use $USERNAME
+	Password     string // will use $PASSWORD
+	UserFullName string // will use $USER_FULL_NAME
+}
+
+func main() {
+	cfg := &Config{}
+	opts := &env.Options{UseFieldNameByDefault: true}
+
+	// Load env vars.
+	if err := env.Parse(cfg, opts); err != nil {
+		log.Fatal(err)
+	}
+
+	// Print the loaded data.
+	fmt.Printf("%+v\n", cfg)
+}
+```
+
 ### Environment
 
 By setting the `Options.Environment` map you can tell `Parse` to add those `keys` and `values`
@@ -262,7 +302,7 @@ func main() {
 	}
 
 	// Print the loaded data.
-	fmt.Printf("%+v\n", cfg.envData)
+	fmt.Printf("%+v\n", cfg)
 }
 ```
 
@@ -296,7 +336,7 @@ func main() {
 	}
 
 	// Print the loaded data.
-	fmt.Printf("%+v\n", cfg.envData)
+	fmt.Printf("%+v\n", cfg)
 }
 ```
 
@@ -347,7 +387,7 @@ func main() {
 	}
 
 	// Print the loaded data.
-	fmt.Printf("%+v\n", cfg.envData)
+	fmt.Printf("%+v\n", cfg)
 }
 ```
 
@@ -385,7 +425,7 @@ func main() {
 	}
 
 	// Print the loaded data.
-	fmt.Printf("%+v\n", cfg.envData)
+	fmt.Printf("%+v\n", cfg)
 }
 ```
 
@@ -420,7 +460,7 @@ func main() {
 	}
 
 	// Print the loaded data.
-	fmt.Printf("%+v\n", cfg.envData)
+	fmt.Printf("%+v\n", cfg)
 }
 ```
 
