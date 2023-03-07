@@ -40,7 +40,17 @@ func (e AggregateError) Error() string {
 	return strings.TrimRight(sb.String(), ";")
 }
 
-// The error occurs when it's impossible to convert the value for given type
+// Is conforms with errors.Is.
+func (e AggregateError) Is(err error) bool {
+	for _, ie := range e.Errors {
+		if reflect.TypeOf(ie) == reflect.TypeOf(err) {
+			return true
+		}
+	}
+	return false
+}
+
+// The error occurs when it's impossible to convert the value for given type.
 type ParseError struct {
 	Name string
 	Type reflect.Type
