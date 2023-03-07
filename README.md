@@ -2,7 +2,7 @@
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/caarlos0/env/build.yml?branch=main&style=for-the-badge)](https://github.com/caarlos0/env/actions?workflow=build)
 [![Coverage Status](https://img.shields.io/codecov/c/gh/caarlos0/env.svg?logo=codecov&style=for-the-badge)](https://codecov.io/gh/caarlos0/env)
-[![](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://pkg.go.dev/github.com/caarlos0/env/v7)
+[![](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://pkg.go.dev/github.com/caarlos0/env/v8)
 
 A simple and zero-dependencies library to parse environment variables into structs.
 
@@ -11,7 +11,7 @@ A simple and zero-dependencies library to parse environment variables into struc
 Get the module with:
 
 ```sh
-go get github.com/caarlos0/env/v7
+go get github.com/caarlos0/env/v8
 ```
 
 The usage looks like this:
@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/caarlos0/env/v7"
+	"github.com/caarlos0/env/v8"
 )
 
 type config struct {
@@ -110,15 +110,16 @@ of the variable.
 
 If you have a type that is not supported out of the box by the lib, you are able
 to use (or define) and pass custom parsers (and their associated `reflect.Type`)
-to the `env.ParseWithFuncs()` function.
+to the `env.ParseWithOptions()` function.
 
 In addition to accepting a struct pointer (same as `Parse()`), this function
-also accepts a `map[reflect.Type]env.ParserFunc`.
+also accepts a `Options{}`, and you can set your custom parsers in the `FuncMap`
+field.
 
 If you add a custom parser for, say `Foo`, it will also be used to parse
 `*Foo` and `[]Foo` types.
 
-Check the examples in the [go doc](http://pkg.go.dev/github.com/caarlos0/env/v7)
+Check the examples in the [go doc](http://pkg.go.dev/github.com/caarlos0/env/v8)
 for more info.
 
 ### A note about `TextUnmarshaler` and `time.Time`
@@ -196,7 +197,7 @@ package main
 import (
 	"fmt"
 	"time"
-	"github.com/caarlos0/env/v7"
+	"github.com/caarlos0/env/v8"
 )
 
 type config struct {
@@ -245,7 +246,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v7"
+	"github.com/caarlos0/env/v8"
 )
 
 type Config struct {
@@ -283,7 +284,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v7"
+	"github.com/caarlos0/env/v8"
 )
 
 type Config struct {
@@ -319,7 +320,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v7"
+	"github.com/caarlos0/env/v8"
 )
 
 type Config struct {
@@ -353,7 +354,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v7"
+	"github.com/caarlos0/env/v8"
 )
 
 type Config struct {
@@ -403,7 +404,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v7"
+	"github.com/caarlos0/env/v8"
 )
 
 type Config struct {
@@ -442,7 +443,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v7"
+	"github.com/caarlos0/env/v8"
 )
 
 type Config struct {
@@ -476,7 +477,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v7"
+	"github.com/caarlos0/env/v8"
 )
 
 type Config struct {
@@ -509,7 +510,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v7"
+	"github.com/caarlos0/env/v8"
 )
 
 type Config struct {
