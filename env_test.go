@@ -1724,6 +1724,16 @@ func TestToEnv(t *testing.T) {
 	}
 }
 
+func TestErrorIs(t *testing.T) {
+	err := newAggregateError(newParseError(reflect.StructField{}, nil))
+	t.Run("is", func(t *testing.T) {
+		isTrue(t, errors.Is(err, ParseError{}))
+	})
+	t.Run("is not", func(t *testing.T) {
+		isFalse(t, errors.Is(err, NoParserError{}))
+	})
+}
+
 func isTrue(tb testing.TB, b bool) {
 	tb.Helper()
 
