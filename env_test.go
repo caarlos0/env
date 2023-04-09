@@ -1745,6 +1745,9 @@ type FieldParamsConfig struct {
 	Unset          string `env:"UNSET,unset"`
 	NotEmpty       string `env:"NOT_EMPTY,notEmpty"`
 	Expand         string `env:"EXPAND" envExpand:"true"`
+	NestedConfig   struct {
+		Simple []string `env:"SIMPLE"`
+	} `envPrefix:"NESTED_"`
 }
 
 func TestGetFieldParams(t *testing.T) {
@@ -1760,12 +1763,10 @@ func TestGetFieldParams(t *testing.T) {
 		{OwnKey: "UNSET", Key: "UNSET", Unset: true},
 		{OwnKey: "NOT_EMPTY", Key: "NOT_EMPTY", NotEmpty: true},
 		{OwnKey: "EXPAND", Key: "EXPAND", Expand: true},
+		{OwnKey: "SIMPLE", Key: "NESTED_SIMPLE"},
 	}
 	isTrue(t, len(params) == len(expectedParams))
 	isTrue(t, areEqual(params, expectedParams))
-
-	params, err = GetFieldParams(&config)
-	isNoErr(t, err)
 }
 
 func TestGetFieldParamsWithPrefix(t *testing.T) {
@@ -1782,12 +1783,10 @@ func TestGetFieldParamsWithPrefix(t *testing.T) {
 		{OwnKey: "UNSET", Key: "FOO_UNSET", Unset: true},
 		{OwnKey: "NOT_EMPTY", Key: "FOO_NOT_EMPTY", NotEmpty: true},
 		{OwnKey: "EXPAND", Key: "FOO_EXPAND", Expand: true},
+		{OwnKey: "SIMPLE", Key: "FOO_NESTED_SIMPLE"},
 	}
 	isTrue(t, len(params) == len(expectedParams))
 	isTrue(t, areEqual(params, expectedParams))
-
-	params, err = GetFieldParams(&config)
-	isNoErr(t, err)
 }
 
 func isTrue(tb testing.TB, b bool) {
