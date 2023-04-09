@@ -1735,6 +1735,61 @@ func TestErrorIs(t *testing.T) {
 	})
 }
 
+type FieldParamsConfig struct {
+	Simple         []string `env:"SIMPLE"`
+	WithoutEnv     string
+	privateWithEnv string `env:"PRIVATE_WITH_ENV"`
+	WithDefault    string `env:"WITH_DEFAULT" envDefault:"default"`
+	Required       string `env:"REQUIRED,required"`
+	File           string `env:"FILE,file"`
+	Unset          string `env:"UNSET,unset"`
+	NotEmpty       string `env:"NOT_EMPTY,notEmpty"`
+	Expand         string `env:"EXPAND" envExpand:"true"`
+}
+
+func TestGetFieldParams(t *testing.T) {
+	var config FieldParamsConfig
+	params, err := GetFieldParams(&config)
+	isNoErr(t, err)
+
+	expectedParams := []FieldParams{
+		{OwnKey: "SIMPLE", Key: "SIMPLE"},
+		{OwnKey: "WITH_DEFAULT", Key: "WITH_DEFAULT", DefaultValue: "default", HasDefaultValue: true},
+		{OwnKey: "REQUIRED", Key: "REQUIRED", Required: true},
+		{OwnKey: "FILE", Key: "FILE", LoadFile: true},
+		{OwnKey: "UNSET", Key: "UNSET", Unset: true},
+		{OwnKey: "NOT_EMPTY", Key: "NOT_EMPTY", NotEmpty: true},
+		{OwnKey: "EXPAND", Key: "EXPAND", Expand: true},
+	}
+	isTrue(t, len(params) == len(expectedParams))
+	isTrue(t, areEqual(params, expectedParams))
+
+	params, err = GetFieldParams(&config)
+	isNoErr(t, err)
+}
+
+func TestGetFieldParamsWithPrefix(t *testing.T) {
+	var config FieldParamsConfig
+
+	params, err := GetFieldParamsWithOptions(&config, Options{Prefix: "FOO_"})
+	isNoErr(t, err)
+
+	expectedParams := []FieldParams{
+		{OwnKey: "SIMPLE", Key: "FOO_SIMPLE"},
+		{OwnKey: "WITH_DEFAULT", Key: "FOO_WITH_DEFAULT", DefaultValue: "default", HasDefaultValue: true},
+		{OwnKey: "REQUIRED", Key: "FOO_REQUIRED", Required: true},
+		{OwnKey: "FILE", Key: "FOO_FILE", LoadFile: true},
+		{OwnKey: "UNSET", Key: "FOO_UNSET", Unset: true},
+		{OwnKey: "NOT_EMPTY", Key: "FOO_NOT_EMPTY", NotEmpty: true},
+		{OwnKey: "EXPAND", Key: "FOO_EXPAND", Expand: true},
+	}
+	isTrue(t, len(params) == len(expectedParams))
+	isTrue(t, areEqual(params, expectedParams))
+
+	params, err = GetFieldParams(&config)
+	isNoErr(t, err)
+}
+
 func isTrue(tb testing.TB, b bool) {
 	tb.Helper()
 
