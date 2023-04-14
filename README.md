@@ -61,7 +61,6 @@ $ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s go run main.go
 
 - _Unexported fields_ are **ignored**
 
-
 ## Supported types and defaults
 
 Out of the box all built-in types are supported, plus a few others that
@@ -238,7 +237,6 @@ It will use the field name as environment variable name.
 
 Here's an example:
 
-
 ```go
 package main
 
@@ -257,10 +255,10 @@ type Config struct {
 
 func main() {
 	cfg := &Config{}
-	opts := &env.Options{UseFieldNameByDefault: true}
+	opts := env.Options{UseFieldNameByDefault: true}
 
 	// Load env vars.
-	if err := env.Parse(cfg, opts); err != nil {
+	if err := env.ParseWithOptions(cfg, opts); err != nil {
 		log.Fatal(err)
 	}
 
@@ -293,12 +291,12 @@ type Config struct {
 
 func main() {
 	cfg := &Config{}
-	opts := &env.Options{Environment: map[string]string{
+	opts := env.Options{Environment: map[string]string{
 		"PASSWORD": "MY_PASSWORD",
 	}}
 
 	// Load env vars.
-	if err := env.Parse(cfg, opts); err != nil {
+	if err := env.ParseWithOptions(cfg, opts); err != nil {
 		log.Fatal(err)
 	}
 
@@ -313,6 +311,7 @@ You can change what tag name to use for setting the env vars by setting the `Opt
 variable.
 
 For example
+
 ```go
 package main
 
@@ -329,10 +328,10 @@ type Config struct {
 
 func main() {
 	cfg := &Config{}
-	opts := &env.Options{TagName: "json"}
+	opts := env.Options{TagName: "json"}
 
 	// Load env vars.
-	if err := env.Parse(cfg, opts); err != nil {
+	if err := env.ParseWithOptions(cfg, opts); err != nil {
 		log.Fatal(err)
 	}
 
@@ -369,8 +368,8 @@ type ComplexConfig struct {
 }
 
 func main() {
-	cfg := ComplexConfig{}
-	if err := Parse(&cfg, Options{
+	cfg := &ComplexConfig{}
+	opts := env.Options{
 		Prefix: "T_",
 		Environment: map[string]string{
 			"T_FOO_HOME": "/foo",
@@ -378,12 +377,10 @@ func main() {
 			"T_BLAH":     "blahhh",
 			"T_HOME":     "/clean",
 		},
-	}); err != nil {
-		log.Fatal(err)
 	}
 
 	// Load env vars.
-	if err := env.Parse(cfg, opts); err != nil {
+	if err := env.ParseWithOptions(cfg, opts); err != nil {
 		log.Fatal(err)
 	}
 
@@ -414,14 +411,14 @@ type Config struct {
 
 func main() {
 	cfg := &Config{}
-	opts := &env.Options{
+	opts := env.Options{
 		OnSet: func(tag string, value interface{}, isDefault bool) {
 			fmt.Printf("Set %s to %v (default? %v)\n", tag, value, isDefault)
 		},
 	}
 
 	// Load env vars.
-	if err := env.Parse(cfg, opts); err != nil {
+	if err := env.ParseWithOptions(cfg, opts); err != nil {
 		log.Fatal(err)
 	}
 
@@ -453,10 +450,10 @@ type Config struct {
 
 func main() {
 	cfg := &Config{}
-	opts := &env.Options{RequiredIfNoDef: true}
+	opts := env.Options{RequiredIfNoDef: true}
 
 	// Load env vars.
-	if err := env.Parse(cfg, opts); err != nil {
+	if err := env.ParseWithOptions(cfg, opts); err != nil {
 		log.Fatal(err)
 	}
 
