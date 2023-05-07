@@ -1,3 +1,5 @@
+//go:build windows
+
 package env
 
 import "testing"
@@ -7,9 +9,11 @@ import "testing"
 func TestToMapWindows(t *testing.T) {
 	envVars := []string{"=::=::\\", "=C:=C:\\test", "VAR=REGULARVAR"}
 	result := toMap(envVars)
-	isEqual(t, map[string]string{
-		"=::": "::\\",
-		"=C:": "C:\\test",
-		"VAR": "REGULARVAR",
-	}, result)
+	isEqual(
+		t, map[string]string{
+			"=::": "::\\",
+			"=C:": "C:\\test",
+			"VAR": "REGULARVAR",
+		}, result,
+	)
 }
