@@ -13,6 +13,5 @@ func TestToMapWindows(t *testing.T) {
 		"=::": "::\\",
 		"=C:": "C:\\test",
 		"VAR": "REGULARVAR",
-	}, result,
-	)
+	}, result)
 }

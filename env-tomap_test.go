@@ -11,6 +11,5 @@ func TestUnix(t *testing.T) {
 		":":    "/test/unix",
 		"PATH": ":/test_val1:/test_val2",
 		"VAR":  "REGULARVAR",
-	}, result,
-	)
+	}, result)
 }
