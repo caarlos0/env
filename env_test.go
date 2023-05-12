@@ -836,6 +836,8 @@ func TestHook(t *testing.T) {
 	type config struct {
 		Something string `env:"SOMETHING" envDefault:"important"`
 		Another   string `env:"ANOTHER"`
+		Nope      string
+		Inner     struct{} `envPrefix:"FOO_"`
 	}
 
 	cfg := &config{}
@@ -1325,6 +1327,8 @@ func ExampleParse_onSet() {
 		Home         string `env:"HOME,required"`
 		Port         int    `env:"PORT" envDefault:"3000"`
 		IsProduction bool   `env:"PRODUCTION"`
+		NoEnvTag     bool
+		Inner        struct{} `envPrefix:"INNER_"`
 	}
 	os.Setenv("HOME", "/tmp/fakehome")
 	var cfg config
@@ -1339,7 +1343,7 @@ func ExampleParse_onSet() {
 	// Output: Set HOME to /tmp/fakehome (default? false)
 	// Set PORT to 3000 (default? true)
 	// Set PRODUCTION to  (default? false)
-	// {Home:/tmp/fakehome Port:3000 IsProduction:false}
+	// {Home:/tmp/fakehome Port:3000 IsProduction:false NoEnvTag:false Inner:{}}
 }
 
 func ExampleParse_defaults() {
