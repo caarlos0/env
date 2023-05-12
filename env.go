@@ -307,7 +307,9 @@ func get(field reflect.StructField, opts Options) (val string, err error) {
 	}
 
 	if opts.OnSet != nil {
-		opts.OnSet(key, val, isDefault)
+		if ownKey != "" {
+			opts.OnSet(key, val, isDefault)
+		}
 	}
 	return val, err
 }
