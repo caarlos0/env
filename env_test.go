@@ -1100,6 +1100,22 @@ func TestCustomParserError(t *testing.T) {
 		isErrorWithMessage(t, err, `env: parse error on field "Var" of type "[]env.foo": something broke`)
 		isTrue(t, errors.Is(err, ParseError{}))
 	})
+
+	t.Run("required, env set but empty", func(t *testing.T) { // issue #268
+		type config struct {
+			Var foo `env:"VAR,required"`
+		}
+
+		t.Setenv("VAR", "")
+		cfg := &config{}
+		err := ParseWithOptions(cfg, Options{FuncMap: map[reflect.Type]ParserFunc{
+			reflect.TypeOf(foo{}): customParserFunc,
+		}})
+
+		isEqual(t, cfg.Var.name, "")
+		isErrorWithMessage(t, err, `env: parse error on field "Var" of type "env.foo": something broke`)
+		isTrue(t, errors.Is(err, ParseError{}))
+	})
 }
 
 func TestCustomParserBasicType(t *testing.T) {
