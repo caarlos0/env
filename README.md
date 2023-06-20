@@ -4,7 +4,8 @@
 [![Coverage Status](https://img.shields.io/codecov/c/gh/caarlos0/env.svg?logo=codecov&style=for-the-badge)](https://codecov.io/gh/caarlos0/env)
 [![](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://pkg.go.dev/github.com/caarlos0/env/v8)
 
-A simple and zero-dependencies library to parse environment variables into structs.
+A simple and zero-dependencies library to parse environment variables into
+`struct`s.
 
 ## Example
 
@@ -60,7 +61,6 @@ $ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s go run main.go
 > **This is important!**
 
 - _Unexported fields_ are **ignored**
-
 
 ## Supported types and defaults
 
@@ -122,8 +122,10 @@ for more info.
 
 Env supports by default anything that implements the `TextUnmarshaler` interface.
 That includes things like `time.Time` for example.
-The upside is that depending on the format you need, you don't need to change anything.
-The downside is that if you do need time in another format, you'll need to create your own type.
+The upside is that depending on the format you need, you don't need to change
+anything.
+The downside is that if you do need time in another format, you'll need to
+create your own type.
 
 Its fairly straightforward:
 
@@ -145,14 +147,22 @@ And then you can parse `Config` with `env.Parse`.
 
 ## Required fields
 
-The `env` tag option `required` (e.g., `env:"tagKey,required"`) can be added to ensure that some environment variable is set.
-In the example above, an error is returned if the `config` struct is changed to:
+The `env` tag option `required` (e.g., `env:"tagKey,required"`) can be added to
+ensure that some environment variable is set. In the example above, an error is
+returned if the `config` struct is changed to:
 
 ```go
 type config struct {
 	SecretKey string `env:"SECRET_KEY,required"`
 }
 ```
+
+> **Warning**
+>
+> Note that being set is not the same as being empty.
+> If the variable is set, but empty, the field will have its type's default
+> value.
+> This also means that custom parser funcs will not be invoked.
 
 ## Expand vars
 
@@ -168,11 +178,11 @@ type config struct {
 
 This also works with `envDefault`.
 
-
 ## Not Empty fields
 
-While `required` demands the environment variable to be set, it doesn't check its value.
-If you want to make sure the environment is set and not empty, you need to use the `notEmpty` tag option instead (`env:"SOME_ENV,notEmpty"`).
+While `required` demands the environment variable to be set, it doesn't check
+its value. If you want to make sure the environment is set and not empty, you
+need to use the `notEmpty` tag option instead (`env:"SOME_ENV,notEmpty"`).
 
 Example:
 
@@ -198,9 +208,9 @@ type config struct {
 ## From file
 
 The `env` tag option `file` (e.g., `env:"tagKey,file"`) can be added
-to in order to indicate that the value of the variable shall be loaded from a file. The path of that file is given
-by the environment variable associated with it
-Example below
+in order to indicate that the value of the variable shall be loaded from a
+file.
+The path of that file is given by the environment variable associated with it:
 
 ```go
 package main
@@ -249,7 +259,6 @@ It will use the field name as environment variable name.
 
 Here's an example:
 
-
 ```go
 package main
 
@@ -268,10 +277,10 @@ type Config struct {
 
 func main() {
 	cfg := &Config{}
-	opts := &env.Options{UseFieldNameByDefault: true}
+	opts := env.Options{UseFieldNameByDefault: true}
 
 	// Load env vars.
-	if err := env.Parse(cfg, opts); err != nil {
+	if err := env.ParseWithOptions(cfg, opts); err != nil {
 		log.Fatal(err)
 	}
 
@@ -282,9 +291,11 @@ func main() {
 
 ### Environment
 
-By setting the `Options.Environment` map you can tell `Parse` to add those `keys` and `values`
-as env vars before parsing is done. These envs are stored in the map and never actually set by `os.Setenv`.
-This option effectively makes `env` ignore the OS environment variables: only the ones provided in the option are used.
+By setting the `Options.Environment` map you can tell `Parse` to add those
+`keys` and `values` as `env` vars before parsing is done.
+These `envs` are stored in the map and never actually set by `os.Setenv`.
+This option effectively makes `env` ignore the OS environment variables: only
+the ones provided in the option are used.
 
 This can make your testing scenarios a bit more clean and easy to handle.
 
@@ -304,12 +315,12 @@ type Config struct {
 
 func main() {
 	cfg := &Config{}
-	opts := &env.Options{Environment: map[string]string{
+	opts := env.Options{Environment: map[string]string{
 		"PASSWORD": "MY_PASSWORD",
 	}}
 
 	// Load env vars.
-	if err := env.Parse(cfg, opts); err != nil {
+	if err := env.ParseWithOptions(cfg, opts); err != nil {
 		log.Fatal(err)
 	}
 
@@ -320,10 +331,11 @@ func main() {
 
 ### Changing default tag name
 
-You can change what tag name to use for setting the env vars by setting the `Options.TagName`
-variable.
+You can change what tag name to use for setting the env vars by setting the
+`Options.TagName` variable.
 
 For example
+
 ```go
 package main
 
@@ -340,10 +352,10 @@ type Config struct {
 
 func main() {
 	cfg := &Config{}
-	opts := &env.Options{TagName: "json"}
+	opts := env.Options{TagName: "json"}
 
 	// Load env vars.
-	if err := env.Parse(cfg, opts); err != nil {
+	if err := env.ParseWithOptions(cfg, opts); err != nil {
 		log.Fatal(err)
 	}
 
@@ -380,8 +392,8 @@ type ComplexConfig struct {
 }
 
 func main() {
-	cfg := ComplexConfig{}
-	if err := Parse(&cfg, Options{
+	cfg := &ComplexConfig{}
+	opts := env.Options{
 		Prefix: "T_",
 		Environment: map[string]string{
 			"T_FOO_HOME": "/foo",
@@ -389,12 +401,10 @@ func main() {
 			"T_BLAH":     "blahhh",
 			"T_HOME":     "/clean",
 		},
-	}); err != nil {
-		log.Fatal(err)
 	}
 
 	// Load env vars.
-	if err := env.Parse(cfg, opts); err != nil {
+	if err := env.ParseWithOptions(cfg, opts); err != nil {
 		log.Fatal(err)
 	}
 
@@ -405,7 +415,8 @@ func main() {
 
 ### On set hooks
 
-You might want to listen to value sets and, for example, log something or do some other kind of logic.
+You might want to listen to value sets and, for example, log something or do
+some other kind of logic.
 You can do this by passing a `OnSet` option:
 
 ```go
@@ -425,14 +436,14 @@ type Config struct {
 
 func main() {
 	cfg := &Config{}
-	opts := &env.Options{
+	opts := env.Options{
 		OnSet: func(tag string, value interface{}, isDefault bool) {
 			fmt.Printf("Set %s to %v (default? %v)\n", tag, value, isDefault)
 		},
 	}
 
 	// Load env vars.
-	if err := env.Parse(cfg, opts); err != nil {
+	if err := env.ParseWithOptions(cfg, opts); err != nil {
 		log.Fatal(err)
 	}
 
@@ -443,7 +454,8 @@ func main() {
 
 ## Making all fields to required
 
-You can make all fields that don't have a default value be required by setting the `RequiredIfNoDef: true` in the `Options`.
+You can make all fields that don't have a default value be required by setting
+the `RequiredIfNoDef: true` in the `Options`.
 
 For example
 
@@ -464,10 +476,10 @@ type Config struct {
 
 func main() {
 	cfg := &Config{}
-	opts := &env.Options{RequiredIfNoDef: true}
+	opts := env.Options{RequiredIfNoDef: true}
 
 	// Load env vars.
-	if err := env.Parse(cfg, opts); err != nil {
+	if err := env.ParseWithOptions(cfg, opts); err != nil {
 		log.Fatal(err)
 	}
 
@@ -478,8 +490,10 @@ func main() {
 
 ## Defaults from code
 
-You may define default value also in code, by initialising the config data before it's filled by `env.Parse`.
-Default values defined as struct tags will overwrite existing values during Parse.
+You may define default value also in code, by initialising the config data
+before it's filled by `env.Parse`.
+Default values defined as struct tags will overwrite existing values during
+Parse.
 
 ```go
 package main
