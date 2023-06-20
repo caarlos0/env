@@ -252,6 +252,7 @@ func get(field reflect.StructField, opts Options) (val string, err error) {
 	var loadFile bool
 	var unset bool
 	var notEmpty bool
+	var expand bool
 
 	required := opts.RequiredIfNoDef
 	ownKey, tags := parseKeyForOption(field.Tag.Get(opts.TagName))
@@ -271,6 +272,8 @@ func get(field reflect.StructField, opts Options) (val string, err error) {
 			unset = true
 		case "notEmpty":
 			notEmpty = true
+		case "expand":
+			expand = true
 		default:
 			return "", newNoSupportedTagOptionError(tag)
 		}
@@ -278,7 +281,6 @@ func get(field reflect.StructField, opts Options) (val string, err error) {
 
 	prefix := opts.Prefix
 	key := prefix + ownKey
-	expand := strings.EqualFold(field.Tag.Get("envExpand"), "true")
 	defaultValue, defExists := field.Tag.Lookup("envDefault")
 	val, exists, isDefault = getOr(key, defaultValue, defExists, opts.Environment)
 

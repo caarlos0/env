@@ -89,7 +89,7 @@ func (e NoParserError) Error() string {
 }
 
 // This error occurs when the given tag is not supported
-// In-built supported tags: "", "file", "required", "unset", "notEmpty", "envDefault", "envExpand", "envSeparator"
+// In-built supported tags: "", "file", "required", "unset", "notEmpty", "expand", "envDefault", "envSeparator"
 // How to create a custom tag: https://github.com/caarlos0/env#changing-default-tag-name
 type NoSupportedTagOptionError struct {
 	Tag string

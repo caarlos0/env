@@ -34,7 +34,7 @@ type config struct {
 	IsProduction bool          `env:"PRODUCTION"`
 	Hosts        []string      `env:"HOSTS" envSeparator:":"`
 	Duration     time.Duration `env:"DURATION"`
-	TempFolder   string        `env:"TEMP_FOLDER" envDefault:"${HOME}/tmp" envExpand:"true"`
+	TempFolder   string        `env:"TEMP_FOLDER,expand" envDefault:"${HOME}/tmp"`
 }
 
 func main() {
@@ -102,10 +102,6 @@ case of absence of it in the environment.
 By default, slice types will split the environment value on `,`; you can change
 this behavior by setting the `envSeparator` tag.
 
-If you set the `envExpand` tag, environment variables (either in `${var}` or
-`$var` format) in the string will be replaced according with the actual value
-of the variable.
-
 ## Custom Parser Funcs
 
 If you have a type that is not supported out of the box by the lib, you are able
@@ -168,6 +164,20 @@ type config struct {
 > value.
 > This also means that custom parser funcs will not be invoked.
 
+## Expand vars
+
+If you set the `expand` option, environment variables (either in `${var}` or
+`$var` format) in the string will be replaced according with the actual value
+of the variable. For example:
+
+```go
+type config struct {
+	SecretKey string `env:"SECRET_KEY,expand"`
+}
+```
+
+This also works with `envDefault`.
+
 ## Not Empty fields
 
 While `required` demands the environment variable to be set, it doesn't check
@@ -214,7 +224,7 @@ import (
 type config struct {
 	Secret       string   `env:"SECRET,file"`
 	Password     string   `env:"PASSWORD,file" envDefault:"/tmp/password"`
-	Certificate  string   `env:"CERTIFICATE,file" envDefault:"${CERTIFICATE_FILE}" envExpand:"true"`
+	Certificate  string   `env:"CERTIFICATE,file,expand" envDefault:"${CERTIFICATE_FILE}"`
 }
 
 func main() {
