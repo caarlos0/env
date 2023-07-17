@@ -141,7 +141,9 @@ func customOptions(opt Options) Options {
 		opt.FuncMap = map[reflect.Type]ParserFunc{}
 	}
 	for k, v := range defOpts.FuncMap {
-		opt.FuncMap[k] = v
+		if _, exists := opt.FuncMap[k]; !exists {
+			opt.FuncMap[k] = v
+		}
 	}
 	return opt
 }
