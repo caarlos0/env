@@ -298,7 +298,14 @@ type FieldParams struct {
 	Expand          bool
 }
 
-func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, error) {
+func get(field reflect.StructField, opts Options) (val string, err error) {
+	var exists bool
+	var isDefault bool
+	var loadFile bool
+	var unset bool
+	var notEmpty bool
+	var expand bool
+
 	ownKey, tags := parseKeyForOption(field.Tag.Get(opts.TagName))
 	if ownKey == "" && opts.UseFieldNameByDefault {
 		ownKey = toEnvName(field.Name)
@@ -327,6 +334,8 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 			result.Unset = true
 		case "notEmpty":
 			result.NotEmpty = true
+		case "expand":
+			expand = true
 		default:
 			return FieldParams{}, newNoSupportedTagOptionError(tag)
 		}
@@ -337,6 +346,9 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	var exists, isDefault bool
 
+	prefix := opts.Prefix
+	key := prefix + ownKey
+	defaultValue, defExists := field.Tag.Lookup("envDefault")
 	val, exists, isDefault = getOr(fieldParams.Key, fieldParams.DefaultValue, fieldParams.HasDefaultValue, opts.Environment)
 
 	if fieldParams.Expand {
@@ -364,7 +376,9 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	}
 
 	if opts.OnSet != nil {
-		opts.OnSet(fieldParams.Key, val, isDefault)
+		if ownKey != "" {
+			opts.OnSet(fieldParams.Key, val, isDefault)
+		}
 	}
 	return val, err
 }

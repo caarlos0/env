@@ -836,6 +836,8 @@ func TestHook(t *testing.T) {
 	type config struct {
 		Something string `env:"SOMETHING" envDefault:"important"`
 		Another   string `env:"ANOTHER"`
+		Nope      string
+		Inner     struct{} `envPrefix:"FOO_"`
 	}
 
 	cfg := &config{}
@@ -931,11 +933,11 @@ func TestErrorRequiredNotSetWithDefault(t *testing.T) {
 func TestParseExpandOption(t *testing.T) {
 	type config struct {
 		Host        string `env:"HOST" envDefault:"localhost"`
-		Port        int    `env:"PORT" envDefault:"3000" envExpand:"True"`
-		SecretKey   string `env:"SECRET_KEY" envExpand:"True"`
+		Port        int    `env:"PORT,expand" envDefault:"3000"`
+		SecretKey   string `env:"SECRET_KEY,expand"`
 		ExpandKey   string `env:"EXPAND_KEY"`
-		CompoundKey string `env:"HOST_PORT" envDefault:"${HOST}:${PORT}" envExpand:"True"`
-		Default     string `env:"DEFAULT" envDefault:"def1"  envExpand:"True"`
+		CompoundKey string `env:"HOST_PORT,expand" envDefault:"${HOST}:${PORT}"`
+		Default     string `env:"DEFAULT,expand" envDefault:"def1"`
 	}
 
 	t.Setenv("HOST", "localhost")
@@ -1309,6 +1311,7 @@ func ExampleParse() {
 		Home         string `env:"HOME,required"`
 		Port         int    `env:"PORT" envDefault:"3000"`
 		IsProduction bool   `env:"PRODUCTION"`
+		TempFolder   string `env:"TEMP_FOLDER,expand" envDefault:"${HOME}/.tmp"`
 		Inner        inner
 	}
 	os.Setenv("HOME", "/tmp/fakehome")
@@ -1317,7 +1320,7 @@ func ExampleParse() {
 		fmt.Println("failed:", err)
 	}
 	fmt.Printf("%+v", cfg)
-	// Output: {Home:/tmp/fakehome Port:3000 IsProduction:false Inner:{Foo:foobar}}
+	// Output:  {Home:/tmp/fakehome Port:3000 IsProduction:false TempFolder:/tmp/fakehome/.tmp Inner:{Foo:foobar}}
 }
 
 func ExampleParse_onSet() {
@@ -1325,6 +1328,8 @@ func ExampleParse_onSet() {
 		Home         string `env:"HOME,required"`
 		Port         int    `env:"PORT" envDefault:"3000"`
 		IsProduction bool   `env:"PRODUCTION"`
+		NoEnvTag     bool
+		Inner        struct{} `envPrefix:"INNER_"`
 	}
 	os.Setenv("HOME", "/tmp/fakehome")
 	var cfg config
@@ -1339,7 +1344,7 @@ func ExampleParse_onSet() {
 	// Output: Set HOME to /tmp/fakehome (default? false)
 	// Set PORT to 3000 (default? true)
 	// Set PRODUCTION to  (default? false)
-	// {Home:/tmp/fakehome Port:3000 IsProduction:false}
+	// {Home:/tmp/fakehome Port:3000 IsProduction:false NoEnvTag:false Inner:{}}
 }
 
 func ExampleParse_defaults() {
@@ -1491,7 +1496,7 @@ func TestFileBadFile(t *testing.T) {
 
 func TestFileWithDefault(t *testing.T) {
 	type config struct {
-		SecretKey string `env:"SECRET_KEY,file" envDefault:"${FILE}" envExpand:"true"`
+		SecretKey string `env:"SECRET_KEY,file,expand" envDefault:"${FILE}"`
 	}
 
 	dir := t.TempDir()
