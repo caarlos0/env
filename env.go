@@ -270,6 +270,7 @@ func setField(refField reflect.Value, refTypeField reflect.StructField, opts Opt
 	if value != "" {
 		return set(refField, refTypeField, value, opts.FuncMap)
 	}
+
 	return nil
 }
 
@@ -298,14 +299,7 @@ type FieldParams struct {
 	Expand          bool
 }
 
-func get(field reflect.StructField, opts Options) (val string, err error) {
-	var exists bool
-	var isDefault bool
-	var loadFile bool
-	var unset bool
-	var notEmpty bool
-	var expand bool
-
+func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, error) {
 	ownKey, tags := parseKeyForOption(field.Tag.Get(opts.TagName))
 	if ownKey == "" && opts.UseFieldNameByDefault {
 		ownKey = toEnvName(field.Name)
@@ -319,7 +313,6 @@ func get(field reflect.StructField, opts Options) (val string, err error) {
 		Required:        opts.RequiredIfNoDef,
 		DefaultValue:    defaultValue,
 		HasDefaultValue: hasDefaultValue,
-		Expand:          strings.EqualFold(field.Tag.Get("envExpand"), "true"),
 	}
 
 	for _, tag := range tags {
@@ -335,7 +328,7 @@ func get(field reflect.StructField, opts Options) (val string, err error) {
 		case "notEmpty":
 			result.NotEmpty = true
 		case "expand":
-			expand = true
+			result.Expand = true
 		default:
 			return FieldParams{}, newNoSupportedTagOptionError(tag)
 		}
@@ -343,12 +336,10 @@ func get(field reflect.StructField, opts Options) (val string, err error) {
 
 	return result, nil
 }
+
 func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	var exists, isDefault bool
 
-	prefix := opts.Prefix
-	key := prefix + ownKey
-	defaultValue, defExists := field.Tag.Lookup("envDefault")
 	val, exists, isDefault = getOr(fieldParams.Key, fieldParams.DefaultValue, fieldParams.HasDefaultValue, opts.Environment)
 
 	if fieldParams.Expand {
@@ -376,7 +367,7 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	}
 
 	if opts.OnSet != nil {
-		if ownKey != "" {
+		if fieldParams.OwnKey != "" {
 			opts.OnSet(fieldParams.Key, val, isDefault)
 		}
 	}

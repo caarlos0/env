@@ -1749,7 +1749,7 @@ type FieldParamsConfig struct {
 	File           string `env:"FILE,file"`
 	Unset          string `env:"UNSET,unset"`
 	NotEmpty       string `env:"NOT_EMPTY,notEmpty"`
-	Expand         string `env:"EXPAND" envExpand:"true"`
+	Expand         string `env:"EXPAND,expand"`
 	NestedConfig   struct {
 		Simple []string `env:"SIMPLE"`
 	} `envPrefix:"NESTED_"`
