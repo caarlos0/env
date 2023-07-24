@@ -1743,7 +1743,7 @@ func TestErrorIs(t *testing.T) {
 type FieldParamsConfig struct {
 	Simple         []string `env:"SIMPLE"`
 	WithoutEnv     string
-	privateWithEnv string `env:"PRIVATE_WITH_ENV"`
+	privateWithEnv string `env:"PRIVATE_WITH_ENV"` //nolint:unused
 	WithDefault    string `env:"WITH_DEFAULT" envDefault:"default"`
 	Required       string `env:"REQUIRED,required"`
 	File           string `env:"FILE,file"`

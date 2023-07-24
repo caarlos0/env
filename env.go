@@ -173,10 +173,14 @@ func ParseWithOptions(v interface{}, opts Options) error {
 	return parseInternal(v, setField, customOptions(opts))
 }
 
+// GetFieldParams parses a struct containing `env` tags and returns information about
+// tags it found.
 func GetFieldParams(v interface{}) ([]FieldParams, error) {
 	return GetFieldParamsWithOptions(v, defaultOptions())
 }
 
+// GetFieldParamsWithOptions parses a struct containing `env` tags and returns information about
+// tags it found.
 func GetFieldParamsWithOptions(v interface{}, opts Options) ([]FieldParams, error) {
 	var result []FieldParams
 	err := parseInternal(
@@ -287,6 +291,7 @@ func toEnvName(input string) string {
 	return string(output)
 }
 
+// FieldParams contains information about parsed field tags.
 type FieldParams struct {
 	OwnKey          string
 	Key             string
