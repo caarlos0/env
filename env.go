@@ -581,3 +581,9 @@ func parseTextUnmarshalers(field reflect.Value, data []string, sf reflect.Struct
 
 	return nil
 }
+
+// ToMap Converts list of env vars as provided by os.Environ() to map you
+// can use as Options.Environment field
+func ToMap(env []string) map[string]string {
+	return toMap(env)
+}
