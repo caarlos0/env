@@ -8,7 +8,7 @@ import "testing"
 // See env_windows.go in the Go source: https://github.com/golang/go/blob/master/src/syscall/env_windows.go#L58
 func TestToMapWindows(t *testing.T) {
 	envVars := []string{"=::=::\\", "=C:=C:\\test", "VAR=REGULARVAR", "FOO=", "BAR"}
-	result := toMap(envVars)
+	result := ToMap(envVars)
 	isEqual(t, map[string]string{
 		"=::": "::\\",
 		"=C:": "C:\\test",
