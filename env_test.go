@@ -1195,7 +1195,7 @@ func TestCustomParserNotCalledForNonAlias(t *testing.T) {
 
 	tParserCalled := false
 
-	tParser := func(value string) (interface{}, error) {
+	tParser := func(_ string) (interface{}, error) {
 		tParserCalled = true
 		return T(99), nil
 	}
