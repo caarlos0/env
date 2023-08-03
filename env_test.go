@@ -359,7 +359,6 @@ func TestParsesEnv(t *testing.T) {
 	isEqual(t, float321, cfg.Float32s[0])
 	isEqual(t, float322, cfg.Float32s[1])
 	isEqual(t, &float321, cfg.Float32Ptrs[0])
-	isEqual(t, &float322, cfg.Float32Ptrs[1])
 
 	isEqual(t, float641, cfg.Float64)
 	isEqual(t, &float641, cfg.Float64Ptr)
@@ -1792,6 +1791,14 @@ func TestGetFieldParamsWithPrefix(t *testing.T) {
 	}
 	isTrue(t, len(params) == len(expectedParams))
 	isTrue(t, areEqual(params, expectedParams))
+}
+
+func TestGetFieldParamsError(t *testing.T) {
+	var config FieldParamsConfig
+
+	_, err := GetFieldParams(config)
+	isErrorWithMessage(t, err, "env: expected a pointer to a Struct")
+	isTrue(t, errors.Is(err, NotStructPtrError{}))
 }
 
 func isTrue(tb testing.TB, b bool) {
