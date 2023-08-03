@@ -185,7 +185,7 @@ func GetFieldParamsWithOptions(v interface{}, opts Options) ([]FieldParams, erro
 	var result []FieldParams
 	err := parseInternal(
 		v,
-		func(refField reflect.Value, refTypeField reflect.StructField, opts Options, fieldParams FieldParams) error {
+		func(_ reflect.Value, _ reflect.StructField, _ Options, fieldParams FieldParams) error {
 			if fieldParams.OwnKey != "" {
 				result = append(result, fieldParams)
 			}
