@@ -1875,3 +1875,23 @@ func isNil(object interface{}) bool {
 	}
 	return false
 }
+
+func TestParseWithOptionsOverride(t *testing.T) {
+	type config struct {
+		Interval time.Duration `env:"INTERVAL"`
+	}
+
+	t.Setenv("INTERVAL", "1")
+
+	var cfg config
+
+	isNoErr(t, ParseWithOptions(&cfg, Options{FuncMap: map[reflect.Type]ParserFunc{
+		reflect.TypeOf(time.Nanosecond): func(value string) (interface{}, error) {
+			intervalI, err := strconv.Atoi(value)
+			if err != nil {
+				return nil, err
+			}
+			return time.Duration(intervalI), nil
+		},
+	}}))
+}
