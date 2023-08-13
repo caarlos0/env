@@ -1548,6 +1548,17 @@ func TestCustomTimeParser(t *testing.T) {
 	isEqual(t, 6, time.Time(cfg.SomeTime).Day())
 }
 
+func TestEmptyValueOverridesDefaultOption(t *testing.T) {
+	type config struct {
+		Empty string `env:"EMPTY" envDefault:"foo"`
+	}
+
+	t.Setenv("EMPTY", "")
+	cfg := config{}
+	isNoErr(t, ParseWithOptions(&cfg, Options{EmptyValueOverridesDefault: true}))
+	isEqual(t, "", cfg.Empty)
+}
+
 func TestRequiredIfNoDefOption(t *testing.T) {
 	type Tree struct {
 		Fruit string `env:"FRUIT"`

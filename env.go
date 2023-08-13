@@ -110,6 +110,11 @@ type Options struct {
 	// declare 'envDefault'.
 	RequiredIfNoDef bool
 
+	// EmptyValueOverridesDefault will take an empty value from the
+	// environment, if the environment variable has been set and prefer it over
+	// the default.
+	EmptyValueOverridesDefault bool
+
 	// OnSet allows to run a function when a value is set.
 	OnSet OnSetFn
 
@@ -347,7 +352,9 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	var exists, isDefault bool
 
-	val, exists, isDefault = getOr(fieldParams.Key, fieldParams.DefaultValue, fieldParams.HasDefaultValue, opts.Environment)
+	val, exists, isDefault = getOr(
+		fieldParams.Key, fieldParams.DefaultValue, fieldParams.HasDefaultValue,
+		opts.EmptyValueOverridesDefault, opts.Environment)
 
 	if fieldParams.Expand {
 		val = os.ExpandEnv(val)
@@ -392,12 +399,15 @@ func getFromFile(filename string) (value string, err error) {
 	return string(b), err
 }
 
-func getOr(key, defaultValue string, defExists bool, envs map[string]string) (string, bool, bool) {
+func getOr(key, defaultValue string, defExists, emptyValueOverridesDefault bool, envs map[string]string) (string, bool /* exists */, bool /* isDefault*/) {
 	value, exists := envs[key]
 	switch {
 	case (!exists || key == "") && defExists:
 		return defaultValue, true, true
 	case exists && value == "" && defExists:
+		if emptyValueOverridesDefault {
+			return "", true, false
+		}
 		return defaultValue, true, true
 	case !exists:
 		return "", false, false
