@@ -1,6 +1,7 @@
 package env
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -1894,4 +1895,29 @@ func TestParseWithOptionsOverride(t *testing.T) {
 			return time.Duration(intervalI), nil
 		},
 	}}))
+}
+
+type Password []byte
+
+func (p *Password) UnmarshalText(text []byte) error {
+	out, err := base64.StdEncoding.DecodeString(string(text))
+	if err != nil {
+		return err
+	}
+	*p = out
+	return nil
+}
+
+type UsernameAndPassword struct {
+	Username string    `env:"USER"`
+	Password *Password `env:"PWD"`
+}
+
+func TestBase64Password(t *testing.T) {
+	t.Setenv("USER", "admin")
+	t.Setenv("PWD", base64.StdEncoding.EncodeToString([]byte("admin123")))
+	var c UsernameAndPassword
+	isNoErr(t, Parse(&c))
+	isEqual(t, "admin", c.Username)
+	isEqual(t, "admin123", string(*c.Password))
 }
