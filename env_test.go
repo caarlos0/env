@@ -1308,10 +1308,11 @@ func ExampleParse() {
 		Foo string `env:"FOO" envDefault:"foobar"`
 	}
 	type config struct {
-		Home         string `env:"HOME,required"`
-		Port         int    `env:"PORT" envDefault:"3000"`
-		IsProduction bool   `env:"PRODUCTION"`
-		TempFolder   string `env:"TEMP_FOLDER,expand" envDefault:"${HOME}/.tmp"`
+		Home         string         `env:"HOME,required"`
+		Port         int            `env:"PORT" envDefault:"3000"`
+		IsProduction bool           `env:"PRODUCTION"`
+		TempFolder   string         `env:"TEMP_FOLDER,expand" envDefault:"${HOME}/.tmp"`
+		StringInts   map[string]int `env:"MAP_STRING_INT" envDefault:"k1:1,k2:2"`
 		Inner        inner
 	}
 	os.Setenv("HOME", "/tmp/fakehome")
@@ -1320,7 +1321,7 @@ func ExampleParse() {
 		fmt.Println("failed:", err)
 	}
 	fmt.Printf("%+v", cfg)
-	// Output:  {Home:/tmp/fakehome Port:3000 IsProduction:false TempFolder:/tmp/fakehome/.tmp Inner:{Foo:foobar}}
+	// Output:  {Home:/tmp/fakehome Port:3000 IsProduction:false TempFolder:/tmp/fakehome/.tmp StringInts:map[k1:1 k2:2] Inner:{Foo:foobar}}
 }
 
 func ExampleParse_onSet() {
