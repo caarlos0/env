@@ -28,13 +28,14 @@ import (
 )
 
 type config struct {
-	Home         string        `env:"HOME"`
-	Port         int           `env:"PORT" envDefault:"3000"`
-	Password     string        `env:"PASSWORD,unset"`
-	IsProduction bool          `env:"PRODUCTION"`
-	Hosts        []string      `env:"HOSTS" envSeparator:":"`
-	Duration     time.Duration `env:"DURATION"`
-	TempFolder   string        `env:"TEMP_FOLDER,expand" envDefault:"${HOME}/tmp"`
+	Home         string         `env:"HOME"`
+	Port         int            `env:"PORT" envDefault:"3000"`
+	Password     string         `env:"PASSWORD,unset"`
+	IsProduction bool           `env:"PRODUCTION"`
+	Hosts        []string       `env:"HOSTS" envSeparator:":"`
+	Duration     time.Duration  `env:"DURATION"`
+	TempFolder   string         `env:"TEMP_FOLDER,expand" envDefault:"${HOME}/tmp"`
+	StringInts   map[string]int `env:"MAP_STRING_INT"`
 }
 
 func main() {
@@ -50,8 +51,8 @@ func main() {
 You can run it like this:
 
 ```sh
-$ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s go run main.go
-{Home:/your/home Port:3000 IsProduction:true Hosts:[host1 host2 host3] Duration:1s}
+$ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s MAP_STRING_INT=k1:1,k2:2 go run main.go
+{Home:/your/home Port:3000 IsProduction:true Hosts:[host1 host2 host3] Duration:1s StringInts:map[k1:1 k2:2]}
 ```
 
 ## Caveats
