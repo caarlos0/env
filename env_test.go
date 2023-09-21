@@ -403,7 +403,7 @@ func TestParsesEnv(t *testing.T) {
 
 func TestParsesEnv_Map(t *testing.T) {
 	type config struct {
-		MapStringString map[string]string `env:"MAP_STRING_STRING" envSeparator:","`
+		MapStringString map[string]string `env:"MAP_STRING_STRING" envSeparator:","  envKeyValSeparator:"|"`
 		MapStringInt64  map[string]int64  `env:"MAP_STRING_INT64"`
 		MapStringBool   map[string]bool   `env:"MAP_STRING_BOOL" envSeparator:";"`
 	}
@@ -412,7 +412,7 @@ func TestParsesEnv_Map(t *testing.T) {
 		"k1": "v1",
 		"k2": "v2",
 	}
-	t.Setenv("MAP_STRING_STRING", "k1:v1,k2:v2")
+	t.Setenv("MAP_STRING_STRING", "k1|v1,k2|v2")
 
 	msi := map[string]int64{
 		"k1": 1,
