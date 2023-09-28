@@ -101,7 +101,10 @@ If you set the `envDefault` tag for something, this value will be used in the
 case of absence of it in the environment.
 
 By default, slice types will split the environment value on `,`; you can change
-this behavior by setting the `envSeparator` tag.
+this behavior by setting the `envSeparator` tag. For map types, the default
+separator between key and value is `:` and `,` for key-value pairs.
+The behavior can be changed by setting the `envKeyValSeparator` and 
+`envSeparator` tags accordingly.
 
 ## Custom Parser Funcs
 
