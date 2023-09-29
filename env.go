@@ -518,11 +518,16 @@ func handleMap(field reflect.Value, value string, sf reflect.StructField, funcMa
 		separator = ","
 	}
 
+	keyValSeparator := sf.Tag.Get("envKeyValSeparator")
+	if keyValSeparator == "" {
+		keyValSeparator = ":"
+	}
+
 	result := reflect.MakeMap(sf.Type)
 	for _, part := range strings.Split(value, separator) {
-		pairs := strings.Split(part, ":")
+		pairs := strings.Split(part, keyValSeparator)
 		if len(pairs) != 2 {
-			return newParseError(sf, fmt.Errorf(`%q should be in "key:value" format`, part))
+			return newParseError(sf, fmt.Errorf(`%q should be in "key%svalue" format`, part, keyValSeparator))
 		}
 
 		key, err := keyParserFunc(pairs[0])

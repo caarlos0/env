@@ -403,9 +403,10 @@ func TestParsesEnv(t *testing.T) {
 
 func TestParsesEnv_Map(t *testing.T) {
 	type config struct {
-		MapStringString map[string]string `env:"MAP_STRING_STRING" envSeparator:","`
-		MapStringInt64  map[string]int64  `env:"MAP_STRING_INT64"`
-		MapStringBool   map[string]bool   `env:"MAP_STRING_BOOL" envSeparator:";"`
+		MapStringString                map[string]string `env:"MAP_STRING_STRING" envSeparator:","`
+		MapStringInt64                 map[string]int64  `env:"MAP_STRING_INT64"`
+		MapStringBool                  map[string]bool   `env:"MAP_STRING_BOOL" envSeparator:";"`
+		CustomSeparatorMapStringString map[string]string `env:"CUSTOM_SEPARATOR_MAP_STRING_STRING" envSeparator:"," envKeyValSeparator:"|"`
 	}
 
 	mss := map[string]string{
@@ -426,12 +427,19 @@ func TestParsesEnv_Map(t *testing.T) {
 	}
 	t.Setenv("MAP_STRING_BOOL", "k1:true;k2:false")
 
+	withCustomSeparator := map[string]string{
+		"k1": "v1",
+		"k2": "v2",
+	}
+	t.Setenv("CUSTOM_SEPARATOR_MAP_STRING_STRING", "k1|v1,k2|v2")
+
 	var cfg config
 	isNoErr(t, Parse(&cfg))
 
 	isEqual(t, mss, cfg.MapStringString)
 	isEqual(t, msi, cfg.MapStringInt64)
 	isEqual(t, msb, cfg.MapStringBool)
+	isEqual(t, withCustomSeparator, cfg.CustomSeparatorMapStringString)
 }
 
 func TestParsesEnvInvalidMap(t *testing.T) {
