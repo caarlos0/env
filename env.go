@@ -392,7 +392,7 @@ func getFromFile(filename string) (value string, err error) {
 	return string(b), err
 }
 
-func getOr(key, defaultValue string, defExists bool, envs map[string]string) (string, bool, bool) {
+func getOr(key, defaultValue string, defExists bool, envs map[string]string) (val string, exists bool, isDefault bool) {
 	value, exists := envs[key]
 	switch {
 	case (!exists || key == "") && defExists:
