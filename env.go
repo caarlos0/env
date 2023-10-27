@@ -167,10 +167,6 @@ func customOptions(opt Options) Options {
 }
 
 func optionsWithEnvPrefix(field reflect.StructField, opts Options) Options {
-	rawEnvVars := opts.rawEnvVars
-	if rawEnvVars == nil {
-		rawEnvVars = make(map[string]string)
-	}
 	return Options{
 		Environment:           opts.Environment,
 		TagName:               opts.TagName,
@@ -179,7 +175,7 @@ func optionsWithEnvPrefix(field reflect.StructField, opts Options) Options {
 		Prefix:                opts.Prefix + field.Tag.Get("envPrefix"),
 		UseFieldNameByDefault: opts.UseFieldNameByDefault,
 		FuncMap:               opts.FuncMap,
-		rawEnvVars:            rawEnvVars,
+		rawEnvVars:            opts.rawEnvVars,
 	}
 }
 
