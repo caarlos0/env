@@ -2,7 +2,7 @@
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/caarlos0/env/build.yml?branch=main&style=for-the-badge)](https://github.com/caarlos0/env/actions?workflow=build)
 [![Coverage Status](https://img.shields.io/codecov/c/gh/caarlos0/env.svg?logo=codecov&style=for-the-badge)](https://codecov.io/gh/caarlos0/env)
-[![](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://pkg.go.dev/github.com/caarlos0/env/v9)
+[![](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://pkg.go.dev/github.com/caarlos0/env/v10)
 
 A simple and zero-dependencies library to parse environment variables into
 `struct`s.
@@ -12,7 +12,7 @@ A simple and zero-dependencies library to parse environment variables into
 Get the module with:
 
 ```sh
-go get github.com/caarlos0/env/v9
+go get github.com/caarlos0/env/v10
 ```
 
 The usage looks like this:
@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/caarlos0/env/v9"
+	"github.com/caarlos0/env/v10"
 )
 
 type config struct {
@@ -32,8 +32,8 @@ type config struct {
 	Port         int            `env:"PORT" envDefault:"3000"`
 	Password     string         `env:"PASSWORD,unset"`
 	IsProduction bool           `env:"PRODUCTION"`
-	Hosts        []string       `env:"HOSTS" envSeparator:":"`
 	Duration     time.Duration  `env:"DURATION"`
+	Hosts        []string       `env:"HOSTS" envSeparator:":"`
 	TempFolder   string         `env:"TEMP_FOLDER,expand" envDefault:"${HOME}/tmp"`
 	StringInts   map[string]int `env:"MAP_STRING_INT"`
 }
@@ -103,7 +103,7 @@ case of absence of it in the environment.
 By default, slice types will split the environment value on `,`; you can change
 this behavior by setting the `envSeparator` tag. For map types, the default
 separator between key and value is `:` and `,` for key-value pairs.
-The behavior can be changed by setting the `envKeyValSeparator` and 
+The behavior can be changed by setting the `envKeyValSeparator` and
 `envSeparator` tags accordingly.
 
 ## Custom Parser Funcs
@@ -119,7 +119,7 @@ field.
 If you add a custom parser for, say `Foo`, it will also be used to parse
 `*Foo` and `[]Foo` types.
 
-Check the examples in the [go doc](http://pkg.go.dev/github.com/caarlos0/env/v9)
+Check the examples in the [go doc](http://pkg.go.dev/github.com/caarlos0/env/v10)
 for more info.
 
 ### A note about `TextUnmarshaler` and `time.Time`
@@ -181,10 +181,11 @@ type config struct {
 ```
 
 This also works with `envDefault`:
+
 ```go
 import (
 	"fmt"
-	"github.com/caarlos0/env/v9"
+	"github.com/caarlos0/env/v10"
 )
 
 type config struct {
@@ -249,13 +250,14 @@ package main
 import (
 	"fmt"
 	"time"
-	"github.com/caarlos0/env/v9"
+
+	"github.com/caarlos0/env/v10"
 )
 
 type config struct {
-	Secret       string   `env:"SECRET,file"`
-	Password     string   `env:"PASSWORD,file" envDefault:"/tmp/password"`
-	Certificate  string   `env:"CERTIFICATE,file,expand" envDefault:"${CERTIFICATE_FILE}"`
+	Secret      string `env:"SECRET,file"`
+	Password    string `env:"PASSWORD,file"           envDefault:"/tmp/password"`
+	Certificate string `env:"CERTIFICATE,file,expand" envDefault:"${CERTIFICATE_FILE}"`
 }
 
 func main() {
@@ -297,7 +299,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v9"
+	"github.com/caarlos0/env/v10"
 )
 
 type Config struct {
@@ -337,7 +339,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v9"
+	"github.com/caarlos0/env/v10"
 )
 
 type Config struct {
@@ -374,7 +376,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v9"
+	"github.com/caarlos0/env/v10"
 )
 
 type Config struct {
@@ -408,7 +410,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v9"
+	"github.com/caarlos0/env/v10"
 )
 
 type Config struct {
@@ -457,7 +459,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v9"
+	"github.com/caarlos0/env/v10"
 )
 
 type Config struct {
@@ -497,7 +499,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v9"
+	"github.com/caarlos0/env/v10"
 )
 
 type Config struct {
@@ -533,7 +535,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v9"
+	"github.com/caarlos0/env/v10"
 )
 
 type Config struct {
@@ -542,7 +544,7 @@ type Config struct {
 }
 
 func main() {
-	var cfg = Config{
+	cfg := Config{
 		Username: "test",
 		Password: "123456",
 	}
@@ -551,7 +553,7 @@ func main() {
 		fmt.Println("failed:", err)
 	}
 
-	fmt.Printf("%+v", cfg)  // {Username:admin Password:123456}
+	fmt.Printf("%+v", cfg) // {Username:admin Password:123456}
 }
 ```
 
@@ -566,7 +568,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/caarlos0/env/v9"
+	"github.com/caarlos0/env/v10"
 )
 
 type Config struct {
@@ -594,7 +596,7 @@ func main() {
 		}
 	}
 
-	fmt.Printf("%+v", cfg)  // {Username:admin Password:123456}
+	fmt.Printf("%+v", cfg) // {Username:admin Password:123456}
 }
 ```
 
