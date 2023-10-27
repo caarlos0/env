@@ -122,6 +122,17 @@ type Options struct {
 
 	// Custom parse functions for different types.
 	FuncMap map[reflect.Type]ParserFunc
+
+	// Used internally. maps the env variable key to its resolved string value. (for env var expansion)
+	rawEnvVars map[string]string
+}
+
+func (opts *Options) getRawEnv(s string) string {
+	val := opts.rawEnvVars[s]
+	if val == "" {
+		return opts.Environment[s]
+	}
+	return val
 }
 
 func defaultOptions() Options {
@@ -129,6 +140,7 @@ func defaultOptions() Options {
 		TagName:     "env",
 		Environment: toMap(os.Environ()),
 		FuncMap:     defaultTypeParsers(),
+		rawEnvVars:  make(map[string]string),
 	}
 }
 
@@ -142,6 +154,9 @@ func customOptions(opt Options) Options {
 	}
 	if opt.FuncMap == nil {
 		opt.FuncMap = map[reflect.Type]ParserFunc{}
+	}
+	if opt.rawEnvVars == nil {
+		opt.rawEnvVars = defOpts.rawEnvVars
 	}
 	for k, v := range defOpts.FuncMap {
 		if _, exists := opt.FuncMap[k]; !exists {
@@ -160,6 +175,7 @@ func optionsWithEnvPrefix(field reflect.StructField, opts Options) Options {
 		Prefix:                opts.Prefix + field.Tag.Get("envPrefix"),
 		UseFieldNameByDefault: opts.UseFieldNameByDefault,
 		FuncMap:               opts.FuncMap,
+		rawEnvVars:            opts.rawEnvVars,
 	}
 }
 
@@ -350,8 +366,10 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	val, exists, isDefault = getOr(fieldParams.Key, fieldParams.DefaultValue, fieldParams.HasDefaultValue, opts.Environment)
 
 	if fieldParams.Expand {
-		val = os.ExpandEnv(val)
+		val = os.Expand(val, opts.getRawEnv)
 	}
+
+	opts.rawEnvVars[fieldParams.OwnKey] = val
 
 	if fieldParams.Unset {
 		defer os.Unsetenv(fieldParams.Key)
@@ -392,7 +410,7 @@ func getFromFile(filename string) (value string, err error) {
 	return string(b), err
 }
 
-func getOr(key, defaultValue string, defExists bool, envs map[string]string) (string, bool, bool) {
+func getOr(key, defaultValue string, defExists bool, envs map[string]string) (val string, exists bool, isDefault bool) {
 	value, exists := envs[key]
 	switch {
 	case (!exists || key == "") && defExists:

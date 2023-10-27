@@ -965,6 +965,38 @@ func TestParseExpandOption(t *testing.T) {
 	isEqual(t, "def1", cfg.Default)
 }
 
+func TestParseExpandWithDefaultOption(t *testing.T) {
+	type config struct {
+		Host            string `env:"HOST" envDefault:"localhost"`
+		Port            int    `env:"PORT,expand" envDefault:"3000"`
+		OtherPort       int    `env:"OTHER_PORT" envDefault:"4000"`
+		CompoundDefault string `env:"HOST_PORT,expand" envDefault:"${HOST}:${PORT}"`
+		SimpleDefault   string `env:"DEFAULT,expand" envDefault:"def1"`
+		MixedDefault    string `env:"MIXED_DEFAULT,expand" envDefault:"$USER@${HOST}:${OTHER_PORT}"`
+		OverrideDefault string `env:"OVERRIDE_DEFAULT,expand" envDefault:"$THIS_SHOULD_NOT_BE_USED"`
+		NoDefault       string `env:"NO_DEFAULT,expand"`
+	}
+
+	t.Setenv("OTHER_PORT", "5000")
+	t.Setenv("USER", "jhon")
+	t.Setenv("THIS_IS_USED", "this is used instead")
+	t.Setenv("OVERRIDE_DEFAULT", "msg: ${THIS_IS_USED}")
+	t.Setenv("NO_DEFAULT", "$PORT:$OTHER_PORT")
+
+	cfg := config{}
+	err := Parse(&cfg)
+
+	isNoErr(t, err)
+	isEqual(t, "localhost", cfg.Host)
+	isEqual(t, 3000, cfg.Port)
+	isEqual(t, 5000, cfg.OtherPort)
+	isEqual(t, "localhost:3000", cfg.CompoundDefault)
+	isEqual(t, "def1", cfg.SimpleDefault)
+	isEqual(t, "jhon@localhost:5000", cfg.MixedDefault)
+	isEqual(t, "msg: this is used instead", cfg.OverrideDefault)
+	isEqual(t, "3000:5000", cfg.NoDefault)
+}
+
 func TestParseUnsetRequireOptions(t *testing.T) {
 	type config struct {
 		Password string `env:"PASSWORD,unset,required"`

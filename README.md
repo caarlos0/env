@@ -180,7 +180,34 @@ type config struct {
 }
 ```
 
-This also works with `envDefault`.
+This also works with `envDefault`:
+```go
+import (
+	"fmt"
+	"github.com/caarlos0/env/v9"
+)
+
+type config struct {
+	Host     string `env:"HOST" envDefault:"localhost"`
+	Port     int    `env:"PORT" envDefault:"3000"`
+	Address  string `env:"ADDRESS,expand" envDefault:"$HOST:${PORT}"`
+}
+
+func main() {
+	cfg := config{}
+	if err := env.Parse(&cfg); err != nil {
+		fmt.Printf("%+v\n", err)
+	}
+	fmt.Printf("%+v\n", cfg)
+}
+```
+
+results in this:
+
+```sh
+$ PORT=8080 go run main.go
+{Host:localhost Port:8080 Address:localhost:8080}
+```
 
 ## Not Empty fields
 
