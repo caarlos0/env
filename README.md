@@ -188,9 +188,9 @@ import (
 )
 
 type config struct {
-	Host            string `env:"HOST" envDefault:"localhost"`
-	Port            int    `env:"PORT" envDefault:"3000"`
-	Address			string `env:"ADDRESS,expand" envDefault:"$HOST:${PORT}"`
+	Host     string `env:"HOST" envDefault:"localhost"`
+	Port     int    `env:"PORT" envDefault:"3000"`
+	Address  string `env:"ADDRESS,expand" envDefault:"$HOST:${PORT}"`
 }
 
 func main() {
