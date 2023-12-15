@@ -605,6 +605,11 @@ func main() {
 > If you want to check if an specific error is in the chain, you can also use
 > `errors.Is()`.
 
+## Used and supported by
+
+![Encore]()
+Encore - the platform for building Go-based cloud backends.
+
 ## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/caarlos0/env.svg)](https://starchart.cc/caarlos0/env)
