@@ -605,6 +605,16 @@ func main() {
 > If you want to check if an specific error is in the chain, you can also use
 > `errors.Is()`.
 
+## Used and supported by
+
+<a href="https://encore.dev">
+  <img src="https://user-images.githubusercontent.com/78424526/214602214-52e0483a-b5fc-4d4c-b03e-0b7b23e012df.svg" width="160px" alt="encore icon"></img>
+</a>
+<br/>
+<br/>
+<b>Encore – the platform for building Go-based cloud backends.</b>
+<br/>
+
 ## Related projects
 
  - [envdoc](https://github.com/g4s8/envdoc) - generate documentation for environment variables from `env` tags
