@@ -615,6 +615,10 @@ func main() {
 <b>Encore – the platform for building Go-based cloud backends.</b>
 <br/>
 
+## Related projects
+
+ - [envdoc](https://github.com/g4s8/envdoc) - generate documentation for environment variables from `env` tags
+
 ## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/caarlos0/env.svg)](https://starchart.cc/caarlos0/env)
