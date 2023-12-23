@@ -236,6 +236,22 @@ type config struct {
 }
 ```
 
+## Depending environment variables
+
+You may define depending environment variables which should be exist 
+and the value is set (in your `environment` or as `envDefault`) for a certain field.
+It works only if the value of the field is set. 
+
+Example:
+
+```go
+type config struct {
+	Production bool   `env:"PRODUCTION"`
+	Name       string `env:"NAME"`
+	SecretKey  string `env:"SECRET_KEY" envDepends:"PRODUCTION,NAME"`
+}
+```
+
 ## Unset environment variable after reading it
 
 The `env` tag option `unset` (e.g., `env:"tagKey,unset"`) can be added

@@ -1371,9 +1371,7 @@ func TestExampleParse(t *testing.T) {
 	}
 	t.Setenv("HOME", "/tmp/fakehome")
 	var cfg config
-	if err := Parse(&cfg); err != nil {
-		fmt.Println("failed:", err)
-	}
+	isNoErr(t, Parse(&cfg))
 	fmt.Printf("%+v", cfg)
 	// Output:  {Home:/tmp/fakehome Port:3000 IsProduction:false TempFolder:/tmp/fakehome/.tmp StringInts:map[k1:1 k2:2] Inner:{Foo:foobar}}
 }
@@ -1387,11 +1385,22 @@ func TestExampleParse_onDepends(t *testing.T) {
 	t.Setenv("HOME", "/tmp/fakehome")
 	t.Setenv("PRODUCTION", "true")
 	var cfg config
-	if err := Parse(&cfg); err != nil {
-		fmt.Println("failed:", err)
-	}
+	isNoErr(t, Parse(&cfg))
 	fmt.Printf("%+v", cfg)
 	// Output:  {Home:/tmp/fakehome Port:3000 IsProduction:true}
+}
+
+func TestExampleParse_noValue_onDepends(t *testing.T) {
+	type config struct {
+		Home         string `env:"HOME,required"`
+		Port         int    `env:"PORT" envDefault:"3000"`
+		IsProduction bool   `env:"PRODUCTION" envDepends:"HOME,PORT"`
+	}
+	t.Setenv("HOME", "/tmp/fakehome")
+	var cfg config
+	isNoErr(t, Parse(&cfg))
+	fmt.Printf("%+v", cfg)
+	// Output:  {Home:/tmp/fakehome Port:3000 IsProduction:false}
 }
 
 func TestExampleParse_onSet(t *testing.T) {
@@ -1404,13 +1413,13 @@ func TestExampleParse_onSet(t *testing.T) {
 	}
 	t.Setenv("HOME", "/tmp/fakehome")
 	var cfg config
-	if err := ParseWithOptions(&cfg, Options{
-		OnSet: func(tag string, value interface{}, isDefault bool) {
-			fmt.Printf("Set %s to %v (default? %v)\n", tag, value, isDefault)
-		},
-	}); err != nil {
-		fmt.Println("failed:", err)
-	}
+	isNoErr(t,
+		ParseWithOptions(&cfg, Options{
+			OnSet: func(tag string, value interface{}, isDefault bool) {
+				fmt.Printf("Set %s to %v (default? %v)\n", tag, value, isDefault)
+			},
+		}),
+	)
 	fmt.Printf("%+v", cfg)
 	// Output: Set HOME to /tmp/fakehome (default? false)
 	// Set PORT to 3000 (default? true)
@@ -1430,9 +1439,7 @@ func TestExampleParse_defaults(t *testing.T) {
 		A: "A",
 		B: "B",
 	}
-	if err := Parse(&cfg); err != nil {
-		fmt.Println("failed:", err)
-	}
+	isNoErr(t, Parse(&cfg))
 	fmt.Printf("%+v", cfg)
 	// Output: {A:foo B:B}
 }

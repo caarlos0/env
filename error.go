@@ -14,6 +14,7 @@ import (
 // NoSupportedTagOptionError
 // EnvVarIsNotSetError
 // EmptyEnvVarError
+// DependsEnvVarError
 // LoadFileContentError
 // ParseValueError
 type AggregateError struct {
@@ -131,8 +132,8 @@ func (e EmptyEnvVarError) Error() string {
 	return fmt.Sprintf("environment variable %q should not be empty", e.Key)
 }
 
-// This error occurs when the variable have dependenices
-// Read about dependency fields: https://github.com/caarlos0/env#dependency-fields
+// This error occurs when the variable is set and have dependenices
+// Read about dependency fields: https://github.com/caarlos0/env#depending-environment-variables
 type DependsEnvVarError struct {
 	Key         string
 	DependsKeys []string

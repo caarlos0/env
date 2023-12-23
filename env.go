@@ -394,7 +394,7 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 		defer os.Unsetenv(fieldParams.Key)
 	}
 
-	if fieldParams.HasDependsKeys {
+	if fieldParams.HasDependsKeys && val != "" {
 		dependencies := checkDependencies(fieldParams.DependsKeys, opts.Environment)
 		if len(dependencies) > 0 {
 			return "", newDependsEnvVarError(fieldParams.Key, dependencies)
