@@ -241,7 +241,12 @@ func doParse(ref reflect.Value, processField processFieldFn, opts Options) error
 		refTypeField := refType.Field(i)
 		params, err := parseFieldParams(refTypeField, opts)
 		if err != nil {
-			return err
+			if val, ok := err.(AggregateError); ok {
+				agrErr.Errors = append(agrErr.Errors, val.Errors...)
+			} else {
+				agrErr.Errors = append(agrErr.Errors, err)
+			}
+			continue
 		}
 		structFields[refTypeField.Name] = params
 	}

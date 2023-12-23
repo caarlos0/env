@@ -1357,7 +1357,7 @@ func TestParseDepsNotSet(t *testing.T) {
 	isTrue(t, errors.Is(err, DependsEnvVarError{}))
 }
 
-func ExampleParse() {
+func TestExampleParse(t *testing.T) {
 	type inner struct {
 		Foo string `env:"FOO" envDefault:"foobar"`
 	}
@@ -1369,7 +1369,7 @@ func ExampleParse() {
 		StringInts   map[string]int `env:"MAP_STRING_INT" envDefault:"k1:1,k2:2"`
 		Inner        inner
 	}
-	os.Setenv("HOME", "/tmp/fakehome")
+	t.Setenv("HOME", "/tmp/fakehome")
 	var cfg config
 	if err := Parse(&cfg); err != nil {
 		fmt.Println("failed:", err)
@@ -1378,14 +1378,14 @@ func ExampleParse() {
 	// Output:  {Home:/tmp/fakehome Port:3000 IsProduction:false TempFolder:/tmp/fakehome/.tmp StringInts:map[k1:1 k2:2] Inner:{Foo:foobar}}
 }
 
-func ExampleParse_onDepends() {
+func TestExampleParse_onDepends(t *testing.T) {
 	type config struct {
 		Home         string `env:"HOME,required"`
 		Port         int    `env:"PORT" envDefault:"3000"`
 		IsProduction bool   `env:"PRODUCTION" envDepends:"HOME,PORT"`
 	}
-	os.Setenv("HOME", "/tmp/fakehome")
-	os.Setenv("PRODUCTION", "true")
+	t.Setenv("HOME", "/tmp/fakehome")
+	t.Setenv("PRODUCTION", "true")
 	var cfg config
 	if err := Parse(&cfg); err != nil {
 		fmt.Println("failed:", err)
@@ -1394,7 +1394,7 @@ func ExampleParse_onDepends() {
 	// Output:  {Home:/tmp/fakehome Port:3000 IsProduction:true}
 }
 
-func ExampleParse_onSet() {
+func TestExampleParse_onSet(t *testing.T) {
 	type config struct {
 		Home         string `env:"HOME,required"`
 		Port         int    `env:"PORT" envDefault:"3000"`
@@ -1402,7 +1402,7 @@ func ExampleParse_onSet() {
 		NoEnvTag     bool
 		Inner        struct{} `envPrefix:"INNER_"`
 	}
-	os.Setenv("HOME", "/tmp/fakehome")
+	t.Setenv("HOME", "/tmp/fakehome")
 	var cfg config
 	if err := ParseWithOptions(&cfg, Options{
 		OnSet: func(tag string, value interface{}, isDefault bool) {
@@ -1418,7 +1418,7 @@ func ExampleParse_onSet() {
 	// {Home:/tmp/fakehome Port:3000 IsProduction:false NoEnvTag:false Inner:{}}
 }
 
-func ExampleParse_defaults() {
+func TestExampleParse_defaults(t *testing.T) {
 	type config struct {
 		A string `env:"FOO" envDefault:"foo"`
 		B string `env:"FOO"`
@@ -1486,7 +1486,7 @@ func TestPrecedenceUnmarshalText(t *testing.T) {
 	isEqual(t, []LogLevel{DebugLevel, InfoLevel}, cfg.LogLevels)
 }
 
-func ExampleParseWithOptions() {
+func TestExampleParseWithOptions(t *testing.T) {
 	type thing struct {
 		desc string
 	}
