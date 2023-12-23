@@ -68,6 +68,7 @@ var (
 			return float32(f), err
 		},
 	}
+	structFields = map[string]FieldParams{}
 )
 
 func defaultTypeParsers() map[reflect.Type]ParserFunc {
@@ -237,6 +238,15 @@ func doParse(ref reflect.Value, processField processFieldFn, opts Options) error
 	var agrErr AggregateError
 
 	for i := 0; i < refType.NumField(); i++ {
+		refTypeField := refType.Field(i)
+		params, err := parseFieldParams(refTypeField, opts)
+		if err != nil {
+			return err
+		}
+		structFields[refTypeField.Name] = params
+	}
+
+	for i := 0; i < refType.NumField(); i++ {
 		refField := ref.Field(i)
 		refTypeField := refType.Field(i)
 
@@ -267,12 +277,7 @@ func doParseField(refField reflect.Value, refTypeField reflect.StructField, proc
 		return parseInternal(refField.Addr().Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
-	params, err := parseFieldParams(refTypeField, opts)
-	if err != nil {
-		return err
-	}
-
-	if err := processField(refField, refTypeField, opts, params); err != nil {
+	if err := processField(refField, refTypeField, opts, structFields[refTypeField.Name]); err != nil {
 		return err
 	}
 
@@ -315,6 +320,8 @@ type FieldParams struct {
 	Key             string
 	DefaultValue    string
 	HasDefaultValue bool
+	DependsKeys     []string
+	HasDependsKeys  bool
 	Required        bool
 	LoadFile        bool
 	Unset           bool
@@ -329,6 +336,11 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 	}
 
 	defaultValue, hasDefaultValue := field.Tag.Lookup("envDefault")
+	dependsKeys, hasDependsKeys := field.Tag.Lookup("envDepends")
+	var dependsKeyList []string
+	if hasDependsKeys {
+		dependsKeyList = strings.Split(dependsKeys, ",")
+	}
 
 	result := FieldParams{
 		OwnKey:          ownKey,
@@ -336,6 +348,8 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 		Required:        opts.RequiredIfNoDef,
 		DefaultValue:    defaultValue,
 		HasDefaultValue: hasDefaultValue,
+		DependsKeys:     dependsKeyList,
+		HasDependsKeys:  hasDependsKeys,
 	}
 
 	for _, tag := range tags {
@@ -375,6 +389,13 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 		defer os.Unsetenv(fieldParams.Key)
 	}
 
+	if fieldParams.HasDependsKeys {
+		dependencies := checkDependencies(fieldParams.DependsKeys, opts.Environment)
+		if len(dependencies) > 0 {
+			return "", newDependsEnvVarError(fieldParams.Key, dependencies)
+		}
+	}
+
 	if fieldParams.Required && !exists && len(fieldParams.OwnKey) > 0 {
 		return "", newEnvVarIsNotSet(fieldParams.Key)
 	}
@@ -397,6 +418,25 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 		}
 	}
 	return val, err
+}
+
+func checkDependencies(dependsKeys []string, envs map[string]string) (emptyKeys []string) {
+	for _, dependsKey := range dependsKeys {
+		value, exists := envs[dependsKey]
+		if !exists || value == "" {
+			for _, field := range structFields {
+				if field.Key != dependsKey {
+					continue
+				}
+				if !field.HasDefaultValue {
+					emptyKeys = append(emptyKeys, dependsKey)
+					break
+				}
+			}
+		}
+	}
+
+	return emptyKeys
 }
 
 // split the env tag's key into the expected key and desired option, if any.

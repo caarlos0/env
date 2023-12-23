@@ -1343,6 +1343,20 @@ func TestParseInvalidURL(t *testing.T) {
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
+func TestParseDepsNotSet(t *testing.T) {
+	type config struct {
+		Home         string `env:"HOME,required"`
+		Port         int    `env:"PORT"`
+		IsProduction bool   `env:"PRODUCTION" envDepends:"HOME,PORT"`
+	}
+	t.Setenv("HOME", "/tmp/fakehome")
+	t.Setenv("PRODUCTION", "true")
+
+	err := Parse(&config{})
+	isErrorWithMessage(t, err, `env: environment variable "PRODUCTION" has dependencies: PORT`)
+	isTrue(t, errors.Is(err, DependsEnvVarError{}))
+}
+
 func ExampleParse() {
 	type inner struct {
 		Foo string `env:"FOO" envDefault:"foobar"`
@@ -1362,6 +1376,22 @@ func ExampleParse() {
 	}
 	fmt.Printf("%+v", cfg)
 	// Output:  {Home:/tmp/fakehome Port:3000 IsProduction:false TempFolder:/tmp/fakehome/.tmp StringInts:map[k1:1 k2:2] Inner:{Foo:foobar}}
+}
+
+func ExampleParse_onDepends() {
+	type config struct {
+		Home         string `env:"HOME,required"`
+		Port         int    `env:"PORT" envDefault:"3000"`
+		IsProduction bool   `env:"PRODUCTION" envDepends:"HOME,PORT"`
+	}
+	os.Setenv("HOME", "/tmp/fakehome")
+	os.Setenv("PRODUCTION", "true")
+	var cfg config
+	if err := Parse(&cfg); err != nil {
+		fmt.Println("failed:", err)
+	}
+	fmt.Printf("%+v", cfg)
+	// Output:  {Home:/tmp/fakehome Port:3000 IsProduction:true}
 }
 
 func ExampleParse_onSet() {
@@ -1782,16 +1812,18 @@ func TestErrorIs(t *testing.T) {
 }
 
 type FieldParamsConfig struct {
-	Simple         []string `env:"SIMPLE"`
-	WithoutEnv     string
-	privateWithEnv string `env:"PRIVATE_WITH_ENV"` //nolint:unused
-	WithDefault    string `env:"WITH_DEFAULT" envDefault:"default"`
-	Required       string `env:"REQUIRED,required"`
-	File           string `env:"FILE,file"`
-	Unset          string `env:"UNSET,unset"`
-	NotEmpty       string `env:"NOT_EMPTY,notEmpty"`
-	Expand         string `env:"EXPAND,expand"`
-	NestedConfig   struct {
+	Simple          []string `env:"SIMPLE"`
+	WithoutEnv      string
+	privateWithEnv  string `env:"PRIVATE_WITH_ENV"` //nolint:unused
+	WithDefault     string `env:"WITH_DEFAULT" envDefault:"default"`
+	IsDepended      bool   `env:"IS_DEPENDED"`
+	WithDependsKeys string `env:"WITH_DEPENDS_KEYS" envDepends:"SIMPLE,IS_DEPENDED"`
+	Required        string `env:"REQUIRED,required"`
+	File            string `env:"FILE,file"`
+	Unset           string `env:"UNSET,unset"`
+	NotEmpty        string `env:"NOT_EMPTY,notEmpty"`
+	Expand          string `env:"EXPAND,expand"`
+	NestedConfig    struct {
 		Simple []string `env:"SIMPLE"`
 	} `envPrefix:"NESTED_"`
 }
@@ -1804,6 +1836,8 @@ func TestGetFieldParams(t *testing.T) {
 	expectedParams := []FieldParams{
 		{OwnKey: "SIMPLE", Key: "SIMPLE"},
 		{OwnKey: "WITH_DEFAULT", Key: "WITH_DEFAULT", DefaultValue: "default", HasDefaultValue: true},
+		{OwnKey: "IS_DEPENDED", Key: "IS_DEPENDED"},
+		{OwnKey: "WITH_DEPENDS_KEYS", Key: "WITH_DEPENDS_KEYS", DependsKeys: []string{"SIMPLE", "IS_DEPENDED"}, HasDependsKeys: true},
 		{OwnKey: "REQUIRED", Key: "REQUIRED", Required: true},
 		{OwnKey: "FILE", Key: "FILE", LoadFile: true},
 		{OwnKey: "UNSET", Key: "UNSET", Unset: true},
@@ -1824,6 +1858,8 @@ func TestGetFieldParamsWithPrefix(t *testing.T) {
 	expectedParams := []FieldParams{
 		{OwnKey: "SIMPLE", Key: "FOO_SIMPLE"},
 		{OwnKey: "WITH_DEFAULT", Key: "FOO_WITH_DEFAULT", DefaultValue: "default", HasDefaultValue: true},
+		{OwnKey: "IS_DEPENDED", Key: "FOO_IS_DEPENDED"},
+		{OwnKey: "WITH_DEPENDS_KEYS", Key: "FOO_WITH_DEPENDS_KEYS", DependsKeys: []string{"SIMPLE", "IS_DEPENDED"}, HasDependsKeys: true},
 		{OwnKey: "REQUIRED", Key: "FOO_REQUIRED", Required: true},
 		{OwnKey: "FILE", Key: "FOO_FILE", LoadFile: true},
 		{OwnKey: "UNSET", Key: "FOO_UNSET", Unset: true},

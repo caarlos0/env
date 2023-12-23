@@ -131,6 +131,21 @@ func (e EmptyEnvVarError) Error() string {
 	return fmt.Sprintf("environment variable %q should not be empty", e.Key)
 }
 
+// This error occurs when the variable have dependenices
+// Read about dependency fields: https://github.com/caarlos0/env#dependency-fields
+type DependsEnvVarError struct {
+	Key         string
+	DependsKeys []string
+}
+
+func newDependsEnvVarError(key string, dependsKeys []string) error {
+	return DependsEnvVarError{key, dependsKeys}
+}
+
+func (e DependsEnvVarError) Error() string {
+	return fmt.Sprintf("environment variable %q has dependencies: %v", e.Key, strings.Join(e.DependsKeys, ", "))
+}
+
 // This error occurs when it's impossible to load the value from the file
 // Read about From file feature: https://github.com/caarlos0/env#from-file
 type LoadFileContentError struct {
