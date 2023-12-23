@@ -435,8 +435,8 @@ func checkDependencies(dependsKeys []string, envs map[string]string) (emptyKeys 
 				}
 				if !field.HasDefaultValue {
 					emptyKeys = append(emptyKeys, dependsKey)
-					break
 				}
+				break
 			}
 		}
 	}
