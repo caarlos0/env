@@ -69,11 +69,10 @@ $ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s MAP_STRING_INT=k1:1,k2:2
 
 ## Caveats
 
-> **Warning**
+> [!CAUTION]
 >
-> **This is important!**
->
-> _Unexported fields_ are **ignored**. This is as intended and will not change.
+> _Unexported fields_ will be **ignored** by `env`.
+> This is by design and will not change.
 
 ## Supported types and defaults
 
