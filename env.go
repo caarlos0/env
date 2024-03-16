@@ -301,8 +301,16 @@ const underscore rune = '_'
 func toEnvName(input string) string {
 	var output []rune
 	for i, c := range input {
-		if i > 0 && output[i-1] != underscore && c != underscore && unicode.ToUpper(c) == c {
-			output = append(output, underscore)
+		if c == underscore {
+			continue
+		}
+		if len(output) > 0 && unicode.IsUpper(c) {
+			if len(input) > i+1 {
+				peek := rune(input[i+1])
+				if unicode.IsLower(peek) || unicode.IsLower(rune(input[i-1])) {
+					output = append(output, underscore)
+				}
+			}
 		}
 		output = append(output, unicode.ToUpper(c))
 	}
