@@ -172,7 +172,7 @@ type config struct {
 }
 ```
 
-> **Warning**
+> [!NOTE]
 >
 > Note that being set is not the same as being empty.
 > If the variable is set, but empty, the field will have its type's default
