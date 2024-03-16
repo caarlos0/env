@@ -1742,32 +1742,43 @@ func TestComplePrefix(t *testing.T) {
 
 func TestNoEnvKey(t *testing.T) {
 	type Config struct {
-		Foo    string
-		FooBar string
-		bar    string
+		Foo      string
+		FooBar   string
+		HTTPPort int
+		bar      string
 	}
 	var cfg Config
 	isNoErr(t, ParseWithOptions(&cfg, Options{
 		UseFieldNameByDefault: true,
 		Environment: map[string]string{
-			"FOO":     "fooval",
-			"FOO_BAR": "foobarval",
+			"FOO":       "fooval",
+			"FOO_BAR":   "foobarval",
+			"HTTP_PORT": "10",
 		},
 	}))
 	isEqual(t, "fooval", cfg.Foo)
 	isEqual(t, "foobarval", cfg.FooBar)
+	isEqual(t, 10, cfg.HTTPPort)
 	isEqual(t, "", cfg.bar)
 }
 
 func TestToEnv(t *testing.T) {
 	for in, out := range map[string]string{
-		"Foo":      "FOO",
-		"FooBar":   "FOO_BAR",
-		"fooBar":   "FOO_BAR",
-		"Foo_Bar":  "FOO_BAR",
-		"Foo__Bar": "FOO__BAR",
+		"Foo":          "FOO",
+		"FooBar":       "FOO_BAR",
+		"FOOBar":       "FOO_BAR",
+		"Foo____Bar":   "FOO_BAR",
+		"fooBar":       "FOO_BAR",
+		"Foo_Bar":      "FOO_BAR",
+		"Foo__Bar":     "FOO_BAR",
+		"HTTPPort":     "HTTP_PORT",
+		"SSHPort":      "SSH_PORT",
+		"_SSH___Port_": "SSH_PORT",
+		"_PortHTTP":    "PORT_HTTP",
 	} {
-		isEqual(t, out, toEnvName(in))
+		t.Run(in, func(t *testing.T) {
+			isEqual(t, out, toEnvName(in))
+		})
 	}
 }
 
