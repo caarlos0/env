@@ -3,9 +3,9 @@ name: build
 on:
   push:
     branches:
-      - 'main'
+      - "main"
     tags:
-      - 'v*'
+      - "v*"
   pull_request:
 
 jobs:
@@ -18,8 +18,8 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
-        go-version: [ oldstable, stable]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go-version: [1.18, oldstable, stable]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
