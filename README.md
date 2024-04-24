@@ -56,6 +56,12 @@ func main() {
 		fmt.Printf("%+v\n", err)
 	}
 
+  // or you can use generics
+  cfg, err := env.ParseAs[config]()
+  if err != nil {
+		fmt.Printf("%+v\n", err)
+  }
+
 	fmt.Printf("%+v\n", cfg)
 }
 ```
