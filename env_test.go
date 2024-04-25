@@ -2013,3 +2013,15 @@ func TestBase64Password(t *testing.T) {
 	isEqual(t, "admin", c.Username)
 	isEqual(t, "admin123", string(*c.Password))
 }
+
+func TestIssue304(t *testing.T) {
+	t.Setenv("BACKEND_URL", "https://google.com")
+	type Config struct {
+		BackendURL string `envDefault:"localhost:8000"`
+	}
+	cfg, err := ParseAsWithOptions[Config](Options{
+		UseFieldNameByDefault: true,
+	})
+	isNoErr(t, err)
+	isEqual(t, "https://google.com", cfg.BackendURL)
+}
