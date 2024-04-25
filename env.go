@@ -118,6 +118,8 @@ type Options struct {
 
 	// UseFieldNameByDefault defines whether or not env should use the field
 	// name by default if the `env` key is missing.
+	// Note that the field name will be "converted" to conform with environment
+	// variable names conventions.
 	UseFieldNameByDefault bool
 
 	// Custom parse functions for different types.
