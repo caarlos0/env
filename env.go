@@ -300,6 +300,15 @@ func doParseField(refField reflect.Value, refTypeField reflect.StructField, proc
 		return err
 	}
 
+	if isStructPtr(refField) && refField.IsNil() {
+		refField.Set(reflect.New(refField.Type().Elem()))
+		refField = refField.Elem()
+	}
+
+	if _, ok := opts.FuncMap[refField.Type()]; ok {
+		return nil
+	}
+
 	if reflect.Struct == refField.Kind() {
 		return doParse(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
@@ -643,4 +652,8 @@ func parseTextUnmarshalers(field reflect.Value, data []string, sf reflect.Struct
 // can use as Options.Environment field
 func ToMap(env []string) map[string]string {
 	return toMap(env)
+}
+
+func isStructPtr(v reflect.Value) bool {
+	return reflect.Ptr == v.Kind() && v.Type().Elem().Kind() == reflect.Struct
 }
