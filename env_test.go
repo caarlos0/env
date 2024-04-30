@@ -2034,3 +2034,22 @@ func TestIssue304(t *testing.T) {
 	isNoErr(t, err)
 	isEqual(t, "https://google.com", cfg.BackendURL)
 }
+
+func TestIssue234(t *testing.T) {
+	type Test struct {
+		Str string `env:"TEST"`
+	}
+	type ComplexConfig struct {
+		Foo   *Test `envPrefix:"FOO_"`
+		Bar   Test  `envPrefix:"BAR_"`
+		Clean *Test
+	}
+
+	t.Setenv("FOO_TEST", "kek")
+	t.Setenv("BAR_TEST", "lel")
+
+	cfg := ComplexConfig{}
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, "kek", cfg.Foo.Str)
+	isEqual(t, "lel", cfg.Bar.Str)
+}
