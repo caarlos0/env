@@ -2,6 +2,7 @@ package env
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -2052,4 +2053,27 @@ func TestIssue234(t *testing.T) {
 	isNoErr(t, Parse(&cfg))
 	isEqual(t, "kek", cfg.Foo.Str)
 	isEqual(t, "lel", cfg.Bar.Str)
+}
+
+type Issue308 struct {
+	Inner Issue308Map `env:"A_MAP"`
+}
+
+type Issue308Map map[string][]string
+
+func (rc *Issue308Map) UnmarshalText(b []byte) error {
+	m := map[string][]string{}
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+	*rc = Issue308Map(m)
+	return nil
+}
+
+func TestIssue308(t *testing.T) {
+	t.Setenv("A_MAP", `{"FOO":["BAR", "ZAZ"]}`)
+
+	cfg := Issue308{}
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, Issue308Map{"FOO": []string{"BAR", "ZAZ"}}, cfg.Inner)
 }
