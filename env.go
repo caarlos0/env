@@ -396,15 +396,25 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 		}
 
 		sliceType := ref.Type()
+		var initialized int
 		if reflect.Ptr == ref.Kind() {
 			sliceType = sliceType.Elem()
+			// Due to the rest of code the pre-initialized slice has no chance to arrive here
+			initialized = 0
+		} else {
+			initialized = ref.Len()
 		}
-
-		result := reflect.MakeSlice(sliceType, counter, counter)
-
-		for i := 0; i < counter; i++ {
-			iRef := result.Index(i)
-			err := doParse(iRef, processField, optionsWithSliceEnvPrefix(opts, i))
+		var capacity int
+		if capacity = counter; initialized > counter {
+			capacity = initialized
+		}
+		result := reflect.MakeSlice(sliceType, capacity, capacity)
+		for i := 0; i < capacity; i++ {
+			item := result.Index(i)
+			if i < initialized {
+				item.Set(ref.Index(i))
+			}
+			err := doParse(item, processField, optionsWithSliceEnvPrefix(opts, i))
 			if err != nil {
 				errors = append(errors, err)
 			}

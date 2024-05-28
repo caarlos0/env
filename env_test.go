@@ -2095,14 +2095,18 @@ func TestIssue298(t *testing.T) {
 	t.Setenv("FOO_1_NUM", "111")
 
 	t.Setenv("BAR_0_STR", "b0t")
-	t.Setenv("BAR_0_NUM", "202")
+	//t.Setenv("BAR_0_NUM", "202") // Not overridden
 	t.Setenv("BAR_1_STR", "b1t")
 	t.Setenv("BAR_1_NUM", "212")
 
 	t.Setenv("STR", "bt")
 	t.Setenv("NUM", "10")
 
-	cfg := ComplexConfig{}
+	sample := make([]Test, 1)
+	sample[0].Str = "overridden text"
+	sample[0].Num = 99999999
+	cfg := ComplexConfig{Bar: sample}
+
 	isNoErr(t, Parse(&cfg))
 
 	isEqual(t, "f0t", (*cfg.Foo)[0].Str)
@@ -2111,7 +2115,7 @@ func TestIssue298(t *testing.T) {
 	isEqual(t, 111, (*cfg.Foo)[1].Num)
 
 	isEqual(t, "b0t", cfg.Bar[0].Str)
-	isEqual(t, 202, cfg.Bar[0].Num)
+	isEqual(t, 99999999, cfg.Bar[0].Num)
 	isEqual(t, "b1t", cfg.Bar[1].Str)
 	isEqual(t, 212, cfg.Bar[1].Num)
 
