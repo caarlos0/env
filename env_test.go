@@ -2077,3 +2077,44 @@ func TestIssue308(t *testing.T) {
 	isNoErr(t, Parse(&cfg))
 	isEqual(t, Issue308Map{"FOO": []string{"BAR", "ZAZ"}}, cfg.Inner)
 }
+
+func TestIssue298(t *testing.T) {
+	type Test struct {
+		Str string `env:"STR"`
+		Num int    `env:"NUM"`
+	}
+	type ComplexConfig struct {
+		Foo *[]Test `envPrefix:"FOO_"`
+		Bar []Test  `envPrefix:"BAR_"`
+		Baz *Test
+	}
+
+	t.Setenv("FOO_0_STR", "f0t")
+	t.Setenv("FOO_0_NUM", "101")
+	t.Setenv("FOO_1_STR", "f1t")
+	t.Setenv("FOO_1_NUM", "111")
+
+	t.Setenv("BAR_0_STR", "b0t")
+	t.Setenv("BAR_0_NUM", "202")
+	t.Setenv("BAR_1_STR", "b1t")
+	t.Setenv("BAR_1_NUM", "212")
+
+	t.Setenv("STR", "bt")
+	t.Setenv("NUM", "10")
+
+	cfg := ComplexConfig{}
+	isNoErr(t, Parse(&cfg))
+
+	isEqual(t, "f0t", (*cfg.Foo)[0].Str)
+	isEqual(t, 101, (*cfg.Foo)[0].Num)
+	isEqual(t, "f1t", (*cfg.Foo)[1].Str)
+	isEqual(t, 111, (*cfg.Foo)[1].Num)
+
+	isEqual(t, "b0t", cfg.Bar[0].Str)
+	isEqual(t, 202, cfg.Bar[0].Num)
+	isEqual(t, "b1t", cfg.Bar[1].Str)
+	isEqual(t, 212, cfg.Bar[1].Num)
+
+	isEqual(t, "bt", cfg.Baz.Str)
+	isEqual(t, 10, cfg.Baz.Num)
+}

@@ -168,6 +168,19 @@ func customOptions(opt Options) Options {
 	return opt
 }
 
+func optionsWithSliceEnvPrefix(opts Options, index int) Options {
+	return Options{
+		Environment:           opts.Environment,
+		TagName:               opts.TagName,
+		RequiredIfNoDef:       opts.RequiredIfNoDef,
+		OnSet:                 opts.OnSet,
+		Prefix:                fmt.Sprintf("%s%d_", opts.Prefix, index),
+		UseFieldNameByDefault: opts.UseFieldNameByDefault,
+		FuncMap:               opts.FuncMap,
+		rawEnvVars:            opts.rawEnvVars,
+	}
+}
+
 func optionsWithEnvPrefix(field reflect.StructField, opts Options) Options {
 	return Options{
 		Environment:           opts.Environment,
@@ -313,7 +326,100 @@ func doParseField(refField reflect.Value, refTypeField reflect.StructField, proc
 		return doParse(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
+	if isSliceOfStructs(refTypeField, opts) {
+		err := doParseSlice(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
+		if len(err) > 0 {
+			return err[0]
+		}
+	}
+
 	return nil
+}
+
+func isSliceOfStructs(refTypeField reflect.StructField, opts Options) bool {
+	field := refTypeField.Type
+	if reflect.Ptr == field.Kind() {
+		field = field.Elem()
+	}
+
+	if reflect.Slice != field.Kind() {
+		return false
+	}
+
+	field = field.Elem()
+
+	if reflect.Ptr == field.Kind() {
+		field = field.Elem()
+	}
+
+	_, ignore := defaultBuiltInParsers[field.Kind()]
+
+	if !ignore {
+		_, ignore = opts.FuncMap[field]
+	}
+
+	if !ignore {
+		_, ignore = reflect.New(field).Interface().(encoding.TextUnmarshaler)
+	}
+
+	if !ignore {
+		ignore = reflect.Struct != field.Kind()
+	}
+	return !ignore
+}
+
+func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) []error {
+	if !strings.HasSuffix(opts.Prefix, string(underscore)) {
+		opts.Prefix += string(underscore)
+	}
+
+	var environments []string
+	for environment, _ := range opts.Environment {
+		if strings.HasPrefix(environment, opts.Prefix) {
+			environments = append(environments, environment)
+		}
+	}
+
+	var errors []error
+	if len(environments) > 0 {
+		counter := 0
+		for finished := false; !finished; {
+			finished = true
+			prefix := fmt.Sprintf("%s%d%c", opts.Prefix, counter, underscore)
+			for _, variable := range environments {
+				if strings.HasPrefix(variable, prefix) {
+					counter++
+					finished = false
+					break
+				}
+			}
+		}
+
+		sliceType := ref.Type()
+		if reflect.Ptr == ref.Kind() {
+			sliceType = sliceType.Elem()
+		}
+
+		result := reflect.MakeSlice(sliceType, counter, counter)
+
+		for i := 0; i < counter; i++ {
+			iRef := result.Index(i)
+			err := doParse(iRef, processField, optionsWithSliceEnvPrefix(opts, i))
+			if err != nil {
+				errors = append(errors, err)
+			}
+		}
+
+		if reflect.Ptr == ref.Kind() {
+			resultPtr := reflect.New(sliceType)
+			resultPtr.Elem().Set(result)
+			result = resultPtr
+		}
+
+		ref.Set(result)
+	}
+
+	return errors
 }
 
 func setField(refField reflect.Value, refTypeField reflect.StructField, opts Options, fieldParams FieldParams) error {
