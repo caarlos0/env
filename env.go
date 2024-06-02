@@ -2,6 +2,7 @@ package env
 
 import (
 	"encoding"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -327,10 +328,7 @@ func doParseField(refField reflect.Value, refTypeField reflect.StructField, proc
 	}
 
 	if isSliceOfStructs(refTypeField, opts) {
-		err := doParseSlice(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
-		if len(err) > 0 {
-			return err[0]
-		}
+		return doParseSlice(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
 	return nil
@@ -368,7 +366,7 @@ func isSliceOfStructs(refTypeField reflect.StructField, opts Options) bool {
 	return !ignore
 }
 
-func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) []error {
+func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) error {
 	if !strings.HasSuffix(opts.Prefix, string(underscore)) {
 		opts.Prefix += string(underscore)
 	}
@@ -380,7 +378,6 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 		}
 	}
 
-	var errors []error
 	if len(environments) > 0 {
 		counter := 0
 		for finished := false; !finished; {
@@ -405,19 +402,17 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 			initialized = ref.Len()
 		}
 		var capacity int
-		if capacity = counter; initialized > counter {
-			capacity = initialized
+		if capacity = initialized; counter > initialized {
+			capacity = counter
 		}
+		var errorList = make([]error, capacity)
 		result := reflect.MakeSlice(sliceType, capacity, capacity)
 		for i := 0; i < capacity; i++ {
 			item := result.Index(i)
 			if i < initialized {
 				item.Set(ref.Index(i))
 			}
-			err := doParse(item, processField, optionsWithSliceEnvPrefix(opts, i))
-			if err != nil {
-				errors = append(errors, err)
-			}
+			errorList[i] = doParse(item, processField, optionsWithSliceEnvPrefix(opts, i))
 		}
 
 		if reflect.Ptr == ref.Kind() {
@@ -425,11 +420,12 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 			resultPtr.Elem().Set(result)
 			result = resultPtr
 		}
-
 		ref.Set(result)
+
+		return errors.Join(errorList...)
 	}
 
-	return errors
+	return nil
 }
 
 func setField(refField reflect.Value, refTypeField reflect.StructField, opts Options, fieldParams FieldParams) error {

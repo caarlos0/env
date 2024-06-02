@@ -2085,7 +2085,7 @@ func TestIssue298(t *testing.T) {
 	}
 	type ComplexConfig struct {
 		Foo *[]Test `envPrefix:"FOO_"`
-		Bar []Test  `envPrefix:"BAR_"`
+		Bar []Test  `envPrefix:"BAR"`
 		Baz *Test
 	}
 
