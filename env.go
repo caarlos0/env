@@ -2,7 +2,6 @@ package env
 
 import (
 	"encoding"
-	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -378,7 +377,6 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 		}
 	}
 
-	var errorList []error
 	if len(environments) > 0 {
 		counter := 0
 		for finished := false; !finished; {
@@ -402,20 +400,20 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 		} else {
 			initialized = ref.Len()
 		}
-		//capacity := int(math.Max(float64(initialized), float64(counter)))
 
 		var capacity int
 		if capacity = initialized; counter > initialized {
 			capacity = counter
 		}
-		errorList = make([]error, capacity)
 		result := reflect.MakeSlice(sliceType, capacity, capacity)
 		for i := 0; i < capacity; i++ {
 			item := result.Index(i)
 			if i < initialized {
 				item.Set(ref.Index(i))
 			}
-			errorList[i] = doParse(item, processField, optionsWithSliceEnvPrefix(opts, i))
+			if err := doParse(item, processField, optionsWithSliceEnvPrefix(opts, i)); err != nil {
+				return err
+			}
 		}
 
 		if reflect.Ptr == ref.Kind() {
@@ -426,7 +424,7 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 		ref.Set(result)
 	}
 
-	return errors.Join(errorList...)
+	return nil
 }
 
 func setField(refField reflect.Value, refTypeField reflect.StructField, opts Options, fieldParams FieldParams) error {
