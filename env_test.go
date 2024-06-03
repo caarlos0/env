@@ -2095,7 +2095,7 @@ func TestIssue298(t *testing.T) {
 	t.Setenv("FOO_1_NUM", "111")
 
 	t.Setenv("BAR_0_STR", "b0t")
-	//t.Setenv("BAR_0_NUM", "202") // Not overridden
+	// t.Setenv("BAR_0_NUM", "202") // Not overridden
 	t.Setenv("BAR_1_STR", "b1t")
 	t.Setenv("BAR_1_NUM", "212")
 

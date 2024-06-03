@@ -371,7 +371,7 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 	}
 
 	var environments []string
-	for environment, _ := range opts.Environment {
+	for environment := range opts.Environment {
 		if strings.HasPrefix(environment, opts.Prefix) {
 			environments = append(environments, environment)
 		}
