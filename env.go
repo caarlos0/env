@@ -378,6 +378,7 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 		}
 	}
 
+	var errorList []error
 	if len(environments) > 0 {
 		counter := 0
 		for finished := false; !finished; {
@@ -396,16 +397,18 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 		var initialized int
 		if reflect.Ptr == ref.Kind() {
 			sliceType = sliceType.Elem()
-			// Due to the rest of code the pre-initialized slice has no chance to arrive here
+			// Due to the rest of code the pre-initialized slice has no chance for this situation
 			initialized = 0
 		} else {
 			initialized = ref.Len()
 		}
+		//capacity := int(math.Max(float64(initialized), float64(counter)))
+
 		var capacity int
 		if capacity = initialized; counter > initialized {
 			capacity = counter
 		}
-		var errorList = make([]error, capacity)
+		errorList = make([]error, capacity)
 		result := reflect.MakeSlice(sliceType, capacity, capacity)
 		for i := 0; i < capacity; i++ {
 			item := result.Index(i)
@@ -421,11 +424,9 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 			result = resultPtr
 		}
 		ref.Set(result)
-
-		return errors.Join(errorList...)
 	}
 
-	return nil
+	return errors.Join(errorList...)
 }
 
 func setField(refField reflect.Value, refTypeField reflect.StructField, opts Options, fieldParams FieldParams) error {
