@@ -2,10 +2,20 @@
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/caarlos0/env/build.yml?branch=main&style=for-the-badge)](https://github.com/caarlos0/env/actions?workflow=build)
 [![Coverage Status](https://img.shields.io/codecov/c/gh/caarlos0/env.svg?logo=codecov&style=for-the-badge)](https://codecov.io/gh/caarlos0/env)
-[![](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://pkg.go.dev/github.com/caarlos0/env/v11)
+[![Go Docs](http://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://pkg.go.dev/github.com/caarlos0/env/v11)
 
-A simple and zero-dependencies library to parse environment variables into
-`struct`s.
+A simple and zero-dependencies library to parse environment variables into `struct`s.
+
+```go
+type config struct {
+  Home string `env:"HOME"`
+}
+
+cfg, err := env.ParseAs[config]()
+```
+
+You can see the full list of examples
+[here](https://pkg.go.dev/github.com/caarlos0/env/v11#pkg-examples).
 
 ## Used and supported by
 
@@ -18,60 +28,6 @@ A simple and zero-dependencies library to parse environment variables into
   <b>Encore – the platform for building Go-based cloud backends.</b>
   <br/>
 </p>
-
-## Example
-
-Get the module with:
-
-```sh
-go get github.com/caarlos0/env/v11
-```
-
-The usage looks like this:
-
-```go
-package main
-
-import (
-	"fmt"
-	"time"
-
-	"github.com/caarlos0/env/v11"
-)
-
-type config struct {
-	Home         string         `env:"HOME"`
-	Port         int            `env:"PORT" envDefault:"3000"`
-	Password     string         `env:"PASSWORD,unset"`
-	IsProduction bool           `env:"PRODUCTION"`
-	Duration     time.Duration  `env:"DURATION"`
-	Hosts        []string       `env:"HOSTS" envSeparator:":"`
-	TempFolder   string         `env:"TEMP_FOLDER,expand" envDefault:"${HOME}/tmp"`
-	StringInts   map[string]int `env:"MAP_STRING_INT"`
-}
-
-func main() {
-	cfg := config{}
-	if err := env.Parse(&cfg); err != nil {
-		fmt.Printf("%+v\n", err)
-	}
-
-  // or you can use generics
-  cfg, err := env.ParseAs[config]()
-  if err != nil {
-		fmt.Printf("%+v\n", err)
-  }
-
-	fmt.Printf("%+v\n", cfg)
-}
-```
-
-You can run it like this:
-
-```sh
-$ PRODUCTION=true HOSTS="host1:host2:host3" DURATION=1s MAP_STRING_INT=k1:1,k2:2 go run main.go
-{Home:/your/home Port:3000 IsProduction:true Hosts:[host1 host2 host3] Duration:1s StringInts:map[k1:1 k2:2]}
-```
 
 ## Caveats
 
@@ -184,48 +140,6 @@ type config struct {
 > If the variable is set, but empty, the field will have its type's default
 > value.
 > This also means that custom parser funcs will not be invoked.
-
-## Expand vars
-
-If you set the `expand` option, environment variables (either in `${var}` or
-`$var` format) in the string will be replaced according with the actual value
-of the variable. For example:
-
-```go
-type config struct {
-	SecretKey string `env:"SECRET_KEY,expand"`
-}
-```
-
-This also works with `envDefault`:
-
-```go
-import (
-	"fmt"
-	"github.com/caarlos0/env/v11"
-)
-
-type config struct {
-	Host     string `env:"HOST" envDefault:"localhost"`
-	Port     int    `env:"PORT" envDefault:"3000"`
-	Address  string `env:"ADDRESS,expand" envDefault:"$HOST:${PORT}"`
-}
-
-func main() {
-	cfg := config{}
-	if err := env.Parse(&cfg); err != nil {
-		fmt.Printf("%+v\n", err)
-	}
-	fmt.Printf("%+v\n", cfg)
-}
-```
-
-results in this:
-
-```sh
-$ PORT=8080 go run main.go
-{Host:localhost Port:8080 Address:localhost:8080}
-```
 
 ## Not Empty fields
 

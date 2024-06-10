@@ -1,3 +1,30 @@
+// Package env parses environment variables into structs.
+//
+//	type config struct {
+//	  Home string `env:"HOME"`
+//	}
+//	cfg, err := env.ParseAs[config]()
+//
+// The following types are supported by default:
+// - string
+// - bool
+// - int
+// - int8
+// - int16
+// - int32
+// - int64
+// - uint
+// - uint8
+// - uint16
+// - uint32
+// - uint64
+// - float32
+// - float64
+// - time.Duration
+// - encoding.TextUnmarshaler
+// - url.URL
+//
+// You can, however, implement custom parsers by setting the FuncMap option.
 package env
 
 import (
