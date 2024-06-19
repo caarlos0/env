@@ -300,7 +300,7 @@ func doParseField(refField reflect.Value, refTypeField reflect.StructField, proc
 		return err
 	}
 
-	if isStructPtr(refField) && refField.IsNil() && params.Init {
+	if params.Init && isStructPtr(refField) && refField.IsNil() {
 		refField.Set(reflect.New(refField.Type().Elem()))
 		refField = refField.Elem()
 
