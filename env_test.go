@@ -2118,3 +2118,12 @@ func TestIssue317(t *testing.T) {
 		})
 	}
 }
+
+func TestIssue310(t *testing.T) {
+	type TestConfig struct {
+		URL *url.URL
+	}
+	cfg, err := ParseAs[TestConfig]()
+	isNoErr(t, err)
+	isEqual(t, nil, cfg.URL)
+}
