@@ -227,6 +227,20 @@ $ PORT=8080 go run main.go
 {Host:localhost Port:8080 Address:localhost:8080}
 ```
 
+## Init `nil` pointers
+
+You can automatically initialize `nil` pointers regardless of if a variable is
+set for them or not.
+This behavior can be enabled by using the `init` tag option.
+
+Example:
+
+```go
+type config struct {
+	URL *url.URL `env:"URL,init"`
+}
+```
+
 ## Not Empty fields
 
 While `required` demands the environment variable to be set, it doesn't check

@@ -137,9 +137,10 @@ type Config struct {
 }
 
 type ParentStruct struct {
-	InnerStruct *InnerStruct
-	unexported  *InnerStruct
-	Ignored     *http.Client
+	InnerStruct    *InnerStruct `env:",init"`
+	NilInnerStruct *InnerStruct
+	unexported     *InnerStruct
+	Ignored        *http.Client
 }
 
 type InnerStruct struct {
@@ -2041,7 +2042,7 @@ func TestIssue234(t *testing.T) {
 		Str string `env:"TEST"`
 	}
 	type ComplexConfig struct {
-		Foo   *Test `envPrefix:"FOO_"`
+		Foo   *Test `envPrefix:"FOO_" env:",init"`
 		Bar   Test  `envPrefix:"BAR_"`
 		Clean *Test
 	}
@@ -2076,4 +2077,77 @@ func TestIssue308(t *testing.T) {
 	cfg := Issue308{}
 	isNoErr(t, Parse(&cfg))
 	isEqual(t, Issue308Map{"FOO": []string{"BAR", "ZAZ"}}, cfg.Inner)
+}
+
+func TestIssue317(t *testing.T) {
+	type TestConfig struct {
+		U1 *url.URL `env:"U1"`
+		U2 *url.URL `env:"U2,init"`
+	}
+	cases := []struct {
+		desc                   string
+		environment            map[string]string
+		expectedU1, expectedU2 *url.URL
+	}{
+		{
+			desc:        "unset",
+			environment: map[string]string{},
+			expectedU1:  nil,
+			expectedU2:  &url.URL{},
+		},
+		{
+			desc:        "empty",
+			environment: map[string]string{"U1": "", "U2": ""},
+			expectedU1:  nil,
+			expectedU2:  &url.URL{},
+		},
+		{
+			desc:        "set",
+			environment: map[string]string{"U1": "https://example.com/"},
+			expectedU1:  &url.URL{Scheme: "https", Host: "example.com", Path: "/"},
+			expectedU2:  &url.URL{},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg := TestConfig{}
+			err := ParseWithOptions(&cfg, Options{Environment: tc.environment})
+			isNoErr(t, err)
+			isEqual(t, tc.expectedU1, cfg.U1)
+			isEqual(t, tc.expectedU2, cfg.U2)
+		})
+	}
+}
+
+func TestIssue310(t *testing.T) {
+	type TestConfig struct {
+		URL *url.URL
+	}
+	cfg, err := ParseAs[TestConfig]()
+	isNoErr(t, err)
+	isEqual(t, nil, cfg.URL)
+}
+
+func TestMultipleTagOptions(t *testing.T) {
+	type TestConfig struct {
+		URL *url.URL `env:"URL,init,unset"`
+	}
+	t.Run("unset", func(t *testing.T) {
+		cfg, err := ParseAs[TestConfig]()
+		isNoErr(t, err)
+		isEqual(t, &url.URL{}, cfg.URL)
+	})
+	t.Run("empty", func(t *testing.T) {
+		t.Setenv("URL", "")
+		cfg, err := ParseAs[TestConfig]()
+		isNoErr(t, err)
+		isEqual(t, &url.URL{}, cfg.URL)
+	})
+	t.Run("set", func(t *testing.T) {
+		t.Setenv("URL", "https://github.com/caarlos0")
+		cfg, err := ParseAs[TestConfig]()
+		isNoErr(t, err)
+		isEqual(t, &url.URL{Scheme: "https", Host: "github.com", Path: "/caarlos0"}, cfg.URL)
+		isEqual(t, "", os.Getenv("URL"))
+	})
 }

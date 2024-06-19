@@ -300,13 +300,13 @@ func doParseField(refField reflect.Value, refTypeField reflect.StructField, proc
 		return err
 	}
 
-	if isStructPtr(refField) && refField.IsNil() {
+	if params.Init && isStructPtr(refField) && refField.IsNil() {
 		refField.Set(reflect.New(refField.Type().Elem()))
 		refField = refField.Elem()
-	}
 
-	if _, ok := opts.FuncMap[refField.Type()]; ok {
-		return nil
+		if _, ok := opts.FuncMap[refField.Type()]; ok {
+			return nil
+		}
 	}
 
 	if reflect.Struct == refField.Kind() {
@@ -361,6 +361,7 @@ type FieldParams struct {
 	Unset           bool
 	NotEmpty        bool
 	Expand          bool
+	Init            bool
 }
 
 func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, error) {
@@ -393,6 +394,8 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 			result.NotEmpty = true
 		case "expand":
 			result.Expand = true
+		case "init":
+			result.Init = true
 		default:
 			return FieldParams{}, newNoSupportedTagOptionError(tag)
 		}
