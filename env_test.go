@@ -2127,3 +2127,27 @@ func TestIssue310(t *testing.T) {
 	isNoErr(t, err)
 	isEqual(t, nil, cfg.URL)
 }
+
+func TestMultipleTagOptions(t *testing.T) {
+	type TestConfig struct {
+		URL *url.URL `env:"URL,init,unset"`
+	}
+	t.Run("unset", func(t *testing.T) {
+		cfg, err := ParseAs[TestConfig]()
+		isNoErr(t, err)
+		isEqual(t, &url.URL{}, cfg.URL)
+	})
+	t.Run("empty", func(t *testing.T) {
+		t.Setenv("URL", "")
+		cfg, err := ParseAs[TestConfig]()
+		isNoErr(t, err)
+		isEqual(t, &url.URL{}, cfg.URL)
+	})
+	t.Run("set", func(t *testing.T) {
+		t.Setenv("URL", "https://github.com/caarlos0")
+		cfg, err := ParseAs[TestConfig]()
+		isNoErr(t, err)
+		isEqual(t, &url.URL{Scheme: "https", Host: "github.com", Path: "/caarlos0"}, cfg.URL)
+		isEqual(t, "", os.Getenv("URL"))
+	})
+}
