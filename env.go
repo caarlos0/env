@@ -366,7 +366,7 @@ func isSliceOfStructs(refTypeField reflect.StructField, opts Options) bool {
 }
 
 func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) error {
-	if !strings.HasSuffix(opts.Prefix, string(underscore)) {
+	if opts.Prefix != "" && !strings.HasSuffix(opts.Prefix, string(underscore)) {
 		opts.Prefix += string(underscore)
 	}
 

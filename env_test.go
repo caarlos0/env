@@ -2160,7 +2160,7 @@ func TestIssue298(t *testing.T) {
 	type ComplexConfig struct {
 		Foo *[]Test `envPrefix:"FOO_"`
 		Bar []Test  `envPrefix:"BAR"`
-		Baz *Test
+		Baz []Test  `env:",init"`
 	}
 
 	t.Setenv("FOO_0_STR", "f0t")
@@ -2173,8 +2173,8 @@ func TestIssue298(t *testing.T) {
 	t.Setenv("BAR_1_STR", "b1t")
 	t.Setenv("BAR_1_NUM", "212")
 
-	t.Setenv("STR", "bt")
-	t.Setenv("NUM", "10")
+	t.Setenv("0_STR", "bt")
+	t.Setenv("1_NUM", "10")
 
 	sample := make([]Test, 1)
 	sample[0].Str = "overridden text"
@@ -2193,8 +2193,10 @@ func TestIssue298(t *testing.T) {
 	isEqual(t, "b1t", cfg.Bar[1].Str)
 	isEqual(t, 212, cfg.Bar[1].Num)
 
-	isEqual(t, "bt", cfg.Baz.Str)
-	isEqual(t, 10, cfg.Baz.Num)
+	isEqual(t, "bt", cfg.Baz[0].Str)
+	isEqual(t, 0, cfg.Baz[0].Num)
+	isEqual(t, "", cfg.Baz[1].Str)
+	isEqual(t, 10, cfg.Baz[1].Num)
 }
 
 func TestIssue298ErrorNestedFieldRequiredNotSet(t *testing.T) {
