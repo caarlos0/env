@@ -168,6 +168,19 @@ func customOptions(opt Options) Options {
 	return opt
 }
 
+func optionsWithSliceEnvPrefix(opts Options, index int) Options {
+	return Options{
+		Environment:           opts.Environment,
+		TagName:               opts.TagName,
+		RequiredIfNoDef:       opts.RequiredIfNoDef,
+		OnSet:                 opts.OnSet,
+		Prefix:                fmt.Sprintf("%s%d_", opts.Prefix, index),
+		UseFieldNameByDefault: opts.UseFieldNameByDefault,
+		FuncMap:               opts.FuncMap,
+		rawEnvVars:            opts.rawEnvVars,
+	}
+}
+
 func optionsWithEnvPrefix(field reflect.StructField, opts Options) Options {
 	return Options{
 		Environment:           opts.Environment,
@@ -311,6 +324,104 @@ func doParseField(refField reflect.Value, refTypeField reflect.StructField, proc
 
 	if reflect.Struct == refField.Kind() {
 		return doParse(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
+	}
+
+	if isSliceOfStructs(refTypeField, opts) {
+		return doParseSlice(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
+	}
+
+	return nil
+}
+
+func isSliceOfStructs(refTypeField reflect.StructField, opts Options) bool {
+	field := refTypeField.Type
+	if reflect.Ptr == field.Kind() {
+		field = field.Elem()
+	}
+
+	if reflect.Slice != field.Kind() {
+		return false
+	}
+
+	field = field.Elem()
+
+	if reflect.Ptr == field.Kind() {
+		field = field.Elem()
+	}
+
+	_, ignore := defaultBuiltInParsers[field.Kind()]
+
+	if !ignore {
+		_, ignore = opts.FuncMap[field]
+	}
+
+	if !ignore {
+		_, ignore = reflect.New(field).Interface().(encoding.TextUnmarshaler)
+	}
+
+	if !ignore {
+		ignore = reflect.Struct != field.Kind()
+	}
+	return !ignore
+}
+
+func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) error {
+	if opts.Prefix != "" && !strings.HasSuffix(opts.Prefix, string(underscore)) {
+		opts.Prefix += string(underscore)
+	}
+
+	var environments []string
+	for environment := range opts.Environment {
+		if strings.HasPrefix(environment, opts.Prefix) {
+			environments = append(environments, environment)
+		}
+	}
+
+	if len(environments) > 0 {
+		counter := 0
+		for finished := false; !finished; {
+			finished = true
+			prefix := fmt.Sprintf("%s%d%c", opts.Prefix, counter, underscore)
+			for _, variable := range environments {
+				if strings.HasPrefix(variable, prefix) {
+					counter++
+					finished = false
+					break
+				}
+			}
+		}
+
+		sliceType := ref.Type()
+		var initialized int
+		if reflect.Ptr == ref.Kind() {
+			sliceType = sliceType.Elem()
+			// Due to the rest of code the pre-initialized slice has no chance for this situation
+			initialized = 0
+		} else {
+			initialized = ref.Len()
+		}
+
+		var capacity int
+		if capacity = initialized; counter > initialized {
+			capacity = counter
+		}
+		result := reflect.MakeSlice(sliceType, capacity, capacity)
+		for i := 0; i < capacity; i++ {
+			item := result.Index(i)
+			if i < initialized {
+				item.Set(ref.Index(i))
+			}
+			if err := doParse(item, processField, optionsWithSliceEnvPrefix(opts, i)); err != nil {
+				return err
+			}
+		}
+
+		if reflect.Ptr == ref.Kind() {
+			resultPtr := reflect.New(sliceType)
+			resultPtr.Elem().Set(result)
+			result = resultPtr
+		}
+		ref.Set(result)
 	}
 
 	return nil

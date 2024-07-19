@@ -2151,3 +2151,67 @@ func TestMultipleTagOptions(t *testing.T) {
 		isEqual(t, "", os.Getenv("URL"))
 	})
 }
+
+func TestIssue298(t *testing.T) {
+	type Test struct {
+		Str string `env:"STR"`
+		Num int    `env:"NUM"`
+	}
+	type ComplexConfig struct {
+		Foo *[]Test `envPrefix:"FOO_"`
+		Bar []Test  `envPrefix:"BAR"`
+		Baz []Test  `env:",init"`
+	}
+
+	t.Setenv("FOO_0_STR", "f0t")
+	t.Setenv("FOO_0_NUM", "101")
+	t.Setenv("FOO_1_STR", "f1t")
+	t.Setenv("FOO_1_NUM", "111")
+
+	t.Setenv("BAR_0_STR", "b0t")
+	// t.Setenv("BAR_0_NUM", "202") // Not overridden
+	t.Setenv("BAR_1_STR", "b1t")
+	t.Setenv("BAR_1_NUM", "212")
+
+	t.Setenv("0_STR", "bt")
+	t.Setenv("1_NUM", "10")
+
+	sample := make([]Test, 1)
+	sample[0].Str = "overridden text"
+	sample[0].Num = 99999999
+	cfg := ComplexConfig{Bar: sample}
+
+	isNoErr(t, Parse(&cfg))
+
+	isEqual(t, "f0t", (*cfg.Foo)[0].Str)
+	isEqual(t, 101, (*cfg.Foo)[0].Num)
+	isEqual(t, "f1t", (*cfg.Foo)[1].Str)
+	isEqual(t, 111, (*cfg.Foo)[1].Num)
+
+	isEqual(t, "b0t", cfg.Bar[0].Str)
+	isEqual(t, 99999999, cfg.Bar[0].Num)
+	isEqual(t, "b1t", cfg.Bar[1].Str)
+	isEqual(t, 212, cfg.Bar[1].Num)
+
+	isEqual(t, "bt", cfg.Baz[0].Str)
+	isEqual(t, 0, cfg.Baz[0].Num)
+	isEqual(t, "", cfg.Baz[1].Str)
+	isEqual(t, 10, cfg.Baz[1].Num)
+}
+
+func TestIssue298ErrorNestedFieldRequiredNotSet(t *testing.T) {
+	type Test struct {
+		Str string `env:"STR,required"`
+		Num int    `env:"NUM"`
+	}
+	type ComplexConfig struct {
+		Foo *[]Test `envPrefix:"FOO"`
+	}
+
+	t.Setenv("FOO_0_NUM", "101")
+
+	cfg := ComplexConfig{}
+	err := Parse(&cfg)
+	isErrorWithMessage(t, err, `env: required environment variable "FOO_0_STR" is not set`)
+	isTrue(t, errors.Is(err, EnvVarIsNotSetError{}))
+}
