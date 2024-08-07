@@ -1,3 +1,18 @@
+// Package env is a simple, zero-dependencies library to parse environment
+// variables into structs.
+//
+// Example:
+//
+//	type config struct {
+//		Home string `env:"HOME"`
+//	}
+//	// parse
+//	var cfg config
+//	err := env.Parse(&cfg)
+//	// or parse with generics
+//	cfg, err := env.ParseAs[config]()
+//
+// Check the examples and README for more detailed usage.
 package env
 
 import (
@@ -89,7 +104,8 @@ func defaultTypeParsers() map[reflect.Type]ParserFunc {
 	}
 }
 
-// ParserFunc defines the signature of a function that can be used within `CustomParsers`.
+// ParserFunc defines the signature of a function that can be used within
+// `Options`' `FuncMap`.
 type ParserFunc func(v string) (interface{}, error)
 
 // OnSetFn is a hook that can be run when a value is set.
@@ -103,20 +119,20 @@ type Options struct {
 	// Environment keys and values that will be accessible for the service.
 	Environment map[string]string
 
-	// TagName specifies another tagname to use rather than the default env.
+	// TagName specifies another tag name to use rather than the default 'env'.
 	TagName string
 
-	// RequiredIfNoDef automatically sets all env as required if they do not
+	// RequiredIfNoDef automatically sets all fields as required if they do not
 	// declare 'envDefault'.
 	RequiredIfNoDef bool
 
 	// OnSet allows to run a function when a value is set.
 	OnSet OnSetFn
 
-	// Prefix define a prefix for each key.
+	// Prefix define a prefix for every key.
 	Prefix string
 
-	// UseFieldNameByDefault defines whether or not env should use the field
+	// UseFieldNameByDefault defines whether or not `env` should use the field
 	// name by default if the `env` key is missing.
 	// Note that the field name will be "converted" to conform with environment
 	// variable names conventions.
@@ -125,7 +141,8 @@ type Options struct {
 	// Custom parse functions for different types.
 	FuncMap map[reflect.Type]ParserFunc
 
-	// Used internally. maps the env variable key to its resolved string value. (for env var expansion)
+	// Used internally. maps the env variable key to its resolved string value.
+	// (for env var expansion)
 	rawEnvVars map[string]string
 }
 
