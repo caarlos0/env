@@ -105,7 +105,7 @@ func ExampleParse_unset() {
 // Similarly, you can use `envKeyValSeparator` to define which character should
 // be used to separate a key from a value in a map.
 // The defaults are `,` and `:`, respectively.
-func ExampleParse_seprator() {
+func ExampleParse_separator() {
 	type Config struct {
 		Map map[string]string `env:"CUSTOM_MAP" envSeparator:"-" envKeyValSeparator:"|"`
 	}
