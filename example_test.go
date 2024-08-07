@@ -1,6 +1,7 @@
 package env
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -97,6 +98,24 @@ func ExampleParse_unset() {
 	}
 	fmt.Printf("%+v - %s", cfg, os.Getenv("SECRET"))
 	// Output: {Secret:1234} -
+}
+
+// You can use `envSeparator` to define which character should be used to
+// separate array items in a string.
+// Similarly, you can use `envKeyValSeparator` to define which character should
+// be used to separate a key from a value in a map.
+// The defaults are `,` and `:`, respectively.
+func ExampleParse_seprator() {
+	type Config struct {
+		Map map[string]string `env:"CUSTOM_MAP" envSeparator:"-" envKeyValSeparator:"|"`
+	}
+	os.Setenv("CUSTOM_MAP", "k1|v1-k2|v2")
+	var cfg Config
+	if err := Parse(&cfg); err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%+v", cfg)
+	// Output: {Map:map[k1:v1 k2:v2]}
 }
 
 // If you set the `expand` option, environment variables (either in `${var}` or
@@ -319,6 +338,22 @@ func ExampleParse_prefix() {
 	// Output: {A:{Foo:a} B:{Foo:b}}
 }
 
+// Setting prefixes for the entire config.
+func ExampleParseWithOptions_prefix() {
+	type Config struct {
+		Foo string `env:"FOO"`
+	}
+	os.Setenv("MY_APP_FOO", "a")
+	var cfg Config
+	if err := ParseWithOptions(&cfg, Options{
+		Prefix: "MY_APP_",
+	}); err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%+v", cfg)
+	// Output: {Foo:a}
+}
+
 // Use a different tag name than `env`.
 func ExampleParseWithOptions_tagName() {
 	type Config struct {
@@ -383,29 +418,39 @@ func ExampleParse_fromFile() {
 
 func ExampleParse_errorHandling() {
 	type Config struct {
-		Username string `env:"USERNAME" envDefault:"admin"`
-		Password string `env:"PASSWORD,notEmpty"`
+		Username string `env:"EX_ERR_USERNAME" envDefault:"admin"`
+		Password string `env:"EX_ERR_PASSWORD,notEmpty"`
 	}
 
 	var cfg Config
-	err := Parse(&cfg)
-	if e, ok := err.(*AggregateError); ok {
-		for _, er := range e.Errors {
-			switch v := er.(type) {
-			case ParseError:
-				// handle it
-			case NotStructPtrError:
-				// handle it
-			case NoParserError:
-				// handle it
-			case NoSupportedTagOptionError:
-				// handle it
-			default:
-				fmt.Printf("Unknown error type %v", v)
+	if err := Parse(&cfg); err != nil {
+		if errors.Is(err, EmptyEnvVarError{}) {
+			fmt.Println("oopsie")
+		}
+		aggErr := AggregateError{}
+		if ok := errors.As(err, &aggErr); ok {
+			for _, er := range aggErr.Errors {
+				switch v := er.(type) {
+				// Handle the error types you need:
+				// ParseError
+				// NotStructPtrError
+				// NoParserError
+				// NoSupportedTagOptionError
+				// EnvVarIsNotSetError
+				// EmptyEnvVarError
+				// LoadFileContentError
+				// ParseValueError
+				case EmptyEnvVarError:
+					fmt.Println("daisy")
+				default:
+					fmt.Printf("Unknown error type %v", v)
+				}
 			}
 		}
 	}
 
 	fmt.Printf("%+v", cfg)
-	// Output: {Username:admin Password:}
+	// Output: oopsie
+	// daisy
+	// {Username:admin Password:}
 }
