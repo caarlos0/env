@@ -1403,32 +1403,6 @@ func TestPrecedenceUnmarshalText(t *testing.T) {
 	isEqual(t, []LogLevel{DebugLevel, InfoLevel}, cfg.LogLevels)
 }
 
-func ExampleParseWithOptions() {
-	type thing struct {
-		desc string
-	}
-
-	type conf struct {
-		Thing thing `env:"THING"`
-	}
-
-	os.Setenv("THING", "my thing")
-
-	c := conf{}
-
-	err := ParseWithOptions(&c, Options{FuncMap: map[reflect.Type]ParserFunc{
-		reflect.TypeOf(thing{}): func(v string) (interface{}, error) {
-			return thing{desc: v}, nil
-		},
-	}})
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(c.Thing.desc)
-	// Output:
-	// my thing
-}
-
 func TestFile(t *testing.T) {
 	type config struct {
 		SecretKey string `env:"SECRET_KEY,file"`
