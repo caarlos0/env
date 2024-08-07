@@ -7,6 +7,25 @@ import (
 	"reflect"
 )
 
+// Basic package usage example.
+func Example() {
+	type Config struct {
+		Foo string `env:"FOO"`
+	}
+
+	os.Setenv("FOO", "bar")
+
+	// parse:
+	var cfg1 Config
+	_ = Parse(&cfg1)
+
+	// parse with generics:
+	cfg2, _ := ParseAs[Config]()
+
+	fmt.Print(cfg1.Foo, cfg2.Foo)
+	// Output: barbar
+}
+
 // Parse the environment into a struct.
 func ExampleParse() {
 	type Config struct {
@@ -124,8 +143,8 @@ func ExampleParse_init() {
 // during `Parse`.
 func ExampleParse_setDefaults() {
 	type Config struct {
-		Foo string `env:"FOO"`
-		Bar string `env:"BAR" envDefault:"bar"`
+		Foo string `env:"DEF_FOO"`
+		Bar string `env:"DEF_BAR" envDefault:"bar"`
 	}
 	cfg := Config{
 		Foo: "foo",
@@ -357,4 +376,36 @@ func ExampleParse_fromFile() {
 	}
 	fmt.Printf("%+v", cfg)
 	// Output: {Secret:super secret}
+}
+
+// TODO: envSeperator
+//
+
+func ExampleParse_errorHandling() {
+	type Config struct {
+		Username string `env:"USERNAME" envDefault:"admin"`
+		Password string `env:"PASSWORD,notEmpty"`
+	}
+
+	var cfg Config
+	err := Parse(&cfg)
+	if e, ok := err.(*AggregateError); ok {
+		for _, er := range e.Errors {
+			switch v := er.(type) {
+			case ParseError:
+				// handle it
+			case NotStructPtrError:
+				// handle it
+			case NoParserError:
+				// handle it
+			case NoSupportedTagOptionError:
+				// handle it
+			default:
+				fmt.Printf("Unknown error type %v", v)
+			}
+		}
+	}
+
+	fmt.Printf("%+v", cfg)
+	// Output: {Username:admin Password:}
 }
