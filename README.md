@@ -46,7 +46,7 @@ You can see the full documentation and list of examples at
 > _Unexported fields_ will be **ignored** by `env`.
 > This is by design and will not change.
 
-### Methods
+### Functions
 
 - `Parse`: parse the current environment into a type
 - `ParseAs`: parse the current environment into a type using generics
@@ -59,7 +59,7 @@ You can see the full documentation and list of examples at
 - `GetFieldParamsWithOptions`: get the `env` parsed options for a type with
   custom options
 
-### Supported types and defaults
+### Supported types
 
 Out of the box all built-in types are supported, plus a few others that
 are commonly used.
