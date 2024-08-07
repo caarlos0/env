@@ -241,8 +241,8 @@ func ExampleParseWithOptions_customTypes() {
 // Make all fields required by default.
 func ExampleParseWithOptions_allFieldsRequired() {
 	type Config struct {
-		Username string `env:"USERNAME" envDefault:"admin"`
-		Password string `env:"PASSWORD"`
+		Username string `env:"EX_USERNAME" envDefault:"admin"`
+		Password string `env:"EX_PASSWORD"`
 	}
 
 	var cfg Config
@@ -252,7 +252,7 @@ func ExampleParseWithOptions_allFieldsRequired() {
 		fmt.Println(err)
 	}
 	fmt.Printf("%+v\n", cfg)
-	// Output: env: required environment variable "PASSWORD" is not set
+	// Output: env: required environment variable "EX_PASSWORD" is not set
 	// {Username:admin Password:}
 }
 
@@ -260,15 +260,15 @@ func ExampleParseWithOptions_allFieldsRequired() {
 // By default, `os.Environ()` is used.
 func ExampleParseWithOptions_setEnv() {
 	type Config struct {
-		Username string `env:"USERNAME" envDefault:"admin"`
-		Password string `env:"PASSWORD"`
+		Username string `env:"EX_USERNAME" envDefault:"admin"`
+		Password string `env:"EX_PASSWORD"`
 	}
 
 	var cfg Config
 	if err := ParseWithOptions(&cfg, Options{
 		Environment: map[string]string{
-			"USERNAME": "john",
-			"PASSWORD": "cena",
+			"EX_USERNAME": "john",
+			"EX_PASSWORD": "cena",
 		},
 	}); err != nil {
 		fmt.Println(err)
