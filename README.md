@@ -3,8 +3,6 @@
   <p align="center">A simple, zero-dependencies library to parse environment variables into structs.</p>
 </p>
 
-A simple and zero-dependencies library to parse environment variables into `struct`s.
-
 ###### Getting started
 
 ```go
