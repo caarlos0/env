@@ -416,12 +416,14 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 			}
 		}
 
-		if reflect.Ptr == ref.Kind() {
-			resultPtr := reflect.New(sliceType)
-			resultPtr.Elem().Set(result)
-			result = resultPtr
+		if result.Len() > 0 {
+			if reflect.Ptr == ref.Kind() {
+				resultPtr := reflect.New(sliceType)
+				resultPtr.Elem().Set(result)
+				result = resultPtr
+			}
+			ref.Set(result)
 		}
-		ref.Set(result)
 	}
 
 	return nil

@@ -2125,3 +2125,23 @@ func TestIssue298ErrorNestedFieldRequiredNotSet(t *testing.T) {
 	isErrorWithMessage(t, err, `env: required environment variable "FOO_0_STR" is not set`)
 	isTrue(t, errors.Is(err, EnvVarIsNotSetError{}))
 }
+
+func TestIssue320(t *testing.T) {
+	type Test struct {
+		Str string `env:"STR"`
+		Num int    `env:"NUM"`
+	}
+	type ComplexConfig struct {
+		Foo *[]Test `envPrefix:"FOO_"`
+		Bar []Test  `envPrefix:"BAR"`
+		Baz []Test  `env:",init"`
+	}
+
+	cfg := ComplexConfig{}
+
+	isNoErr(t, Parse(&cfg))
+
+	isEqual(t, cfg.Foo, nil)
+	isEqual(t, cfg.Bar, nil)
+	isEqual(t, cfg.Baz, nil)
+}
