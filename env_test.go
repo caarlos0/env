@@ -456,6 +456,34 @@ func TestParsesEnvInvalidMap(t *testing.T) {
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
+func TestParseMapOfUnmarshalerValues(t *testing.T) {
+	type mapOfUnmarshaler map[string]unmarshaler
+
+	type config struct {
+		Durations mapOfUnmarshaler `env:"DURATIONS"`
+	}
+
+	t.Setenv("DURATIONS", "year:8760h")
+
+	var cfg config
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, mapOfUnmarshaler{"year": {Duration: 365 * 24 * time.Hour}}, cfg.Durations)
+}
+
+func TestParseMapOfUnmarshalerPtrs(t *testing.T) {
+	type mapOfUnmarshaler map[string]*unmarshaler
+
+	type config struct {
+		Durations mapOfUnmarshaler `env:"DURATIONS"`
+	}
+
+	t.Setenv("DURATIONS", "year:8760h")
+
+	var cfg config
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, mapOfUnmarshaler{"year": {Duration: 365 * 24 * time.Hour}}, cfg.Durations)
+}
+
 func TestParseCustomMapType(t *testing.T) {
 	type custommap map[string]bool
 
