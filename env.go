@@ -699,9 +699,35 @@ func handleMap(field reflect.Value, value string, sf reflect.StructField, funcMa
 	elemType := sf.Type.Elem()
 	elemParserFunc, ok := funcMap[elemType]
 	if !ok {
-		elemParserFunc, ok = defaultBuiltInParsers[elemType.Kind()]
-		if !ok {
-			return newNoParserError(sf)
+		rawType := elemType
+		isPtr := reflect.Ptr == rawType.Kind()
+
+		if isPtr {
+			rawType = rawType.Elem()
+		}
+
+		if _, ok := reflect.New(rawType).Interface().(encoding.TextUnmarshaler); ok {
+			if isPtr {
+				elemParserFunc = func(v string) (any, error) {
+					ptr := reflect.New(rawType)
+					unmarshaler := ptr.Interface().(encoding.TextUnmarshaler)
+					err := unmarshaler.UnmarshalText([]byte(v))
+
+					return unmarshaler, err
+				}
+			} else {
+				elemParserFunc = func(v string) (any, error) {
+					ptr := reflect.New(rawType)
+					err := ptr.Interface().(encoding.TextUnmarshaler).UnmarshalText([]byte(v))
+
+					return ptr.Elem().Interface(), err
+				}
+			}
+		} else {
+			elemParserFunc, ok = defaultBuiltInParsers[elemType.Kind()]
+			if !ok {
+				return newNoParserError(sf)
+			}
 		}
 	}
 
