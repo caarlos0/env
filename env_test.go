@@ -2152,7 +2152,7 @@ func TestParseWithOptionsRenamedDefault(t *testing.T) {
 	}
 
 	cfg := &config{}
-	isNoErr(t, ParseWithOptions(cfg, Options{DefaultTagName: "myDefault"}))
+	isNoErr(t, ParseWithOptions(cfg, Options{DefaultValueTagName: "myDefault"}))
 	isEqual(t, "bar", cfg.Str)
 
 	isNoErr(t, Parse(cfg))
