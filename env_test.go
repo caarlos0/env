@@ -819,6 +819,20 @@ func TestInvalidDurations(t *testing.T) {
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
+func TestInvalidLocation(t *testing.T) {
+	t.Setenv("LOCATION", "should-be-a-valid-location")
+	err := Parse(&Config{})
+	isErrorWithMessage(t, err, `env: parse error on field "Location" of type "time.Location": unable to parse location: unknown time zone should-be-a-valid-location; parse error on field "LocationPtr" of type "*time.Location": unable to parse location: unknown time zone should-be-a-valid-location`)
+	isTrue(t, errors.Is(err, ParseError{}))
+}
+
+func TestInvalidLocations(t *testing.T) {
+	t.Setenv("LOCATIONS", "should-be-a-valid-location,UTC,Europe/Berlin")
+	err := Parse(&Config{})
+	isErrorWithMessage(t, err, `env: parse error on field "Locations" of type "[]time.Location": unable to parse location: unknown time zone should-be-a-valid-location; parse error on field "LocationPtrs" of type "[]*time.Location": unable to parse location: unknown time zone should-be-a-valid-location`)
+	isTrue(t, errors.Is(err, ParseError{}))
+}
+
 func TestParseStructWithoutEnvTag(t *testing.T) {
 	cfg := Config{}
 	isNoErr(t, Parse(&cfg))
