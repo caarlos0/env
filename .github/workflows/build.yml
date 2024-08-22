@@ -35,7 +35,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.txt
       - uses: goreleaser/goreleaser-action@v6
-        if: success() && startsWith(github.ref, 'refs/tags/') && matrix.os == 'ubuntu-latest' && matrix.go-version == 'stable'
+        if: success() && startsWith(github.ref, 'refs/tags/') && matrix.os == 'ubuntu-latest' && matrix.go-version == 'stable' # editorconfig-checker-disable-line
         with:
           version: latest
           distribution: goreleaser-pro

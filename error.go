@@ -6,7 +6,8 @@ import (
 	"strings"
 )
 
-// An aggregated error wrapper to combine gathered errors. This allows either to display all errors or convert them individually
+// An aggregated error wrapper to combine gathered errors.
+// This allows either to display all errors or convert them individually
 // List of the available errors
 // ParseError
 // NotStructPtrError

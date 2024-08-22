@@ -112,7 +112,12 @@ type ParserFunc func(v string) (interface{}, error)
 type OnSetFn func(tag string, value interface{}, isDefault bool)
 
 // processFieldFn is a function which takes all information about a field and processes it.
-type processFieldFn func(refField reflect.Value, refTypeField reflect.StructField, opts Options, fieldParams FieldParams) error
+type processFieldFn func(
+	refField reflect.Value,
+	refTypeField reflect.StructField,
+	opts Options,
+	fieldParams FieldParams,
+) error
 
 // Options for the parser.
 type Options struct {
@@ -310,7 +315,12 @@ func doParse(ref reflect.Value, processField processFieldFn, opts Options) error
 	return agrErr
 }
 
-func doParseField(refField reflect.Value, refTypeField reflect.StructField, processField processFieldFn, opts Options) error {
+func doParseField(
+	refField reflect.Value,
+	refTypeField reflect.StructField,
+	processField processFieldFn,
+	opts Options,
+) error {
 	if !refField.CanSet() {
 		return nil
 	}
@@ -537,7 +547,12 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	var exists, isDefault bool
 
-	val, exists, isDefault = getOr(fieldParams.Key, fieldParams.DefaultValue, fieldParams.HasDefaultValue, opts.Environment)
+	val, exists, isDefault = getOr(
+		fieldParams.Key,
+		fieldParams.DefaultValue,
+		fieldParams.HasDefaultValue,
+		opts.Environment,
+	)
 
 	if fieldParams.Expand {
 		val = os.Expand(val, opts.getRawEnv)
