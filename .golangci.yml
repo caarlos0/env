@@ -1,3 +1,16 @@
+linters-settings:
+  revive:
+    rules:
+      - name: line-length-limit
+        arguments: [120]
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - revive
+      text: "line-length-limit:"
+
 linters:
   enable:
     - thelper
@@ -6,3 +19,4 @@ linters:
     - unconvert
     - unparam
     - wastedassign
+    - revive

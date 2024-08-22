@@ -106,7 +106,7 @@ func (e NoSupportedTagOptionError) Error() string {
 
 // This error occurs when the required variable is not set
 // Read about required fields: https://github.com/caarlos0/env#required-fields
-type EnvVarIsNotSetError struct {
+type EnvVarIsNotSetError struct { //nolint:revive // FIXME https://github.com/caarlos0/env/issues/328
 	Key string
 }
 

@@ -408,7 +408,7 @@ func TestParsesEnv_Map(t *testing.T) {
 		MapStringString                map[string]string `env:"MAP_STRING_STRING" envSeparator:","`
 		MapStringInt64                 map[string]int64  `env:"MAP_STRING_INT64"`
 		MapStringBool                  map[string]bool   `env:"MAP_STRING_BOOL" envSeparator:";"`
-		CustomSeparatorMapStringString map[string]string `env:"CUSTOM_SEPARATOR_MAP_STRING_STRING" envSeparator:"," envKeyValSeparator:"|"` // editorconfig-checker-disable-line
+		CustomSeparatorMapStringString map[string]string `env:"CUSTOM_SEPARATOR_MAP_STRING_STRING" envSeparator:"," envKeyValSeparator:"|"`
 	}
 
 	mss := map[string]string{
@@ -467,7 +467,7 @@ func TestParseCustomMapType(t *testing.T) {
 
 	var cfg config
 	isNoErr(t, ParseWithOptions(&cfg, Options{FuncMap: map[reflect.Type]ParserFunc{
-		reflect.TypeOf(custommap{}): func(value string) (interface{}, error) {
+		reflect.TypeOf(custommap{}): func(_ string) (interface{}, error) {
 			return custommap(map[string]bool{}), nil
 		},
 	}}))
@@ -529,7 +529,7 @@ func TestParseMapCustomKeyTypeError(t *testing.T) {
 
 	var cfg config
 	err := ParseWithOptions(&cfg, Options{FuncMap: map[reflect.Type]ParserFunc{
-		reflect.TypeOf(CustomKey("")): func(value string) (interface{}, error) {
+		reflect.TypeOf(CustomKey("")): func(_ string) (interface{}, error) {
 			return nil, fmt.Errorf("custom error")
 		},
 	}})
@@ -547,7 +547,7 @@ func TestParseMapCustomValueTypeError(t *testing.T) {
 
 	var cfg config
 	err := ParseWithOptions(&cfg, Options{FuncMap: map[reflect.Type]ParserFunc{
-		reflect.TypeOf(Customval("")): func(value string) (interface{}, error) {
+		reflect.TypeOf(Customval("")): func(_ string) (interface{}, error) {
 			return nil, fmt.Errorf("custom error")
 		},
 	}})
@@ -614,7 +614,7 @@ func TestParsesEnvInnerFails(t *testing.T) {
 	}
 	t.Setenv("NUMBER", "not-a-number")
 	err := Parse(&config{})
-	isErrorWithMessage(t, err, `env: parse error on field "Number" of type "int": strconv.ParseInt: parsing "not-a-number": invalid syntax`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "Number" of type "int": strconv.ParseInt: parsing "not-a-number": invalid syntax`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
@@ -630,7 +630,7 @@ func TestParsesEnvInnerFailsMultipleErrors(t *testing.T) {
 	}
 	t.Setenv("NUMBER", "not-a-number")
 	err := Parse(&config{})
-	isErrorWithMessage(t, err, `env: required environment variable "NAME" is not set; parse error on field "Number" of type "int": strconv.ParseInt: parsing "not-a-number": invalid syntax; required environment variable "AGE" is not set`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: required environment variable "NAME" is not set; parse error on field "Number" of type "int": strconv.ParseInt: parsing "not-a-number": invalid syntax; required environment variable "AGE" is not set`)
 	isTrue(t, errors.Is(err, ParseError{}))
 	isTrue(t, errors.Is(err, EnvVarIsNotSetError{}))
 	isTrue(t, errors.Is(err, EnvVarIsNotSetError{}))
@@ -648,7 +648,7 @@ func TestParsesEnvInnerInvalid(t *testing.T) {
 		InnerStruct: &InnerStruct{},
 	}
 	err := Parse(&cfg)
-	isErrorWithMessage(t, err, `env: parse error on field "Number" of type "uint": strconv.ParseUint: parsing "-547": invalid syntax`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "Number" of type "uint": strconv.ParseUint: parsing "-547": invalid syntax`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
@@ -691,49 +691,49 @@ func TestPassReference(t *testing.T) {
 func TestInvalidBool(t *testing.T) {
 	t.Setenv("BOOL", "should-be-a-bool")
 	err := Parse(&Config{})
-	isErrorWithMessage(t, err, `env: parse error on field "Bool" of type "bool": strconv.ParseBool: parsing "should-be-a-bool": invalid syntax; parse error on field "BoolPtr" of type "*bool": strconv.ParseBool: parsing "should-be-a-bool": invalid syntax`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "Bool" of type "bool": strconv.ParseBool: parsing "should-be-a-bool": invalid syntax; parse error on field "BoolPtr" of type "*bool": strconv.ParseBool: parsing "should-be-a-bool": invalid syntax`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
 func TestInvalidInt(t *testing.T) {
 	t.Setenv("INT", "should-be-an-int")
 	err := Parse(&Config{})
-	isErrorWithMessage(t, err, `env: parse error on field "Int" of type "int": strconv.ParseInt: parsing "should-be-an-int": invalid syntax; parse error on field "IntPtr" of type "*int": strconv.ParseInt: parsing "should-be-an-int": invalid syntax`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "Int" of type "int": strconv.ParseInt: parsing "should-be-an-int": invalid syntax; parse error on field "IntPtr" of type "*int": strconv.ParseInt: parsing "should-be-an-int": invalid syntax`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
 func TestInvalidUint(t *testing.T) {
 	t.Setenv("UINT", "-44")
 	err := Parse(&Config{})
-	isErrorWithMessage(t, err, `env: parse error on field "Uint" of type "uint": strconv.ParseUint: parsing "-44": invalid syntax; parse error on field "UintPtr" of type "*uint": strconv.ParseUint: parsing "-44": invalid syntax`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "Uint" of type "uint": strconv.ParseUint: parsing "-44": invalid syntax; parse error on field "UintPtr" of type "*uint": strconv.ParseUint: parsing "-44": invalid syntax`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
 func TestInvalidFloat32(t *testing.T) {
 	t.Setenv("FLOAT32", "AAA")
 	err := Parse(&Config{})
-	isErrorWithMessage(t, err, `env: parse error on field "Float32" of type "float32": strconv.ParseFloat: parsing "AAA": invalid syntax; parse error on field "Float32Ptr" of type "*float32": strconv.ParseFloat: parsing "AAA": invalid syntax`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "Float32" of type "float32": strconv.ParseFloat: parsing "AAA": invalid syntax; parse error on field "Float32Ptr" of type "*float32": strconv.ParseFloat: parsing "AAA": invalid syntax`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
 func TestInvalidFloat64(t *testing.T) {
 	t.Setenv("FLOAT64", "AAA")
 	err := Parse(&Config{})
-	isErrorWithMessage(t, err, `env: parse error on field "Float64" of type "float64": strconv.ParseFloat: parsing "AAA": invalid syntax; parse error on field "Float64Ptr" of type "*float64": strconv.ParseFloat: parsing "AAA": invalid syntax`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "Float64" of type "float64": strconv.ParseFloat: parsing "AAA": invalid syntax; parse error on field "Float64Ptr" of type "*float64": strconv.ParseFloat: parsing "AAA": invalid syntax`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
 func TestInvalidUint64(t *testing.T) {
 	t.Setenv("UINT64", "AAA")
 	err := Parse(&Config{})
-	isErrorWithMessage(t, err, `env: parse error on field "Uint64" of type "uint64": strconv.ParseUint: parsing "AAA": invalid syntax; parse error on field "Uint64Ptr" of type "*uint64": strconv.ParseUint: parsing "AAA": invalid syntax`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "Uint64" of type "uint64": strconv.ParseUint: parsing "AAA": invalid syntax; parse error on field "Uint64Ptr" of type "*uint64": strconv.ParseUint: parsing "AAA": invalid syntax`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
 func TestInvalidInt64(t *testing.T) {
 	t.Setenv("INT64", "AAA")
 	err := Parse(&Config{})
-	isErrorWithMessage(t, err, `env: parse error on field "Int64" of type "int64": strconv.ParseInt: parsing "AAA": invalid syntax; parse error on field "Int64Ptr" of type "*int64": strconv.ParseInt: parsing "AAA": invalid syntax`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "Int64" of type "int64": strconv.ParseInt: parsing "AAA": invalid syntax; parse error on field "Int64Ptr" of type "*int64": strconv.ParseInt: parsing "AAA": invalid syntax`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
@@ -743,7 +743,7 @@ func TestInvalidInt64Slice(t *testing.T) {
 		BadFloats []int64 `env:"BADINTS"`
 	}
 	err := Parse(&config{})
-	isErrorWithMessage(t, err, `env: parse error on field "BadFloats" of type "[]int64": strconv.ParseInt: parsing "A": invalid syntax`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "BadFloats" of type "[]int64": strconv.ParseInt: parsing "A": invalid syntax`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
@@ -753,7 +753,7 @@ func TestInvalidUInt64Slice(t *testing.T) {
 		BadFloats []uint64 `env:"BADINTS"`
 	}
 	err := Parse(&config{})
-	isErrorWithMessage(t, err, `env: parse error on field "BadFloats" of type "[]uint64": strconv.ParseUint: parsing "A": invalid syntax`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "BadFloats" of type "[]uint64": strconv.ParseUint: parsing "A": invalid syntax`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
@@ -763,7 +763,7 @@ func TestInvalidFloat32Slice(t *testing.T) {
 		BadFloats []float32 `env:"BADFLOATS"`
 	}
 	err := Parse(&config{})
-	isErrorWithMessage(t, err, `env: parse error on field "BadFloats" of type "[]float32": strconv.ParseFloat: parsing "A": invalid syntax`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "BadFloats" of type "[]float32": strconv.ParseFloat: parsing "A": invalid syntax`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
@@ -773,7 +773,7 @@ func TestInvalidFloat64Slice(t *testing.T) {
 		BadFloats []float64 `env:"BADFLOATS"`
 	}
 	err := Parse(&config{})
-	isErrorWithMessage(t, err, `env: parse error on field "BadFloats" of type "[]float64": strconv.ParseFloat: parsing "A": invalid syntax`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "BadFloats" of type "[]float64": strconv.ParseFloat: parsing "A": invalid syntax`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
@@ -783,21 +783,21 @@ func TestInvalidBoolsSlice(t *testing.T) {
 		BadBools []bool `env:"BADBOOLS"`
 	}
 	err := Parse(&config{})
-	isErrorWithMessage(t, err, `env: parse error on field "BadBools" of type "[]bool": strconv.ParseBool: parsing "faaaalse": invalid syntax`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "BadBools" of type "[]bool": strconv.ParseBool: parsing "faaaalse": invalid syntax`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
 func TestInvalidDuration(t *testing.T) {
 	t.Setenv("DURATION", "should-be-a-valid-duration")
 	err := Parse(&Config{})
-	isErrorWithMessage(t, err, `env: parse error on field "Duration" of type "time.Duration": unable to parse duration: time: invalid duration "should-be-a-valid-duration"; parse error on field "DurationPtr" of type "*time.Duration": unable to parse duration: time: invalid duration "should-be-a-valid-duration"`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "Duration" of type "time.Duration": unable to parse duration: time: invalid duration "should-be-a-valid-duration"; parse error on field "DurationPtr" of type "*time.Duration": unable to parse duration: time: invalid duration "should-be-a-valid-duration"`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
 func TestInvalidDurations(t *testing.T) {
 	t.Setenv("DURATIONS", "1s,contains-an-invalid-duration,3s")
 	err := Parse(&Config{})
-	isErrorWithMessage(t, err, `env: parse error on field "Durations" of type "[]time.Duration": unable to parse duration: time: invalid duration "contains-an-invalid-duration"; parse error on field "DurationPtrs" of type "[]*time.Duration": unable to parse duration: time: invalid duration "contains-an-invalid-duration"`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "Durations" of type "[]time.Duration": unable to parse duration: time: invalid duration "contains-an-invalid-duration"; parse error on field "DurationPtrs" of type "[]*time.Duration": unable to parse duration: time: invalid duration "contains-an-invalid-duration"`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
@@ -813,7 +813,7 @@ func TestParseStructWithInvalidFieldKind(t *testing.T) {
 	}
 	t.Setenv("BLAH", "a")
 	err := Parse(&config{})
-	isErrorWithMessage(t, err, `env: parse error on field "WontWorkByte" of type "uint8": strconv.ParseUint: parsing "a": invalid syntax`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "WontWorkByte" of type "uint8": strconv.ParseUint: parsing "a": invalid syntax`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
@@ -835,7 +835,7 @@ func TestBadSeparator(t *testing.T) {
 
 	t.Setenv("WONTWORK", "1,2,3,4")
 	err := Parse(&config{})
-	isErrorWithMessage(t, err, `env: parse error on field "WontWork" of type "[]int": strconv.ParseInt: parsing "1,2,3,4": invalid syntax`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "WontWork" of type "[]int": strconv.ParseInt: parsing "1,2,3,4": invalid syntax`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
@@ -1116,7 +1116,7 @@ func TestCustomParserError(t *testing.T) {
 		name string
 	}
 
-	customParserFunc := func(v string) (interface{}, error) {
+	customParserFunc := func(_ string) (interface{}, error) {
 		return nil, errors.New("something broke")
 	}
 
@@ -1320,7 +1320,7 @@ func TestTextUnmarshalerError(t *testing.T) {
 	}
 	t.Setenv("UNMARSHALER", "invalid")
 	err := Parse(&config{})
-	isErrorWithMessage(t, err, `env: parse error on field "Unmarshaler" of type "env.unmarshaler": time: invalid duration "invalid"`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "Unmarshaler" of type "env.unmarshaler": time: invalid duration "invalid"`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
@@ -1330,7 +1330,7 @@ func TestTextUnmarshalersError(t *testing.T) {
 	}
 	t.Setenv("UNMARSHALERS", "1s,invalid")
 	err := Parse(&config{})
-	isErrorWithMessage(t, err, `env: parse error on field "Unmarshalers" of type "[]env.unmarshaler": time: invalid duration "invalid"`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "Unmarshalers" of type "[]env.unmarshaler": time: invalid duration "invalid"`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
@@ -1350,7 +1350,7 @@ func TestParseInvalidURL(t *testing.T) {
 	t.Setenv("EXAMPLE_URL_2", "nope://s s/")
 
 	err := Parse(&config{})
-	isErrorWithMessage(t, err, `env: parse error on field "ExampleURL" of type "url.URL": unable to parse URL: parse "nope://s s/": invalid character " " in host name`) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, `env: parse error on field "ExampleURL" of type "url.URL": unable to parse URL: parse "nope://s s/": invalid character " " in host name`)
 	isTrue(t, errors.Is(err, ParseError{}))
 }
 
@@ -1452,7 +1452,7 @@ func TestFileBadFile(t *testing.T) {
 	}
 
 	err := Parse(&config{})
-	isErrorWithMessage(t, err, fmt.Sprintf(`env: could not load content of file "%s" from variable SECRET_KEY: open %s: %s`, filename, filename, oserr)) // editorconfig-checker-disable-line
+	isErrorWithMessage(t, err, fmt.Sprintf(`env: could not load content of file "%s" from variable SECRET_KEY: open %s: %s`, filename, filename, oserr))
 	isTrue(t, errors.Is(err, LoadFileContentError{}))
 }
 
@@ -1524,7 +1524,7 @@ func TestRequiredIfNoDefOption(t *testing.T) {
 
 	t.Run("missing", func(t *testing.T) {
 		err := ParseWithOptions(&cfg, Options{RequiredIfNoDef: true})
-		isErrorWithMessage(t, err, `env: required environment variable "NAME" is not set; required environment variable "FRUIT" is not set`) // editorconfig-checker-disable-line
+		isErrorWithMessage(t, err, `env: required environment variable "NAME" is not set; required environment variable "FRUIT" is not set`)
 		isTrue(t, errors.Is(err, EnvVarIsNotSetError{}))
 		t.Setenv("NAME", "John")
 		err = ParseWithOptions(&cfg, Options{RequiredIfNoDef: true})
@@ -1584,7 +1584,7 @@ func TestPrefix(t *testing.T) {
 		Clean Config
 	}
 	cfg := ComplexConfig{}
-	isNoErr(t, ParseWithOptions(&cfg, Options{Environment: map[string]string{"FOO_HOME": "/foo", "BAR_HOME": "/bar", "HOME": "/clean"}})) // editorconfig-checker-disable-line
+	isNoErr(t, ParseWithOptions(&cfg, Options{Environment: map[string]string{"FOO_HOME": "/foo", "BAR_HOME": "/bar", "HOME": "/clean"}}))
 	isEqual(t, "/foo", cfg.Foo.Home)
 	isEqual(t, "/bar", cfg.Bar.Home)
 	isEqual(t, "/clean", cfg.Clean.Home)
@@ -1605,7 +1605,7 @@ func TestPrefixPointers(t *testing.T) {
 		Bar:   &Test{},
 		Clean: &Test{},
 	}
-	isNoErr(t, ParseWithOptions(&cfg, Options{Environment: map[string]string{"FOO_TEST": "kek", "BAR_TEST": "lel", "TEST": "clean"}})) // editorconfig-checker-disable-line
+	isNoErr(t, ParseWithOptions(&cfg, Options{Environment: map[string]string{"FOO_TEST": "kek", "BAR_TEST": "lel", "TEST": "clean"}}))
 	isEqual(t, "kek", cfg.Foo.Str)
 	isEqual(t, "lel", cfg.Bar.Str)
 	isEqual(t, "clean", cfg.Clean.Str)
