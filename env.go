@@ -87,13 +87,13 @@ var (
 
 func defaultTypeParsers() map[reflect.Type]ParserFunc {
 	return map[reflect.Type]ParserFunc{
-		reflect.TypeOf(url.URL{}):       parserURL,
-		reflect.TypeOf(time.Nanosecond): parserDuration,
-		reflect.TypeOf(time.Location{}): parserLocation,
+		reflect.TypeOf(url.URL{}):       parseURL,
+		reflect.TypeOf(time.Nanosecond): parseDuration,
+		reflect.TypeOf(time.Location{}): parseLocation,
 	}
 }
 
-func parserURL(v string) (interface{}, error) {
+func parseURL(v string) (interface{}, error) {
 	u, err := url.Parse(v)
 	if err != nil {
 		return nil, newParseValueError("unable to parse URL", err)
@@ -101,7 +101,7 @@ func parserURL(v string) (interface{}, error) {
 	return *u, nil
 }
 
-func parserDuration(v string) (interface{}, error) {
+func parseDuration(v string) (interface{}, error) {
 	d, err := time.ParseDuration(v)
 	if err != nil {
 		return nil, newParseValueError("unable to parse duration", err)
@@ -109,7 +109,7 @@ func parserDuration(v string) (interface{}, error) {
 	return d, err
 }
 
-func parserLocation(v string) (interface{}, error) {
+func parseLocation(v string) (interface{}, error) {
 	loc, err := time.LoadLocation(v)
 	if err != nil {
 		return nil, newParseValueError("unable to parse location", err)
