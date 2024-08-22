@@ -1,8 +1,15 @@
-name: golangci-lint
+name: linters
 on:
   push:
   pull_request:
 jobs:
+  editorconfig:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: editorconfig-checker/action-editorconfig-checker@main
+      - run: editorconfig-checker
+
   golangci:
     name: lint
     runs-on: ubuntu-latest

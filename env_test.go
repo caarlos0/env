@@ -1,3 +1,4 @@
+// editorconfig-checker-disable-file
 package env
 
 import (
