@@ -1,7 +1,7 @@
-<div style="text-align: center">
+<p style="text-align: center">
   <img alt="GoReleaser Logo" src="https://becker.software/env.png" height="140" />
   <p style="text-align: center">A simple, zero-dependencies library to parse environment variables into structs.</p>
-</div>
+</p>
 
 ###### Getting started
 
