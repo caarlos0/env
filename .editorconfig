@@ -5,7 +5,9 @@ charset = utf-8
 end_of_line = lf
 trim_trailing_whitespace = true
 max_line_length = 120
-ij_visual_guides = 100,120,150
+# visual setting for intelliJ IDE, no consequences on code validation
+# https://www.jetbrains.com/help/idea/editorconfig.html
+ij_visual_guides = 100, 120, 150
 
 [{go.mod,go.sum,*.go}]
 insert_final_newline = true
