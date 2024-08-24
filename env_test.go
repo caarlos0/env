@@ -2177,3 +2177,16 @@ func TestIssue320(t *testing.T) {
 	isEqual(t, cfg.Bar, nil)
 	isEqual(t, cfg.Baz, nil)
 }
+
+func TestParseWithOptionsRenamedDefault(t *testing.T) {
+	type config struct {
+		Str string `env:"STR" envDefault:"foo" myDefault:"bar"`
+	}
+
+	cfg := &config{}
+	isNoErr(t, ParseWithOptions(cfg, Options{DefaultValueTagName: "myDefault"}))
+	isEqual(t, "bar", cfg.Str)
+
+	isNoErr(t, Parse(cfg))
+	isEqual(t, "foo", cfg.Str)
+}

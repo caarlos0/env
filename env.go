@@ -135,6 +135,9 @@ type Options struct {
 	// TagName specifies another tag name to use rather than the default 'env'.
 	TagName string
 
+	// DefaultValueTagName specifies another default tag name to use rather than the default 'envDefault'.
+	DefaultValueTagName string
+
 	// RequiredIfNoDef automatically sets all fields as required if they do not
 	// declare 'envDefault'.
 	RequiredIfNoDef bool
@@ -169,10 +172,11 @@ func (opts *Options) getRawEnv(s string) string {
 
 func defaultOptions() Options {
 	return Options{
-		TagName:     "env",
-		Environment: toMap(os.Environ()),
-		FuncMap:     defaultTypeParsers(),
-		rawEnvVars:  make(map[string]string),
+		TagName:             "env",
+		DefaultValueTagName: "envDefault",
+		Environment:         toMap(os.Environ()),
+		FuncMap:             defaultTypeParsers(),
+		rawEnvVars:          make(map[string]string),
 	}
 }
 
@@ -180,6 +184,9 @@ func customOptions(opt Options) Options {
 	defOpts := defaultOptions()
 	if opt.TagName == "" {
 		opt.TagName = defOpts.TagName
+	}
+	if opt.DefaultValueTagName == "" {
+		opt.DefaultValueTagName = defOpts.DefaultValueTagName
 	}
 	if opt.Environment == nil {
 		opt.Environment = defOpts.Environment
@@ -202,6 +209,7 @@ func optionsWithSliceEnvPrefix(opts Options, index int) Options {
 	return Options{
 		Environment:           opts.Environment,
 		TagName:               opts.TagName,
+		DefaultValueTagName:   opts.DefaultValueTagName,
 		RequiredIfNoDef:       opts.RequiredIfNoDef,
 		OnSet:                 opts.OnSet,
 		Prefix:                fmt.Sprintf("%s%d_", opts.Prefix, index),
@@ -215,6 +223,7 @@ func optionsWithEnvPrefix(field reflect.StructField, opts Options) Options {
 	return Options{
 		Environment:           opts.Environment,
 		TagName:               opts.TagName,
+		DefaultValueTagName:   opts.DefaultValueTagName,
 		RequiredIfNoDef:       opts.RequiredIfNoDef,
 		OnSet:                 opts.OnSet,
 		Prefix:                opts.Prefix + field.Tag.Get("envPrefix"),
@@ -513,7 +522,7 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 		ownKey = toEnvName(field.Name)
 	}
 
-	defaultValue, hasDefaultValue := field.Tag.Lookup("envDefault")
+	defaultValue, hasDefaultValue := field.Tag.Lookup(opts.DefaultValueTagName)
 
 	result := FieldParams{
 		OwnKey:          ownKey,
