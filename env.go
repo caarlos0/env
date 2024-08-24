@@ -550,7 +550,7 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	}
 
 	if fieldParams.Required && !exists && len(fieldParams.OwnKey) > 0 {
-		return "", newVarIsNotSet(fieldParams.Key)
+		return "", newVarIsNotSetError(fieldParams.Key)
 	}
 
 	if fieldParams.NotEmpty && val == "" {

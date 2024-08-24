@@ -111,7 +111,7 @@ type VarIsNotSetError struct {
 	Key string
 }
 
-func newVarIsNotSet(key string) error {
+func newVarIsNotSetError(key string) error {
 	return VarIsNotSetError{key}
 }
 
