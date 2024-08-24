@@ -87,21 +87,34 @@ var (
 
 func defaultTypeParsers() map[reflect.Type]ParserFunc {
 	return map[reflect.Type]ParserFunc{
-		reflect.TypeOf(url.URL{}): func(v string) (interface{}, error) {
-			u, err := url.Parse(v)
-			if err != nil {
-				return nil, newParseValueError("unable to parse URL", err)
-			}
-			return *u, nil
-		},
-		reflect.TypeOf(time.Nanosecond): func(v string) (interface{}, error) {
-			s, err := time.ParseDuration(v)
-			if err != nil {
-				return nil, newParseValueError("unable to parse duration", err)
-			}
-			return s, err
-		},
+		reflect.TypeOf(url.URL{}):       parseURL,
+		reflect.TypeOf(time.Nanosecond): parseDuration,
+		reflect.TypeOf(time.Location{}): parseLocation,
 	}
+}
+
+func parseURL(v string) (interface{}, error) {
+	u, err := url.Parse(v)
+	if err != nil {
+		return nil, newParseValueError("unable to parse URL", err)
+	}
+	return *u, nil
+}
+
+func parseDuration(v string) (interface{}, error) {
+	d, err := time.ParseDuration(v)
+	if err != nil {
+		return nil, newParseValueError("unable to parse duration", err)
+	}
+	return d, err
+}
+
+func parseLocation(v string) (interface{}, error) {
+	loc, err := time.LoadLocation(v)
+	if err != nil {
+		return nil, newParseValueError("unable to parse location", err)
+	}
+	return *loc, nil
 }
 
 // ParserFunc defines the signature of a function that can be used within
@@ -126,6 +139,9 @@ type Options struct {
 
 	// TagName specifies another tag name to use rather than the default 'env'.
 	TagName string
+
+	// DefaultValueTagName specifies another default tag name to use rather than the default 'envDefault'.
+	DefaultValueTagName string
 
 	// RequiredIfNoDef automatically sets all fields as required if they do not
 	// declare 'envDefault'.
@@ -161,10 +177,11 @@ func (opts *Options) getRawEnv(s string) string {
 
 func defaultOptions() Options {
 	return Options{
-		TagName:     "env",
-		Environment: toMap(os.Environ()),
-		FuncMap:     defaultTypeParsers(),
-		rawEnvVars:  make(map[string]string),
+		TagName:             "env",
+		DefaultValueTagName: "envDefault",
+		Environment:         toMap(os.Environ()),
+		FuncMap:             defaultTypeParsers(),
+		rawEnvVars:          make(map[string]string),
 	}
 }
 
@@ -172,6 +189,9 @@ func customOptions(opt Options) Options {
 	defOpts := defaultOptions()
 	if opt.TagName == "" {
 		opt.TagName = defOpts.TagName
+	}
+	if opt.DefaultValueTagName == "" {
+		opt.DefaultValueTagName = defOpts.DefaultValueTagName
 	}
 	if opt.Environment == nil {
 		opt.Environment = defOpts.Environment
@@ -194,6 +214,7 @@ func optionsWithSliceEnvPrefix(opts Options, index int) Options {
 	return Options{
 		Environment:           opts.Environment,
 		TagName:               opts.TagName,
+		DefaultValueTagName:   opts.DefaultValueTagName,
 		RequiredIfNoDef:       opts.RequiredIfNoDef,
 		OnSet:                 opts.OnSet,
 		Prefix:                fmt.Sprintf("%s%d_", opts.Prefix, index),
@@ -207,6 +228,7 @@ func optionsWithEnvPrefix(field reflect.StructField, opts Options) Options {
 	return Options{
 		Environment:           opts.Environment,
 		TagName:               opts.TagName,
+		DefaultValueTagName:   opts.DefaultValueTagName,
 		RequiredIfNoDef:       opts.RequiredIfNoDef,
 		OnSet:                 opts.OnSet,
 		Prefix:                opts.Prefix + field.Tag.Get("envPrefix"),
@@ -510,7 +532,7 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 		ownKey = toEnvName(field.Name)
 	}
 
-	defaultValue, hasDefaultValue := field.Tag.Lookup("envDefault")
+	defaultValue, hasDefaultValue := field.Tag.Lookup(opts.DefaultValueTagName)
 
 	result := FieldParams{
 		OwnKey:          ownKey,
@@ -565,11 +587,11 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	}
 
 	if fieldParams.Required && !exists && len(fieldParams.OwnKey) > 0 {
-		return "", newEnvVarIsNotSet(fieldParams.Key)
+		return "", newVarIsNotSetError(fieldParams.Key)
 	}
 
 	if fieldParams.NotEmpty && val == "" {
-		return "", newEmptyEnvVarError(fieldParams.Key)
+		return "", newEmptyVarError(fieldParams.Key)
 	}
 
 	if fieldParams.LoadFile && val != "" {

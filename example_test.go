@@ -354,20 +354,22 @@ func ExampleParseWithOptions_prefix() {
 	// Output: {Foo:a}
 }
 
-// Use a different tag name than `env`.
+// Use a different tag name than `env` and `envDefault`.
 func ExampleParseWithOptions_tagName() {
 	type Config struct {
 		Home string `json:"HOME"`
+		Page string `json:"PAGE" def:"world"`
 	}
 	os.Setenv("HOME", "hello")
 	var cfg Config
 	if err := ParseWithOptions(&cfg, Options{
-		TagName: "json",
+		TagName:             "json",
+		DefaultValueTagName: "def",
 	}); err != nil {
 		fmt.Println(err)
 	}
 	fmt.Printf("%+v", cfg)
-	// Output: {Home:hello}
+	// Output: {Home:hello Page:world}
 }
 
 // If you don't want to set the `env` tag on every field, you can use the
@@ -424,7 +426,7 @@ func ExampleParse_errorHandling() {
 
 	var cfg Config
 	if err := Parse(&cfg); err != nil {
-		if errors.Is(err, EmptyEnvVarError{}) {
+		if errors.Is(err, EmptyVarError{}) {
 			fmt.Println("oopsie")
 		}
 		aggErr := AggregateError{}
@@ -440,7 +442,7 @@ func ExampleParse_errorHandling() {
 				// EmptyEnvVarError
 				// LoadFileContentError
 				// ParseValueError
-				case EmptyEnvVarError:
+				case EmptyVarError:
 					fmt.Println("daisy")
 				default:
 					fmt.Printf("Unknown error type %v", v)

@@ -74,6 +74,7 @@ Complete list:
 - `uint8`
 - `uint`
 - `time.Duration`
+- `time.Location`
 - `encoding.TextUnmarshaler`
 - `url.URL`
 
