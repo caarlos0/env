@@ -632,8 +632,8 @@ func TestParsesEnvInnerFailsMultipleErrors(t *testing.T) {
 	err := Parse(&config{})
 	isErrorWithMessage(t, err, `env: required environment variable "NAME" is not set; parse error on field "Number" of type "int": strconv.ParseInt: parsing "not-a-number": invalid syntax; required environment variable "AGE" is not set`)
 	isTrue(t, errors.Is(err, ParseError{}))
-	isTrue(t, errors.Is(err, EnvVarIsNotSetError{}))
-	isTrue(t, errors.Is(err, EnvVarIsNotSetError{}))
+	isTrue(t, errors.Is(err, VarIsNotSetError{}))
+	isTrue(t, errors.Is(err, VarIsNotSetError{}))
 }
 
 func TestParsesEnvInnerNil(t *testing.T) {
@@ -900,7 +900,7 @@ func TestErrorRequiredNotSet(t *testing.T) {
 	}
 	err := Parse(&config{})
 	isErrorWithMessage(t, err, `env: required environment variable "IS_REQUIRED" is not set`)
-	isTrue(t, errors.Is(err, EnvVarIsNotSetError{}))
+	isTrue(t, errors.Is(err, VarIsNotSetError{}))
 }
 
 func TestNoErrorNotEmptySet(t *testing.T) {
@@ -926,7 +926,7 @@ func TestErrorNotEmptySet(t *testing.T) {
 	}
 	err := Parse(&config{})
 	isErrorWithMessage(t, err, `env: environment variable "IS_REQUIRED" should not be empty`)
-	isTrue(t, errors.Is(err, EmptyEnvVarError{}))
+	isTrue(t, errors.Is(err, EmptyVarError{}))
 }
 
 func TestErrorRequiredAndNotEmptySet(t *testing.T) {
@@ -936,7 +936,7 @@ func TestErrorRequiredAndNotEmptySet(t *testing.T) {
 	}
 	err := Parse(&config{})
 	isErrorWithMessage(t, err, `env: environment variable "IS_REQUIRED" should not be empty`)
-	isTrue(t, errors.Is(err, EmptyEnvVarError{}))
+	isTrue(t, errors.Is(err, EmptyVarError{}))
 }
 
 func TestErrorRequiredNotSetWithDefault(t *testing.T) {
@@ -1016,7 +1016,7 @@ func TestParseUnsetRequireOptions(t *testing.T) {
 
 	err := Parse(&cfg)
 	isErrorWithMessage(t, err, `env: required environment variable "PASSWORD" is not set`)
-	isTrue(t, errors.Is(err, EnvVarIsNotSetError{}))
+	isTrue(t, errors.Is(err, VarIsNotSetError{}))
 	t.Setenv("PASSWORD", "superSecret")
 	isNoErr(t, Parse(&cfg))
 
@@ -1435,7 +1435,7 @@ func TestFileNoParamRequired(t *testing.T) {
 
 	err := Parse(&config{})
 	isErrorWithMessage(t, err, `env: required environment variable "SECRET_KEY" is not set`)
-	isTrue(t, errors.Is(err, EnvVarIsNotSetError{}))
+	isTrue(t, errors.Is(err, VarIsNotSetError{}))
 }
 
 func TestFileBadFile(t *testing.T) {
@@ -1525,11 +1525,11 @@ func TestRequiredIfNoDefOption(t *testing.T) {
 	t.Run("missing", func(t *testing.T) {
 		err := ParseWithOptions(&cfg, Options{RequiredIfNoDef: true})
 		isErrorWithMessage(t, err, `env: required environment variable "NAME" is not set; required environment variable "FRUIT" is not set`)
-		isTrue(t, errors.Is(err, EnvVarIsNotSetError{}))
+		isTrue(t, errors.Is(err, VarIsNotSetError{}))
 		t.Setenv("NAME", "John")
 		err = ParseWithOptions(&cfg, Options{RequiredIfNoDef: true})
 		isErrorWithMessage(t, err, `env: required environment variable "FRUIT" is not set`)
-		isTrue(t, errors.Is(err, EnvVarIsNotSetError{}))
+		isTrue(t, errors.Is(err, VarIsNotSetError{}))
 	})
 
 	t.Run("all set", func(t *testing.T) {
@@ -1561,7 +1561,7 @@ func TestRequiredIfNoDefNested(t *testing.T) {
 
 		err := ParseWithOptions(&cfg, Options{RequiredIfNoDef: true})
 		isErrorWithMessage(t, err, `env: required environment variable "SERVER_PORT" is not set`)
-		isTrue(t, errors.Is(err, EnvVarIsNotSetError{}))
+		isTrue(t, errors.Is(err, VarIsNotSetError{}))
 	})
 
 	t.Run("all set", func(t *testing.T) {
@@ -2123,7 +2123,7 @@ func TestIssue298ErrorNestedFieldRequiredNotSet(t *testing.T) {
 	cfg := ComplexConfig{}
 	err := Parse(&cfg)
 	isErrorWithMessage(t, err, `env: required environment variable "FOO_0_STR" is not set`)
-	isTrue(t, errors.Is(err, EnvVarIsNotSetError{}))
+	isTrue(t, errors.Is(err, VarIsNotSetError{}))
 }
 
 func TestIssue320(t *testing.T) {

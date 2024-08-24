@@ -424,7 +424,7 @@ func ExampleParse_errorHandling() {
 
 	var cfg Config
 	if err := Parse(&cfg); err != nil {
-		if errors.Is(err, EmptyEnvVarError{}) {
+		if errors.Is(err, EmptyVarError{}) {
 			fmt.Println("oopsie")
 		}
 		aggErr := AggregateError{}
@@ -440,7 +440,7 @@ func ExampleParse_errorHandling() {
 				// EmptyEnvVarError
 				// LoadFileContentError
 				// ParseValueError
-				case EmptyEnvVarError:
+				case EmptyVarError:
 					fmt.Println("daisy")
 				default:
 					fmt.Printf("Unknown error type %v", v)
