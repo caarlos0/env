@@ -563,11 +563,11 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	}
 
 	if fieldParams.Required && !exists && len(fieldParams.OwnKey) > 0 {
-		return "", newEnvVarIsNotSet(fieldParams.Key)
+		return "", newVarIsNotSetError(fieldParams.Key)
 	}
 
 	if fieldParams.NotEmpty && val == "" {
-		return "", newEmptyEnvVarError(fieldParams.Key)
+		return "", newEmptyVarError(fieldParams.Key)
 	}
 
 	if fieldParams.LoadFile && val != "" {

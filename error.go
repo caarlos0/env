@@ -12,8 +12,8 @@ import (
 // NotStructPtrError
 // NoParserError
 // NoSupportedTagOptionError
-// EnvVarIsNotSetError
-// EmptyEnvVarError
+// VarIsNotSetError
+// EmptyVarError
 // LoadFileContentError
 // ParseValueError
 type AggregateError struct {
@@ -65,16 +65,14 @@ func (e ParseError) Error() string {
 	return fmt.Sprintf(`parse error on field "%s" of type "%s": %v`, e.Name, e.Type, e.Err)
 }
 
-// The error occurs when pass something that is not a pointer to a Struct to Parse
+// The error occurs when pass something that is not a pointer to a struct to Parse
 type NotStructPtrError struct{}
 
 func (e NotStructPtrError) Error() string {
 	return "expected a pointer to a Struct"
 }
 
-// This error occurs when there is no parser provided for given type
-// Supported types and defaults: https://github.com/caarlos0/env#supported-types-and-defaults
-// How to create a custom parser: https://github.com/caarlos0/env#custom-parser-funcs
+// This error occurs when there is no parser provided for given type.
 type NoParserError struct {
 	Name string
 	Type reflect.Type
@@ -88,9 +86,9 @@ func (e NoParserError) Error() string {
 	return fmt.Sprintf(`no parser found for field "%s" of type "%s"`, e.Name, e.Type)
 }
 
-// This error occurs when the given tag is not supported
-// In-built supported tags: "", "file", "required", "unset", "notEmpty", "expand", "envDefault", "envSeparator"
-// How to create a custom tag: https://github.com/caarlos0/env#changing-default-tag-name
+// This error occurs when the given tag is not supported.
+// Built-in supported tags: "", "file", "required", "unset", "notEmpty",
+// "expand", "envDefault", and "envSeparator".
 type NoSupportedTagOptionError struct {
 	Tag string
 }
@@ -103,36 +101,43 @@ func (e NoSupportedTagOptionError) Error() string {
 	return fmt.Sprintf("tag option %q not supported", e.Tag)
 }
 
-// This error occurs when the required variable is not set
-// Read about required fields: https://github.com/caarlos0/env#required-fields
-type EnvVarIsNotSetError struct {
+// This error occurs when the required variable is not set.
+//
+// deprecated: use VarIsNotSetError
+type EnvVarIsNotSetError = VarIsNotSetError
+
+// This error occurs when the required variable is not set.
+type VarIsNotSetError struct {
 	Key string
 }
 
-func newEnvVarIsNotSet(key string) error {
-	return EnvVarIsNotSetError{key}
+func newVarIsNotSetError(key string) error {
+	return VarIsNotSetError{key}
 }
 
-func (e EnvVarIsNotSetError) Error() string {
+func (e VarIsNotSetError) Error() string {
 	return fmt.Sprintf(`required environment variable %q is not set`, e.Key)
 }
 
 // This error occurs when the variable which must be not empty is existing but has an empty value
-// Read about not empty fields: https://github.com/caarlos0/env#not-empty-fields
-type EmptyEnvVarError struct {
+//
+// deprecated: use EmptyVarError
+type EmptyEnvVarError = EmptyVarError
+
+// This error occurs when the variable which must be not empty is existing but has an empty value
+type EmptyVarError struct {
 	Key string
 }
 
-func newEmptyEnvVarError(key string) error {
-	return EmptyEnvVarError{key}
+func newEmptyVarError(key string) error {
+	return EmptyVarError{key}
 }
 
-func (e EmptyEnvVarError) Error() string {
+func (e EmptyVarError) Error() string {
 	return fmt.Sprintf("environment variable %q should not be empty", e.Key)
 }
 
-// This error occurs when it's impossible to load the value from the file
-// Read about From file feature: https://github.com/caarlos0/env#from-file
+// This error occurs when it's impossible to load the value from the file.
 type LoadFileContentError struct {
 	Filename string
 	Key      string
@@ -147,9 +152,7 @@ func (e LoadFileContentError) Error() string {
 	return fmt.Sprintf(`could not load content of file "%s" from variable %s: %v`, e.Filename, e.Key, e.Err)
 }
 
-// This error occurs when it's impossible to convert value using given parser
-// Supported types and defaults: https://github.com/caarlos0/env#supported-types-and-defaults
-// How to create a custom parser: https://github.com/caarlos0/env#custom-parser-funcs
+// This error occurs when it's impossible to convert value using given parser.
 type ParseValueError struct {
 	Msg string
 	Err error
