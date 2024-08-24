@@ -87,21 +87,34 @@ var (
 
 func defaultTypeParsers() map[reflect.Type]ParserFunc {
 	return map[reflect.Type]ParserFunc{
-		reflect.TypeOf(url.URL{}): func(v string) (interface{}, error) {
-			u, err := url.Parse(v)
-			if err != nil {
-				return nil, newParseValueError("unable to parse URL", err)
-			}
-			return *u, nil
-		},
-		reflect.TypeOf(time.Nanosecond): func(v string) (interface{}, error) {
-			s, err := time.ParseDuration(v)
-			if err != nil {
-				return nil, newParseValueError("unable to parse duration", err)
-			}
-			return s, err
-		},
+		reflect.TypeOf(url.URL{}):       parseURL,
+		reflect.TypeOf(time.Nanosecond): parseDuration,
+		reflect.TypeOf(time.Location{}): parseLocation,
 	}
+}
+
+func parseURL(v string) (interface{}, error) {
+	u, err := url.Parse(v)
+	if err != nil {
+		return nil, newParseValueError("unable to parse URL", err)
+	}
+	return *u, nil
+}
+
+func parseDuration(v string) (interface{}, error) {
+	d, err := time.ParseDuration(v)
+	if err != nil {
+		return nil, newParseValueError("unable to parse duration", err)
+	}
+	return d, err
+}
+
+func parseLocation(v string) (interface{}, error) {
+	loc, err := time.LoadLocation(v)
+	if err != nil {
+		return nil, newParseValueError("unable to parse location", err)
+	}
+	return *loc, nil
 }
 
 // ParserFunc defines the signature of a function that can be used within
