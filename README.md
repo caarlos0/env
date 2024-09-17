@@ -3,6 +3,12 @@
   <p align="center">A simple, zero-dependencies library to parse environment variables into structs.</p>
 </p>
 
+###### Installation
+
+```bash
+go get github.com/caarlos0/env/v11
+```
+
 ###### Getting started
 
 ```go
