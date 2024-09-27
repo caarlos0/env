@@ -135,6 +135,9 @@ type Options struct {
 	// TagName specifies another tag name to use rather than the default 'env'.
 	TagName string
 
+	// PrefixTagName specifies another prefix tag name to use rather than the default 'envPrefix'.
+	PrefixTagName string
+
 	// DefaultValueTagName specifies another default tag name to use rather than the default 'envDefault'.
 	DefaultValueTagName string
 
@@ -173,6 +176,7 @@ func (opts *Options) getRawEnv(s string) string {
 func defaultOptions() Options {
 	return Options{
 		TagName:             "env",
+		PrefixTagName:       "envPrefix",
 		DefaultValueTagName: "envDefault",
 		Environment:         toMap(os.Environ()),
 		FuncMap:             defaultTypeParsers(),
@@ -184,6 +188,9 @@ func customOptions(opt Options) Options {
 	defOpts := defaultOptions()
 	if opt.TagName == "" {
 		opt.TagName = defOpts.TagName
+	}
+	if opt.PrefixTagName == "" {
+		opt.PrefixTagName = defOpts.PrefixTagName
 	}
 	if opt.DefaultValueTagName == "" {
 		opt.DefaultValueTagName = defOpts.DefaultValueTagName
@@ -209,6 +216,7 @@ func optionsWithSliceEnvPrefix(opts Options, index int) Options {
 	return Options{
 		Environment:           opts.Environment,
 		TagName:               opts.TagName,
+		PrefixTagName:         opts.PrefixTagName,
 		DefaultValueTagName:   opts.DefaultValueTagName,
 		RequiredIfNoDef:       opts.RequiredIfNoDef,
 		OnSet:                 opts.OnSet,
@@ -223,10 +231,11 @@ func optionsWithEnvPrefix(field reflect.StructField, opts Options) Options {
 	return Options{
 		Environment:           opts.Environment,
 		TagName:               opts.TagName,
+		PrefixTagName:         opts.PrefixTagName,
 		DefaultValueTagName:   opts.DefaultValueTagName,
 		RequiredIfNoDef:       opts.RequiredIfNoDef,
 		OnSet:                 opts.OnSet,
-		Prefix:                opts.Prefix + field.Tag.Get("envPrefix"),
+		Prefix:                opts.Prefix + field.Tag.Get(opts.PrefixTagName),
 		UseFieldNameByDefault: opts.UseFieldNameByDefault,
 		FuncMap:               opts.FuncMap,
 		rawEnvVars:            opts.rawEnvVars,
