@@ -3,19 +3,29 @@
   <p align="center">A simple, zero-dependencies library to parse environment variables into structs.</p>
 </p>
 
+[![Release](https://img.shields.io/github/release/caarlos0/env.svg?style=for-the-badge)](https://github.com/goreleaser/goreleaser/releases/latest)
+
 ###### Getting started
 
-```go
+```
+ 
+import "github.com/caarlos0/env/v11" 
+// import dependencie
+
 type config struct {
   Home string `env:"HOME"`
 }
 
-// parse
-var cfg config
-err := env.Parse(&cfg)
+  // parse
+  var cfg config
+  err := env.Parse(&cfg)
 
-// parse with generics
-cfg, err := env.ParseAs[config]()
+  // parse with generics
+  cfg, err := env.ParseAs[config]()
+
+
+
+
 ```
 
 You can see the full documentation and list of examples at
@@ -35,7 +45,19 @@ You can see the full documentation and list of examples at
   <br/>
 </p>
 
-## Usage
+## ⚙️ Installation ##
+env is compatible with modern Go releases in module mode, with Go installed:
+
+```bash
+go get github.com/caarlos0/env/v11
+```
+This command fetches the env package and adds it to your project's dependencies.
+
+
+## ⚡️ Usage
+```go
+import "github.com/caarlos0/env/v11"	 
+```
 
 ### Caveats
 
@@ -134,7 +156,7 @@ Examples are live in
 and also in the
 [example test file](./example_test.go).
 
-## Badges
+## 🎯 Badges
 
 [![Release](https://img.shields.io/github/release/caarlos0/env.svg?style=for-the-badge)](https://github.com/goreleaser/goreleaser/releases/latest)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=for-the-badge)](/LICENSE.md)
@@ -144,10 +166,12 @@ and also in the
 [![Powered By: GoReleaser](https://img.shields.io/badge/powered%20by-goreleaser-green.svg?style=for-the-badge)](https://github.com/goreleaser)
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg?style=for-the-badge)](https://conventionalcommits.org)
 
-## Related projects
+## 📖 Related projects
 
 - [envdoc](https://github.com/g4s8/envdoc) - generate documentation for environment variables from `env` tags
 
+## 🧾 License
+`Env` is free and open-source software licensed under the [MIT License](./LICENSE.md).
 ## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/caarlos0/env.svg)](https://starchart.cc/caarlos0/env)
