@@ -108,6 +108,7 @@ Here are all the options available for the `env` tag:
 
 - `,expand`: expands environment variables, e.g. `FOO_${BAR}`
 - `,file`: instructs that the content of the variable is a path to a file that should be read
+- `,ignorePrefix`: ignore the prefix when parsing the environment variable name
 - `,init`: initialize nil pointers
 - `,notEmpty`: make the field errors if the environment variable is empty
 - `,required`: make the field errors if the environment variable is not set

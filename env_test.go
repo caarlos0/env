@@ -1693,6 +1693,33 @@ func TestComplePrefix(t *testing.T) {
 	isEqual(t, "blahhh", cfg.Blah)
 }
 
+func TestIgnorePrefix(t *testing.T) {
+	type Inner struct {
+		GlobalEnv    string `env:"GLOBAL_ENV,ignorePrefix"`
+		NonGlobalEnv string `env:"GLOBAL_ENV"`
+		Other        string `env:"OTHER"`
+	}
+
+	type Config struct {
+		GlobalEnv string `env:"GLOBAL_ENV"`
+		Inner     Inner  `envPrefix:"INNER_"`
+	}
+
+	var cfg Config
+	isNoErr(t, ParseWithOptions(&cfg, Options{
+		Environment: map[string]string{
+			"GLOBAL_ENV":       "global_env",
+			"INNER_GLOBAL_ENV": "inner_global_env",
+			"INNER_OTHER":      "inner_other",
+		},
+	}))
+
+	isEqual(t, "global_env", cfg.GlobalEnv)
+	isEqual(t, "global_env", cfg.Inner.GlobalEnv)
+	isEqual(t, "inner_global_env", cfg.Inner.NonGlobalEnv)
+	isEqual(t, "inner_other", cfg.Inner.Other)
+}
+
 func TestNoEnvKey(t *testing.T) {
 	type Config struct {
 		Foo      string

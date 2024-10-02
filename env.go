@@ -514,6 +514,7 @@ type FieldParams struct {
 	NotEmpty        bool
 	Expand          bool
 	Init            bool
+	IgnorePrefix    bool
 }
 
 func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, error) {
@@ -548,9 +549,15 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 			result.Expand = true
 		case "init":
 			result.Init = true
+		case "ignorePrefix":
+			result.IgnorePrefix = true
 		default:
 			return FieldParams{}, newNoSupportedTagOptionError(tag)
 		}
+	}
+
+	if result.IgnorePrefix {
+		result.Key = ownKey
 	}
 
 	return result, nil
