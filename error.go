@@ -40,6 +40,11 @@ func (e AggregateError) Error() string {
 	return strings.TrimRight(sb.String(), ";")
 }
 
+// Unwrap implements std errors.Join go1.20 compatibility
+func (e AggregateError) Unwrap() []error {
+	return e.Errors
+}
+
 // Is conforms with errors.Is.
 func (e AggregateError) Is(err error) bool {
 	for _, ie := range e.Errors {
