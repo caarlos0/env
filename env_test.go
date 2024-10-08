@@ -2214,3 +2214,26 @@ func TestParseWithOptionsRenamedPrefix(t *testing.T) {
 	isNoErr(t, Parse(cfg))
 	isEqual(t, "101", cfg.Foo.Str)
 }
+
+func TestMapKeys(t *testing.T) {
+	type Inner struct {
+		Key1 string `env:"KEY1"`
+		Key2 string `env:"KEY2"`
+	}
+
+	type config struct {
+		Map map[string]Inner `envPrefix:"MAP_"`
+	}
+
+	t.Setenv("MAP_KEYNAME_KEY1", "key1")
+	t.Setenv("MAP_KEYNAME_KEY2", "key2")
+	t.Setenv("MAP_KEY_NAME_KEY1", "key1")
+	t.Setenv("MAP_KEY_NAME_KEY2", "key2")
+
+	cfg := &config{}
+	isNoErr(t, Parse(cfg))
+	isEqual(t, map[string]Inner{
+		"keyname":  {Key1: "key1", Key2: "key2"},
+		"key_name": {Key1: "key1", Key2: "key2"},
+	}, cfg.Map)
+}

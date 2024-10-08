@@ -217,6 +217,20 @@ func customOptions(opt Options) Options {
 	return opt
 }
 
+func optionsWithMapEnvPrefix(opts Options, mapKey string) Options {
+	return Options{
+		Environment:           opts.Environment,
+		TagName:               opts.TagName,
+		DefaultValueTagName:   opts.DefaultValueTagName,
+		RequiredIfNoDef:       opts.RequiredIfNoDef,
+		OnSet:                 opts.OnSet,
+		Prefix:                fmt.Sprintf("%s%s_", opts.Prefix, mapKey),
+		UseFieldNameByDefault: opts.UseFieldNameByDefault,
+		FuncMap:               opts.FuncMap,
+		rawEnvVars:            opts.rawEnvVars,
+	}
+}
+
 func optionsWithSliceEnvPrefix(opts Options, index int) Options {
 	return Options{
 		Environment:           opts.Environment,
@@ -380,6 +394,10 @@ func doParseField(
 		}
 	}
 
+	if isMapOfStructs(refTypeField, opts) {
+		return doParseMap(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
+	}
+
 	if reflect.Struct == refField.Kind() {
 		return doParse(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
@@ -389,6 +407,38 @@ func doParseField(
 	}
 
 	return nil
+}
+
+func isMapOfStructs(refTypeField reflect.StructField, opts Options) bool {
+	field := refTypeField.Type
+	if reflect.Ptr == field.Kind() {
+		field = field.Elem()
+	}
+
+	if reflect.Map != field.Kind() {
+		return false
+	}
+
+	field = field.Elem()
+
+	if reflect.Ptr == field.Kind() {
+		field = field.Elem()
+	}
+
+	_, ignore := defaultBuiltInParsers[field.Kind()]
+
+	if !ignore {
+		_, ignore = opts.FuncMap[field]
+	}
+
+	if !ignore {
+		_, ignore = reflect.New(field).Interface().(encoding.TextUnmarshaler)
+	}
+
+	if !ignore {
+		ignore = reflect.Struct != field.Kind()
+	}
+	return !ignore
 }
 
 func isSliceOfStructs(refTypeField reflect.StructField, opts Options) bool {
@@ -482,6 +532,63 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 			}
 			ref.Set(result)
 		}
+	}
+
+	return nil
+}
+
+func doParseMap(refField reflect.Value, processField processFieldFn, opts Options) error {
+	mapType := refField.Type()
+	elemType := mapType.Elem()
+
+	// Check if the element type has any fields
+	if elemType.NumField() == 0 {
+		return nil // Can't process an empty struct
+	}
+
+	// Create a new map if it's nil
+	if refField.IsNil() {
+		refField.Set(reflect.MakeMap(mapType))
+	}
+
+	prefixLen := len(opts.Prefix)
+
+	mapKeys := make(map[string]bool)
+	for envKey := range opts.Environment {
+		if !strings.HasPrefix(envKey, opts.Prefix) {
+			continue
+		}
+
+		trimmedKey := envKey[prefixLen:]
+		// Check all fields for a matching env tag
+		for i := 0; i < elemType.NumField(); i++ {
+			field := elemType.Field(i)
+			envTag := field.Tag.Get(opts.TagName)
+			if envTag == "" {
+				continue
+			}
+
+			lastIndex := strings.LastIndex(trimmedKey, "_"+envTag)
+			if lastIndex == -1 {
+				continue
+			}
+
+			mapKey := trimmedKey[:lastIndex]
+			mapKeys[mapKey] = true
+		}
+	}
+
+	// Process each map key
+	for mapKey := range mapKeys {
+		elem := reflect.New(elemType).Elem()
+
+		// Parse the struct
+		if err := doParse(elem, processField, optionsWithMapEnvPrefix(opts, mapKey)); err != nil {
+			return err
+		}
+
+		// Set the element in the map
+		refField.SetMapIndex(reflect.ValueOf(strings.ToLower(mapKey)), elem)
 	}
 
 	return nil
