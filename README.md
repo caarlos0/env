@@ -126,6 +126,15 @@ There are a few options available in the functions that end with `WithOptions`:
 Examples are live in [pkg.go.dev](https://pkg.go.dev/github.com/caarlos0/env/v11),
 and also in the [example test file](./example_test.go).
 
+## Current state
+
+`env` is considered feature-complete.
+
+I do not intent to add any new features unless they really make sense, and are
+requested by many people.
+
+Eventual bug fixes will keep being merged.
+
 ## Badges
 
 [![Release](https://img.shields.io/github/release/caarlos0/env.svg?style=for-the-badge)](https://github.com/goreleaser/goreleaser/releases/latest)
