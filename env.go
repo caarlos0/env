@@ -371,7 +371,7 @@ func doParseField(
 		return err
 	}
 
-	if params.Init && isStructPtr(refField) && refField.IsNil() {
+	if isStructPtr(refField) && refField.IsNil() && shouldInit(params, optionsWithEnvPrefix(refTypeField, opts)) {
 		refField.Set(reflect.New(refField.Type().Elem()))
 		refField = refField.Elem()
 
@@ -389,6 +389,18 @@ func doParseField(
 	}
 
 	return nil
+}
+
+func shouldInit(fieldParams FieldParams, opts Options) bool {
+	if fieldParams.Init {
+		return true
+	}
+
+	if fieldParams.InitIfSet {
+		return hasValue(opts)
+	}
+
+	return false
 }
 
 func isSliceOfStructs(refTypeField reflect.StructField, opts Options) bool {
@@ -533,6 +545,7 @@ type FieldParams struct {
 	NotEmpty        bool
 	Expand          bool
 	Init            bool
+	InitIfSet       bool
 }
 
 func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, error) {
@@ -567,6 +580,8 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 			result.Expand = true
 		case "init":
 			result.Init = true
+		case "initIfSet":
+			result.InitIfSet = true
 		default:
 			return FieldParams{}, newNoSupportedTagOptionError(tag)
 		}
@@ -617,6 +632,16 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 		}
 	}
 	return val, err
+}
+
+// hasValue checks if the struct has any values in the environment variables.
+func hasValue(opts Options) bool {
+	for key, _ := range opts.Environment {
+		if strings.HasPrefix(key, opts.Prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 // split the env tag's key into the expected key and desired option, if any.
