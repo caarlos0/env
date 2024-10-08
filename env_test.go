@@ -2214,3 +2214,22 @@ func TestParseWithOptionsRenamedPrefix(t *testing.T) {
 	isNoErr(t, Parse(cfg))
 	isEqual(t, "101", cfg.Foo.Str)
 }
+
+func TestInitIfSet(t *testing.T) {
+	type Test struct {
+		Str string `env:"TEST"`
+	}
+	type ComplexConfig struct {
+		Foo *Test `envPrefix:"FOO_" env:",init"`
+		Bar *Test `envPrefix:"BAR_" env:",initIfSet"`
+		Baz *Test `envPrefix:"BAZ_" env:",initIfSet"`
+	}
+
+	t.Setenv("BAR_TEST", "lel")
+
+	cfg := ComplexConfig{}
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, &Test{}, cfg.Foo)
+	isEqual(t, &Test{Str: "lel"}, cfg.Bar)
+	isEqual(t, nil, cfg.Baz)
+}
