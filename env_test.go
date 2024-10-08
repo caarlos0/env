@@ -2191,3 +2191,26 @@ func TestParseWithOptionsRenamedDefault(t *testing.T) {
 	isNoErr(t, Parse(cfg))
 	isEqual(t, "foo", cfg.Str)
 }
+
+func TestParseWithOptionsRenamedPrefix(t *testing.T) {
+	type Config struct {
+		Str string `env:"STR"`
+	}
+	type ComplexConfig struct {
+		Foo Config `envPrefix:"FOO_" myPrefix:"BAR_"`
+	}
+
+	t.Setenv("FOO_STR", "101")
+	t.Setenv("BAR_STR", "202")
+	t.Setenv("APP_BAR_STR", "303")
+
+	cfg := &ComplexConfig{}
+	isNoErr(t, ParseWithOptions(cfg, Options{PrefixTagName: "myPrefix"}))
+	isEqual(t, "202", cfg.Foo.Str)
+
+	isNoErr(t, ParseWithOptions(cfg, Options{PrefixTagName: "myPrefix", Prefix: "APP_"}))
+	isEqual(t, "303", cfg.Foo.Str)
+
+	isNoErr(t, Parse(cfg))
+	isEqual(t, "101", cfg.Foo.Str)
+}
