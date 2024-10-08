@@ -1,3 +1,4 @@
+// editorconfig-checker-disable-file
 package env
 
 import (
@@ -485,7 +486,7 @@ func TestParseCustomMapType(t *testing.T) {
 
 	var cfg config
 	isNoErr(t, ParseWithOptions(&cfg, Options{FuncMap: map[reflect.Type]ParserFunc{
-		reflect.TypeOf(custommap{}): func(value string) (interface{}, error) {
+		reflect.TypeOf(custommap{}): func(_ string) (interface{}, error) {
 			return custommap(map[string]bool{}), nil
 		},
 	}}))
@@ -547,7 +548,7 @@ func TestParseMapCustomKeyTypeError(t *testing.T) {
 
 	var cfg config
 	err := ParseWithOptions(&cfg, Options{FuncMap: map[reflect.Type]ParserFunc{
-		reflect.TypeOf(CustomKey("")): func(value string) (interface{}, error) {
+		reflect.TypeOf(CustomKey("")): func(_ string) (interface{}, error) {
 			return nil, fmt.Errorf("custom error")
 		},
 	}})
@@ -565,7 +566,7 @@ func TestParseMapCustomValueTypeError(t *testing.T) {
 
 	var cfg config
 	err := ParseWithOptions(&cfg, Options{FuncMap: map[reflect.Type]ParserFunc{
-		reflect.TypeOf(Customval("")): func(value string) (interface{}, error) {
+		reflect.TypeOf(Customval("")): func(_ string) (interface{}, error) {
 			return nil, fmt.Errorf("custom error")
 		},
 	}})
@@ -1148,7 +1149,7 @@ func TestCustomParserError(t *testing.T) {
 		name string
 	}
 
-	customParserFunc := func(v string) (interface{}, error) {
+	customParserFunc := func(_ string) (interface{}, error) {
 		return nil, errors.New("something broke")
 	}
 
