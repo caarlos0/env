@@ -2214,3 +2214,43 @@ func TestParseWithOptionsRenamedPrefix(t *testing.T) {
 	isNoErr(t, Parse(cfg))
 	isEqual(t, "101", cfg.Foo.Str)
 }
+
+func TestFieldIgnored(t *testing.T) {
+	type Test struct {
+		Foo string `env:"FOO"`
+		Bar string `env:"BAR,-"`
+	}
+	type ComplexConfig struct {
+		Str string `env:"STR"`
+		Foo Test   `env:"FOO" envPrefix:"FOO_"`
+		Bar Test   `env:"-" envPrefix:"BAR_"`
+	}
+	t.Setenv("STR", "101")
+	t.Setenv("FOO_FOO", "202")
+	t.Setenv("FOO_BAR", "303")
+	t.Setenv("BAR_FOO", "404")
+	t.Setenv("BAR_BAR", "505")
+
+	var cfg ComplexConfig
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, "101", cfg.Str)
+	isEqual(t, "202", cfg.Foo.Foo)
+	isEqual(t, "", cfg.Foo.Bar)
+	isEqual(t, "", cfg.Bar.Foo)
+	isEqual(t, "", cfg.Bar.Bar)
+}
+
+func TestNoEnvKeyIgnored(t *testing.T) {
+	type Config struct {
+		Foo    string `env:"-"`
+		FooBar string
+	}
+
+	t.Setenv("FOO", "101")
+	t.Setenv("FOO_BAR", "202")
+
+	var cfg Config
+	isNoErr(t, ParseWithOptions(&cfg, Options{UseFieldNameByDefault: true}))
+	isEqual(t, "", cfg.Foo)
+	isEqual(t, "202", cfg.FooBar)
+}
