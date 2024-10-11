@@ -367,6 +367,10 @@ func doParseField(
 		return err
 	}
 
+	if params.Ignored {
+		return nil
+	}
+
 	if err := processField(refField, refTypeField, opts, params); err != nil {
 		return err
 	}
@@ -533,6 +537,7 @@ type FieldParams struct {
 	NotEmpty        bool
 	Expand          bool
 	Init            bool
+	Ignored         bool
 }
 
 func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, error) {
@@ -549,6 +554,7 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 		Required:        opts.RequiredIfNoDef,
 		DefaultValue:    defaultValue,
 		HasDefaultValue: hasDefaultValue,
+		Ignored:         ownKey == "-",
 	}
 
 	for _, tag := range tags {
@@ -567,6 +573,8 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 			result.Expand = true
 		case "init":
 			result.Init = true
+		case "-":
+			result.Ignored = true
 		default:
 			return FieldParams{}, newNoSupportedTagOptionError(tag)
 		}
