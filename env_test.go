@@ -2232,7 +2232,7 @@ func TestFieldIgnored(t *testing.T) {
 	t.Setenv("BAR_BAR", "505")
 
 	var cfg ComplexConfig
-	isNoErr(t, Parse(cfg))
+	isNoErr(t, Parse(&cfg))
 	isEqual(t, "101", cfg.Str)
 	isEqual(t, "202", cfg.Foo.Foo)
 	isEqual(t, "", cfg.Foo.Bar)
