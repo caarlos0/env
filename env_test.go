@@ -2254,3 +2254,55 @@ func TestNoEnvKeyIgnored(t *testing.T) {
 	isEqual(t, "", cfg.Foo)
 	isEqual(t, "202", cfg.FooBar)
 }
+
+func TestIssue339(t *testing.T) {
+	t.Run("Should parse with bool ptr set and env undefined", func(t *testing.T) {
+		existingValue := true
+		cfg := Config{
+			BoolPtr: &existingValue,
+		}
+
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, &existingValue, cfg.BoolPtr)
+	})
+
+	t.Run("Should parse with bool ptr set and env defined", func(t *testing.T) {
+		existingValue := true
+		cfg := Config{
+			BoolPtr: &existingValue,
+		}
+
+		newValue := false
+		t.Setenv("BOOL", strconv.FormatBool(newValue))
+
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, &newValue, cfg.BoolPtr)
+	})
+
+	t.Run("Should parse with string ptr set and env undefined", func(t *testing.T) {
+		existingValue := "one"
+		cfg := Config{
+			StringPtr: &existingValue,
+		}
+
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, &existingValue, cfg.StringPtr)
+	})
+
+	t.Run("Should parse with string ptr set and env defined", func(t *testing.T) {
+		existingValue := "one"
+		cfg := Config{
+			StringPtr: &existingValue,
+		}
+
+		newValue := "two"
+		t.Setenv("STRING", newValue)
+
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, &newValue, cfg.StringPtr)
+	})
+}
