@@ -1,4 +1,13 @@
 linters-settings:
+  gocritic:
+    enabled-checks:
+      - emptyStringTest
+      - evalOrder
+      - paramTypeCombine
+      - preferStringWriter
+      - sprintfQuotedString
+      - stringConcatSimplify
+      - yodaStyleExpr
   revive:
     rules:
       - name: line-length-limit
@@ -15,6 +24,7 @@ linters:
   enable:
     - thelper
     - gofumpt
+    - gocritic
     - tparallel
     - unconvert
     - unparam

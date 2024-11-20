@@ -3,7 +3,6 @@ package env
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"reflect"
 )
@@ -400,7 +399,7 @@ func ExampleParseWithOptions_useFieldName() {
 // it.
 func ExampleParse_fromFile() {
 	f, _ := os.CreateTemp("", "")
-	_, _ = io.WriteString(f, "super secret")
+	_, _ = f.WriteString("super secret")
 	_ = f.Close()
 
 	type Config struct {
