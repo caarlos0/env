@@ -20,3 +20,4 @@ linters:
     - unparam
     - wastedassign
     - revive
+    - ineffassign
