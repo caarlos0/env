@@ -68,7 +68,7 @@ func newParseError(sf reflect.StructField, err error) error {
 }
 
 func (e ParseError) Error() string {
-	return fmt.Sprintf(`parse error on field "%s" of type "%s": %v`, e.Name, e.Type, e.Err)
+	return fmt.Sprintf("parse error on field %q of type %q: %v", e.Name, e.Type, e.Err)
 }
 
 // The error occurs when pass something that is not a pointer to a struct to Parse
@@ -89,7 +89,7 @@ func newNoParserError(sf reflect.StructField) error {
 }
 
 func (e NoParserError) Error() string {
-	return fmt.Sprintf(`no parser found for field "%s" of type "%s"`, e.Name, e.Type)
+	return fmt.Sprintf("no parser found for field %q of type %q", e.Name, e.Type)
 }
 
 // This error occurs when the given tag is not supported.
@@ -109,7 +109,7 @@ func (e NoSupportedTagOptionError) Error() string {
 
 // This error occurs when the required variable is not set.
 //
-// deprecated: use VarIsNotSetError
+// Deprecated: use VarIsNotSetError.
 type EnvVarIsNotSetError = VarIsNotSetError
 
 // This error occurs when the required variable is not set.
@@ -127,7 +127,7 @@ func (e VarIsNotSetError) Error() string {
 
 // This error occurs when the variable which must be not empty is existing but has an empty value
 //
-// deprecated: use EmptyVarError
+// Deprecated: use EmptyVarError.
 type EmptyEnvVarError = EmptyVarError
 
 // This error occurs when the variable which must be not empty is existing but has an empty value
@@ -155,7 +155,7 @@ func newLoadFileContentError(filename, key string, err error) error {
 }
 
 func (e LoadFileContentError) Error() string {
-	return fmt.Sprintf(`could not load content of file "%s" from variable %s: %v`, e.Filename, e.Key, e.Err)
+	return fmt.Sprintf("could not load content of file %q from variable %s: %v", e.Filename, e.Key, e.Err)
 }
 
 // This error occurs when it's impossible to convert value using given parser.

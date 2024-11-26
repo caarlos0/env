@@ -263,14 +263,16 @@ func ParseWithOptions(v interface{}, opts Options) error {
 // values from environment variables.
 func ParseAs[T any]() (T, error) {
 	var t T
-	return t, Parse(&t)
+	err := Parse(&t)
+	return t, err
 }
 
 // ParseWithOptions parses the given struct type containing `env` tags and
 // loads its values from environment variables.
 func ParseAsWithOptions[T any](opts Options) (T, error) {
 	var t T
-	return t, ParseWithOptions(&t, opts)
+	err := ParseWithOptions(&t, opts)
+	return t, err
 }
 
 // Must panic is if err is not nil, and returns t otherwise.
@@ -355,10 +357,10 @@ func doParseField(
 	if !refField.CanSet() {
 		return nil
 	}
-	if reflect.Ptr == refField.Kind() && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
+	if refField.Kind() == reflect.Ptr && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
 		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
-	if reflect.Struct == refField.Kind() && refField.CanAddr() && refField.Type().Name() == "" {
+	if refField.Kind() == reflect.Struct && refField.CanAddr() && refField.Type().Name() == "" {
 		return parseInternal(refField.Addr().Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
@@ -384,7 +386,7 @@ func doParseField(
 		}
 	}
 
-	if reflect.Struct == refField.Kind() {
+	if refField.Kind() == reflect.Struct {
 		return doParse(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
@@ -397,17 +399,17 @@ func doParseField(
 
 func isSliceOfStructs(refTypeField reflect.StructField, opts Options) bool {
 	field := refTypeField.Type
-	if reflect.Ptr == field.Kind() {
+	if field.Kind() == reflect.Ptr {
 		field = field.Elem()
 	}
 
-	if reflect.Slice != field.Kind() {
+	if field.Kind() != reflect.Slice {
 		return false
 	}
 
 	field = field.Elem()
 
-	if reflect.Ptr == field.Kind() {
+	if field.Kind() == reflect.Ptr {
 		field = field.Elem()
 	}
 
@@ -422,7 +424,7 @@ func isSliceOfStructs(refTypeField reflect.StructField, opts Options) bool {
 	}
 
 	if !ignore {
-		ignore = reflect.Struct != field.Kind()
+		ignore = field.Kind() != reflect.Struct
 	}
 	return !ignore
 }
@@ -603,7 +605,7 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 		defer os.Unsetenv(fieldParams.Key)
 	}
 
-	if fieldParams.Required && !exists && len(fieldParams.OwnKey) > 0 {
+	if fieldParams.Required && !exists && fieldParams.OwnKey != "" {
 		return "", newVarIsNotSetError(fieldParams.Key)
 	}
 
@@ -638,7 +640,7 @@ func getFromFile(filename string) (value string, err error) {
 	return string(b), err
 }
 
-func getOr(key, defaultValue string, defExists bool, envs map[string]string) (val string, exists bool, isDefault bool) {
+func getOr(key, defaultValue string, defExists bool, envs map[string]string) (val string, exists, isDefault bool) {
 	value, exists := envs[key]
 	switch {
 	case (!exists || key == "") && defExists:
@@ -794,7 +796,7 @@ func handleMap(field reflect.Value, value string, sf reflect.StructField, funcMa
 }
 
 func asTextUnmarshaler(field reflect.Value) encoding.TextUnmarshaler {
-	if reflect.Ptr == field.Kind() {
+	if field.Kind() == reflect.Ptr {
 		if field.IsNil() {
 			field.Set(reflect.New(field.Type().Elem()))
 		}

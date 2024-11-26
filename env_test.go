@@ -276,7 +276,7 @@ func TestParsesEnv(t *testing.T) {
 	t.Setenv("URL", tos(url1))
 	t.Setenv("URLS", toss(url1, url2))
 
-	t.Setenv("SEPSTRINGS", strings.Join([]string{str1, str2}, ":"))
+	t.Setenv("SEPSTRINGS", str1+":"+str2)
 
 	nonDefinedStr := "nonDefinedStr"
 	t.Setenv("NONDEFINED_STR", nonDefinedStr)
@@ -1485,7 +1485,7 @@ func TestFileBadFile(t *testing.T) {
 	}
 
 	err := Parse(&config{})
-	isErrorWithMessage(t, err, fmt.Sprintf(`env: could not load content of file "%s" from variable SECRET_KEY: open %s: %s`, filename, filename, oserr))
+	isErrorWithMessage(t, err, fmt.Sprintf("env: could not load content of file %q from variable SECRET_KEY: open %s: %s", filename, filename, oserr))
 	isTrue(t, errors.Is(err, LoadFileContentError{}))
 }
 
