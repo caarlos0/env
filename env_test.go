@@ -282,6 +282,8 @@ func TestParsesEnv(t *testing.T) {
 	t.Setenv("NONDEFINED_STR", nonDefinedStr)
 	t.Setenv("PRF_NONDEFINED_STR", nonDefinedStr)
 
+	t.Setenv("FOO", str1)
+
 	cfg := Config{}
 	isNoErr(t, Parse(&cfg))
 
