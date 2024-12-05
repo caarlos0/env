@@ -377,13 +377,9 @@ func doParseField(
 		return err
 	}
 
-	if params.Init && isStructPtr(refField) && refField.IsNil() {
+	if params.Init && isInvalidPtr(refField) {
 		refField.Set(reflect.New(refField.Type().Elem()))
 		refField = refField.Elem()
-
-		if _, ok := opts.FuncMap[refField.Type()]; ok {
-			return nil
-		}
 	}
 
 	if refField.Kind() == reflect.Struct {
@@ -843,6 +839,6 @@ func ToMap(env []string) map[string]string {
 	return toMap(env)
 }
 
-func isStructPtr(v reflect.Value) bool {
-	return reflect.Ptr == v.Kind() && v.Type().Elem().Kind() == reflect.Struct
+func isInvalidPtr(v reflect.Value) bool {
+	return reflect.Ptr == v.Kind() && v.Elem().Kind() == reflect.Invalid
 }
