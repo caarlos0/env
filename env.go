@@ -173,9 +173,9 @@ type Options struct {
 func (opts *Options) getRawEnv(s string) string {
 	val := opts.rawEnvVars[s]
 	if val == "" {
-		return opts.Environment[s]
+		val = opts.Environment[s]
 	}
-	return val
+	return os.Expand(val, opts.getRawEnv)
 }
 
 func defaultOptions() Options {
