@@ -115,6 +115,8 @@ There are a few options available in the functions that end with `WithOptions`:
 
 - `Environment`: keys and values to be used instead of `os.Environ()`
 - `TagName`: specifies another tag name to use rather than the default `env`
+- `PrefixTagName`: specifies another prefix tag name to use rather than the default `envPrefix`
+- `DefaultValueTagName`: specifies another default tag name to use rather than the default `envDefault`
 - `RequiredIfNoDef`: set all `env` fields as required if they do not declare `envDefault`
 - `OnSet`: allows to hook into the `env` parsing and do something when a value is set
 - `Prefix`: prefix to be used in all environment variables
