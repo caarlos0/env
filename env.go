@@ -191,30 +191,43 @@ func defaultOptions() Options {
 
 func customOptions(opt Options) Options {
 	defOpts := defaultOptions()
-	if opt.TagName == "" {
-		opt.TagName = defOpts.TagName
-	}
-	if opt.PrefixTagName == "" {
-		opt.PrefixTagName = defOpts.PrefixTagName
-	}
-	if opt.DefaultValueTagName == "" {
-		opt.DefaultValueTagName = defOpts.DefaultValueTagName
-	}
-	if opt.Environment == nil {
-		opt.Environment = defOpts.Environment
-	}
-	if opt.FuncMap == nil {
-		opt.FuncMap = map[reflect.Type]ParserFunc{}
-	}
-	if opt.rawEnvVars == nil {
-		opt.rawEnvVars = defOpts.rawEnvVars
-	}
-	for k, v := range defOpts.FuncMap {
-		if _, exists := opt.FuncMap[k]; !exists {
-			opt.FuncMap[k] = v
+	mergeOptions[Options](&defOpts, &opt)
+	return defOpts
+}
+
+func mergeOptions[T any](target *T, source *T) {
+	targetPtr := reflect.ValueOf(target).Elem()
+	sourcePtr := reflect.ValueOf(source).Elem()
+
+	targetType := targetPtr.Type()
+	for i := 0; i < targetPtr.NumField(); i++ {
+		targetField := targetPtr.Field(i)
+		sourceField := sourcePtr.FieldByName(targetType.Field(i).Name)
+
+		if targetField.CanSet() && !isZero(sourceField) {
+			switch targetField.Kind() {
+			case reflect.Map:
+				if !sourceField.IsZero() {
+					iter := sourceField.MapRange()
+					for iter.Next() {
+						targetField.SetMapIndex(iter.Key(), iter.Value())
+					}
+				}
+			default:
+				targetField.Set(sourceField)
+			}
 		}
 	}
-	return opt
+}
+
+func isZero(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Func, reflect.Map, reflect.Slice:
+		return v.IsNil()
+	default:
+		zero := reflect.Zero(v.Type())
+		return v.Interface() == zero.Interface()
+	}
 }
 
 func optionsWithSliceEnvPrefix(opts Options, index int) Options {
