@@ -399,7 +399,7 @@ func doParseField(
 		return doParse(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
-	if isSliceOfStructs(refTypeField, opts) {
+	if isSliceOfStructs(refTypeField) {
 		return doParseSlice(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
