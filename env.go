@@ -406,7 +406,7 @@ func doParseField(
 	return nil
 }
 
-func isSliceOfStructs(refTypeField reflect.StructField, opts Options) bool {
+func isSliceOfStructs(refTypeField reflect.StructField) bool {
 	field := refTypeField.Type
 
 	// *[]struct
