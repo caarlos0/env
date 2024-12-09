@@ -54,7 +54,7 @@ You can see the full documentation and list of examples at [pkg.go.dev](https://
 - `Parse`: parse the current environment into a type
 - `ParseAs`: parse the current environment into a type using generics
 - `ParseWithOptions`: parse the current environment into a type with custom options
-- `ParseAsithOptions`: parse the current environment into a type with custom options and using generics
+- `ParseAsWithOptions`: parse the current environment into a type with custom options and using generics
 - `Must`: can be used to wrap `Parse.*` calls to panic on error
 - `GetFieldParams`: get the `env` parsed options for a type
 - `GetFieldParamsWithOptions`: get the `env` parsed options for a type with custom options
@@ -115,6 +115,8 @@ There are a few options available in the functions that end with `WithOptions`:
 
 - `Environment`: keys and values to be used instead of `os.Environ()`
 - `TagName`: specifies another tag name to use rather than the default `env`
+- `PrefixTagName`: specifies another prefix tag name to use rather than the default `envPrefix`
+- `DefaultValueTagName`: specifies another default tag name to use rather than the default `envDefault`
 - `RequiredIfNoDef`: set all `env` fields as required if they do not declare `envDefault`
 - `OnSet`: allows to hook into the `env` parsing and do something when a value is set
 - `Prefix`: prefix to be used in all environment variables

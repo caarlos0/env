@@ -173,9 +173,9 @@ type Options struct {
 func (opts *Options) getRawEnv(s string) string {
 	val := opts.rawEnvVars[s]
 	if val == "" {
-		return opts.Environment[s]
+		val = opts.Environment[s]
 	}
-	return val
+	return os.Expand(val, opts.getRawEnv)
 }
 
 func defaultOptions() Options {
@@ -189,32 +189,45 @@ func defaultOptions() Options {
 	}
 }
 
-func customOptions(opt Options) Options {
-	defOpts := defaultOptions()
-	if opt.TagName == "" {
-		opt.TagName = defOpts.TagName
-	}
-	if opt.PrefixTagName == "" {
-		opt.PrefixTagName = defOpts.PrefixTagName
-	}
-	if opt.DefaultValueTagName == "" {
-		opt.DefaultValueTagName = defOpts.DefaultValueTagName
-	}
-	if opt.Environment == nil {
-		opt.Environment = defOpts.Environment
-	}
-	if opt.FuncMap == nil {
-		opt.FuncMap = map[reflect.Type]ParserFunc{}
-	}
-	if opt.rawEnvVars == nil {
-		opt.rawEnvVars = defOpts.rawEnvVars
-	}
-	for k, v := range defOpts.FuncMap {
-		if _, exists := opt.FuncMap[k]; !exists {
-			opt.FuncMap[k] = v
+func mergeOptions[T any](target, source *T) {
+	targetPtr := reflect.ValueOf(target).Elem()
+	sourcePtr := reflect.ValueOf(source).Elem()
+
+	targetType := targetPtr.Type()
+	for i := 0; i < targetPtr.NumField(); i++ {
+		targetField := targetPtr.Field(i)
+		sourceField := sourcePtr.FieldByName(targetType.Field(i).Name)
+
+		if targetField.CanSet() && !isZero(sourceField) {
+			switch targetField.Kind() {
+			case reflect.Map:
+				if !sourceField.IsZero() {
+					iter := sourceField.MapRange()
+					for iter.Next() {
+						targetField.SetMapIndex(iter.Key(), iter.Value())
+					}
+				}
+			default:
+				targetField.Set(sourceField)
+			}
 		}
 	}
-	return opt
+}
+
+func isZero(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Func, reflect.Map, reflect.Slice:
+		return v.IsNil()
+	default:
+		zero := reflect.Zero(v.Type())
+		return v.Interface() == zero.Interface()
+	}
+}
+
+func customOptions(opts Options) Options {
+	defOpts := defaultOptions()
+	mergeOptions(&defOpts, &opts)
+	return defOpts
 }
 
 func optionsWithSliceEnvPrefix(opts Options, index int) Options {
@@ -386,43 +399,30 @@ func doParseField(
 		return doParse(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
-	if isSliceOfStructs(refTypeField, opts) {
+	if isSliceOfStructs(refTypeField) {
 		return doParseSlice(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
 	return nil
 }
 
-func isSliceOfStructs(refTypeField reflect.StructField, opts Options) bool {
+func isSliceOfStructs(refTypeField reflect.StructField) bool {
 	field := refTypeField.Type
+
+	// *[]struct
 	if field.Kind() == reflect.Ptr {
 		field = field.Elem()
+		if field.Kind() == reflect.Slice && field.Elem().Kind() == reflect.Struct {
+			return true
+		}
 	}
 
-	if field.Kind() != reflect.Slice {
-		return false
+	// []struct{}
+	if field.Kind() == reflect.Slice && field.Elem().Kind() == reflect.Struct {
+		return true
 	}
 
-	field = field.Elem()
-
-	if field.Kind() == reflect.Ptr {
-		field = field.Elem()
-	}
-
-	_, ignore := defaultBuiltInParsers[field.Kind()]
-
-	if !ignore {
-		_, ignore = opts.FuncMap[field]
-	}
-
-	if !ignore {
-		_, ignore = reflect.New(field).Interface().(encoding.TextUnmarshaler)
-	}
-
-	if !ignore {
-		ignore = field.Kind() != reflect.Struct
-	}
-	return !ignore
+	return false
 }
 
 func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) error {
