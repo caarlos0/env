@@ -408,34 +408,21 @@ func doParseField(
 
 func isSliceOfStructs(refTypeField reflect.StructField, opts Options) bool {
 	field := refTypeField.Type
+
+	// *[]struct
 	if field.Kind() == reflect.Ptr {
 		field = field.Elem()
+		if field.Kind() == reflect.Slice && field.Elem().Kind() == reflect.Struct {
+			return true
+		}
 	}
 
-	if field.Kind() != reflect.Slice {
-		return false
+	// []struct{}
+	if field.Kind() == reflect.Slice && field.Elem().Kind() == reflect.Struct {
+		return true
 	}
 
-	field = field.Elem()
-
-	if field.Kind() == reflect.Ptr {
-		field = field.Elem()
-	}
-
-	_, ignore := defaultBuiltInParsers[field.Kind()]
-
-	if !ignore {
-		_, ignore = opts.FuncMap[field]
-	}
-
-	if !ignore {
-		_, ignore = reflect.New(field).Interface().(encoding.TextUnmarshaler)
-	}
-
-	if !ignore {
-		ignore = field.Kind() != reflect.Struct
-	}
-	return !ignore
+	return false
 }
 
 func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) error {
