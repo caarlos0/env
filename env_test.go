@@ -1019,7 +1019,8 @@ func TestParseExpandWithDefaultOption(t *testing.T) {
 		CompoundDefault string `env:"HOST_PORT,expand" envDefault:"${HOST}:${PORT}"`
 		SimpleDefault   string `env:"DEFAULT,expand" envDefault:"def1"`
 		MixedDefault    string `env:"MIXED_DEFAULT,expand" envDefault:"$USER@${HOST}:${OTHER_PORT}"`
-		OverrideDefault string `env:"OVERRIDE_DEFAULT,expand" envDefault:"$THIS_SHOULD_NOT_BE_USED"`
+		OverrideDefault string `env:"OVERRIDE_DEFAULT,expand"`
+		DefaultIsExpand string `env:"DEFAULT_IS_EXPAND,expand" envDefault:"$THIS_IS_EXPAND"`
 		NoDefault       string `env:"NO_DEFAULT,expand"`
 	}
 
@@ -1027,6 +1028,7 @@ func TestParseExpandWithDefaultOption(t *testing.T) {
 	t.Setenv("USER", "jhon")
 	t.Setenv("THIS_IS_USED", "this is used instead")
 	t.Setenv("OVERRIDE_DEFAULT", "msg: ${THIS_IS_USED}")
+	t.Setenv("THIS_IS_EXPAND", "msg: ${THIS_IS_USED}")
 	t.Setenv("NO_DEFAULT", "$PORT:$OTHER_PORT")
 
 	cfg := config{}
