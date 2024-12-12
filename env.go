@@ -769,7 +769,7 @@ func handleMap(field reflect.Value, value string, sf reflect.StructField, funcMa
 
 	result := reflect.MakeMap(sf.Type)
 	for _, part := range strings.Split(value, separator) {
-		pairs := strings.Split(part, keyValSeparator)
+		pairs := strings.SplitN(part, keyValSeparator, 2)
 		if len(pairs) != 2 {
 			return newParseError(sf, fmt.Errorf(`%q should be in "key%svalue" format`, part, keyValSeparator))
 		}

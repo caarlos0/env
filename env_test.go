@@ -2310,3 +2310,15 @@ func TestIssue339(t *testing.T) {
 		isEqual(t, &newValue, cfg.StringPtr)
 	})
 }
+
+func TestIssue350(t *testing.T) {
+	t.Setenv("MAP", "url:https://foo.bar:2030")
+
+	type Config struct {
+		Map map[string]string `env:"MAP"`
+	}
+
+	var cfg Config
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, map[string]string{"url": "https://foo.bar:2030"}, cfg.Map)
+}
