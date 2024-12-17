@@ -2196,6 +2196,63 @@ func TestParseWithOptionsRenamedDefault(t *testing.T) {
 	isEqual(t, "foo", cfg.Str)
 }
 
+func TestSetDefaultsForZeroValuesOnly(t *testing.T) {
+	type config struct {
+		Str string  `env:"STR" envDefault:"foo"`
+		Int int     `env:"INT" envDefault:"42"`
+		Url url.URL `env:"URL" envDefault:"https://github.com/caarlos0"`
+	}
+	defUrl, err := url.Parse("https://github.com/caarlos0")
+	isNoErr(t, err)
+
+	u, err := url.Parse("https://localhost/foo")
+	isNoErr(t, err)
+
+	for _, tc := range []struct {
+		Name     string
+		Options  Options
+		Expected config
+	}{
+		{
+			Name:    "true",
+			Options: Options{SetDefaultsForZeroValuesOnly: true},
+			Expected: config{
+				Str: "isSet",
+				Int: 1,
+				Url: *u,
+			},
+		},
+		{
+			Name:    "false",
+			Options: Options{SetDefaultsForZeroValuesOnly: false},
+			Expected: config{
+				Str: "foo",
+				Int: 42,
+				Url: *defUrl,
+			},
+		},
+		{
+			Name:    "default",
+			Options: Options{},
+			Expected: config{
+				Str: "foo",
+				Int: 42,
+				Url: *defUrl,
+			},
+		},
+	} {
+		t.Run(tc.Name, func(t *testing.T) {
+			cfg := &config{
+				Str: "isSet",
+				Int: 1,
+				Url: *u,
+			}
+			isNoErr(t, ParseWithOptions(cfg, tc.Options))
+			isEqual(t, tc.Expected, *cfg)
+		})
+	}
+}
+
 func TestParseWithOptionsRenamedPrefix(t *testing.T) {
 	type Config struct {
 		Str string `env:"STR"`
