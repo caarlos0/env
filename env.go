@@ -162,6 +162,15 @@ type Options struct {
 	// variable names conventions.
 	UseFieldNameByDefault bool
 
+	// SetDefaultsForZeroValuesOnly defines whether to set defaults for zero values
+	// If the `env` variable for the value is not set
+	// and `envDefault` is set
+	// and the value is not a zero value for the the type
+	// and SetDefaultsForZeroValuesOnly=true
+	// the value from `envDefault` will be ignored
+	// Usefull for mixing default values from `envDefault` and struct initialization
+	SetDefaultsForZeroValuesOnly bool
+
 	// Custom parse functions for different types.
 	FuncMap map[reflect.Type]ParserFunc
 
@@ -233,31 +242,33 @@ func customOptions(opts Options) Options {
 
 func optionsWithSliceEnvPrefix(opts Options, index int) Options {
 	return Options{
-		Environment:           opts.Environment,
-		TagName:               opts.TagName,
-		PrefixTagName:         opts.PrefixTagName,
-		DefaultValueTagName:   opts.DefaultValueTagName,
-		RequiredIfNoDef:       opts.RequiredIfNoDef,
-		OnSet:                 opts.OnSet,
-		Prefix:                fmt.Sprintf("%s%d_", opts.Prefix, index),
-		UseFieldNameByDefault: opts.UseFieldNameByDefault,
-		FuncMap:               opts.FuncMap,
-		rawEnvVars:            opts.rawEnvVars,
+		Environment:                  opts.Environment,
+		TagName:                      opts.TagName,
+		PrefixTagName:                opts.PrefixTagName,
+		DefaultValueTagName:          opts.DefaultValueTagName,
+		RequiredIfNoDef:              opts.RequiredIfNoDef,
+		OnSet:                        opts.OnSet,
+		Prefix:                       fmt.Sprintf("%s%d_", opts.Prefix, index),
+		UseFieldNameByDefault:        opts.UseFieldNameByDefault,
+		SetDefaultsForZeroValuesOnly: opts.SetDefaultsForZeroValuesOnly,
+		FuncMap:                      opts.FuncMap,
+		rawEnvVars:                   opts.rawEnvVars,
 	}
 }
 
 func optionsWithEnvPrefix(field reflect.StructField, opts Options) Options {
 	return Options{
-		Environment:           opts.Environment,
-		TagName:               opts.TagName,
-		PrefixTagName:         opts.PrefixTagName,
-		DefaultValueTagName:   opts.DefaultValueTagName,
-		RequiredIfNoDef:       opts.RequiredIfNoDef,
-		OnSet:                 opts.OnSet,
-		Prefix:                opts.Prefix + field.Tag.Get(opts.PrefixTagName),
-		UseFieldNameByDefault: opts.UseFieldNameByDefault,
-		FuncMap:               opts.FuncMap,
-		rawEnvVars:            opts.rawEnvVars,
+		Environment:                  opts.Environment,
+		TagName:                      opts.TagName,
+		PrefixTagName:                opts.PrefixTagName,
+		DefaultValueTagName:          opts.DefaultValueTagName,
+		RequiredIfNoDef:              opts.RequiredIfNoDef,
+		OnSet:                        opts.OnSet,
+		Prefix:                       opts.Prefix + field.Tag.Get(opts.PrefixTagName),
+		UseFieldNameByDefault:        opts.UseFieldNameByDefault,
+		SetDefaultsForZeroValuesOnly: opts.SetDefaultsForZeroValuesOnly,
+		FuncMap:                      opts.FuncMap,
+		rawEnvVars:                   opts.rawEnvVars,
 	}
 }
 
@@ -496,7 +507,7 @@ func setField(refField reflect.Value, refTypeField reflect.StructField, opts Opt
 		return err
 	}
 
-	if value != "" {
+	if value != "" && (!opts.SetDefaultsForZeroValuesOnly || refField.IsZero()) {
 		return set(refField, refTypeField, value, opts.FuncMap)
 	}
 
