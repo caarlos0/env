@@ -2322,3 +2322,35 @@ func TestIssue350(t *testing.T) {
 	isNoErr(t, Parse(&cfg))
 	isEqual(t, map[string]string{"url": "https://foo.bar:2030"}, cfg.Map)
 }
+
+func TestEnvBleed(t *testing.T) {
+	type Config struct {
+		Foo string `env:"FOO"`
+	}
+
+	t.Setenv("FOO", "101")
+
+	t.Run("Default env with value", func(t *testing.T) {
+		var cfg Config
+		isNoErr(t, ParseWithOptions(&cfg, Options{}))
+		isEqual(t, "101", cfg.Foo)
+	})
+
+	t.Run("Empty env without value", func(t *testing.T) {
+		var cfg Config
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: map[string]string{}}))
+		isEqual(t, "", cfg.Foo)
+	})
+
+	t.Run("Custom env with overwritten value", func(t *testing.T) {
+		var cfg Config
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: map[string]string{"FOO": "202"}}))
+		isEqual(t, "202", cfg.Foo)
+	})
+
+	t.Run("Custom env without value", func(t *testing.T) {
+		var cfg Config
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: map[string]string{"BAR": "202"}}))
+		isEqual(t, "", cfg.Foo)
+	})
+}
