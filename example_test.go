@@ -477,5 +477,6 @@ func Example_setDefaultsForZeroValuesOnly() {
 	}
 
 	fmt.Printf("%+v", cfg)
+	// Without SetDefaultsForZeroValuesOnly, the username would have been 'admin'.
 	// Output: {Username:root Password:qwerty}
 }
