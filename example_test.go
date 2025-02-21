@@ -455,3 +455,27 @@ func ExampleParse_errorHandling() {
 	// daisy
 	// {Username:admin Password:}
 }
+
+// You can avoid setting defaults for non zero values
+// This could be useful for loading data from config file first
+// and then filling the rest from env
+func Example_setDefaultsForZeroValuesOnly() {
+	type Config struct {
+		Username string `env:"USERNAME" envDefault:"admin"`
+		Password string `env:"PASSWORD" envDefault:"qwerty"`
+	}
+
+	cfg := Config{
+		Username: "root",
+	}
+
+	if err := ParseWithOptions(&cfg, Options{
+		Environment:                  map[string]string{},
+		SetDefaultsForZeroValuesOnly: true,
+	}); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Printf("%+v", cfg)
+	// Output: {Username:root Password:qwerty}
+}
