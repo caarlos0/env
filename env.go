@@ -537,17 +537,18 @@ func toEnvName(input string) string {
 
 // FieldParams contains information about parsed field tags.
 type FieldParams struct {
-	OwnKey          string
-	Key             string
-	DefaultValue    string
-	HasDefaultValue bool
-	Required        bool
-	LoadFile        bool
-	Unset           bool
-	NotEmpty        bool
-	Expand          bool
-	Init            bool
-	Ignored         bool
+	OwnKey                string
+	Key                   string
+	DefaultValue          string
+	HasDefaultValue       bool
+	Required              bool
+	LoadFile              bool
+	Unset                 bool
+	NotEmpty              bool
+	Expand                bool
+	Init                  bool
+	Ignored               bool
+	EmptyOverridesDefault bool
 }
 
 func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, error) {
@@ -583,6 +584,8 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 			result.Expand = true
 		case "init":
 			result.Init = true
+		case "emptyOverridesDefault":
+			result.EmptyOverridesDefault = true
 		case "-":
 			result.Ignored = true
 		default:
@@ -600,6 +603,7 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 		fieldParams.Key,
 		fieldParams.DefaultValue,
 		fieldParams.HasDefaultValue,
+		fieldParams.EmptyOverridesDefault,
 		opts.Environment,
 	)
 
@@ -648,12 +652,12 @@ func getFromFile(filename string) (value string, err error) {
 	return string(b), err
 }
 
-func getOr(key, defaultValue string, defExists bool, envs map[string]string) (val string, exists, isDefault bool) {
+func getOr(key, defaultValue string, defExists bool, emptyOverridesDefault bool, envs map[string]string) (val string, exists, isDefault bool) {
 	value, exists := envs[key]
 	switch {
 	case (!exists || key == "") && defExists:
 		return defaultValue, true, true
-	case exists && value == "" && defExists:
+	case exists && value == "" && !emptyOverridesDefault && defExists:
 		return defaultValue, true, true
 	case !exists:
 		return "", false, false
