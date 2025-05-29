@@ -415,6 +415,10 @@ func doParseField(
 		return doParseSlice(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
+	if isMapOfStructs(refTypeField) {
+		return doParseMap(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
+	}
+
 	return nil
 }
 
@@ -431,6 +435,20 @@ func isSliceOfStructs(refTypeField reflect.StructField) bool {
 
 	// []struct{}
 	if field.Kind() == reflect.Slice && field.Elem().Kind() == reflect.Struct {
+		return true
+	}
+
+	return false
+}
+
+func isMapOfStructs(refTypeField reflect.StructField) bool {
+	field := refTypeField.Type
+
+	if field.Kind() == reflect.Ptr {
+		field = field.Elem()
+	}
+
+	if field.Kind() == reflect.Map && field.Elem().Kind() == reflect.Struct {
 		return true
 	}
 
@@ -495,6 +513,82 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 				result = resultPtr
 			}
 			ref.Set(result)
+		}
+	}
+
+	return nil
+}
+
+func doParseMap(ref reflect.Value, processField processFieldFn, opts Options) error {
+	// Ensure prefix ends with underscore
+	if opts.Prefix != "" && !strings.HasSuffix(opts.Prefix, string(underscore)) {
+		opts.Prefix += string(underscore)
+	}
+
+	// Collect all environment variables with the prefix
+	var environments []string
+	for environment := range opts.Environment {
+		if strings.HasPrefix(environment, opts.Prefix) {
+			environments = append(environments, environment)
+		}
+	}
+
+	if len(environments) > 0 {
+		// Create a new map if it's nil
+		if ref.IsNil() {
+			ref.Set(reflect.MakeMap(ref.Type()))
+		}
+
+		// Get the key and value types
+		keyType := ref.Type().Key()
+		valueType := ref.Type().Elem()
+
+		// Group environment variables by key
+		keyGroups := make(map[string][]string)
+		for _, env := range environments {
+			// Remove prefix and split by first underscore
+			key := strings.TrimPrefix(env, opts.Prefix)
+			parts := strings.SplitN(key, string(underscore), 2)
+			if len(parts) >= 2 {
+				mapKey := parts[0]
+				keyGroups[mapKey] = append(keyGroups[mapKey], env)
+			}
+		}
+
+		// Process each key group
+		for mapKey := range keyGroups {
+			// Create a new value for this key
+			value := reflect.New(valueType).Elem()
+
+			// Create options with the key prefix
+			keyOpts := Options{
+				Environment:                  opts.Environment,
+				TagName:                      opts.TagName,
+				PrefixTagName:                opts.PrefixTagName,
+				DefaultValueTagName:          opts.DefaultValueTagName,
+				RequiredIfNoDef:              opts.RequiredIfNoDef,
+				OnSet:                        opts.OnSet,
+				Prefix:                       fmt.Sprintf("%s%s_", opts.Prefix, mapKey),
+				UseFieldNameByDefault:        opts.UseFieldNameByDefault,
+				SetDefaultsForZeroValuesOnly: opts.SetDefaultsForZeroValuesOnly,
+				FuncMap:                      opts.FuncMap,
+				rawEnvVars:                   opts.rawEnvVars,
+			}
+
+			// Parse the value
+			if err := doParse(value, processField, keyOpts); err != nil {
+				return err
+			}
+
+			// Convert the map key to the correct type
+			keyValue := reflect.ValueOf(mapKey)
+			if keyType.Kind() != reflect.String {
+				// Try to convert the key to the required type
+				keyValue = keyValue.Convert(keyType)
+			}
+
+			// Set the value in the map
+			ref.SetMapIndex(keyValue, value)
 		}
 	}
 
