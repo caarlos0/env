@@ -240,7 +240,7 @@ func customOptions(opts Options) Options {
 	return defOpts
 }
 
-func optionsWithSliceEnvPrefix(opts Options, index int) Options {
+func optionsWithPrefix(opts Options, prefix string) Options {
 	return Options{
 		Environment:                  opts.Environment,
 		TagName:                      opts.TagName,
@@ -248,7 +248,7 @@ func optionsWithSliceEnvPrefix(opts Options, index int) Options {
 		DefaultValueTagName:          opts.DefaultValueTagName,
 		RequiredIfNoDef:              opts.RequiredIfNoDef,
 		OnSet:                        opts.OnSet,
-		Prefix:                       fmt.Sprintf("%s%d_", opts.Prefix, index),
+		Prefix:                       prefix,
 		UseFieldNameByDefault:        opts.UseFieldNameByDefault,
 		SetDefaultsForZeroValuesOnly: opts.SetDefaultsForZeroValuesOnly,
 		FuncMap:                      opts.FuncMap,
@@ -256,20 +256,16 @@ func optionsWithSliceEnvPrefix(opts Options, index int) Options {
 	}
 }
 
+func optionsWithSliceEnvPrefix(opts Options, index int) Options {
+	return optionsWithPrefix(opts, fmt.Sprintf("%s%d_", opts.Prefix, index))
+}
+
+func optionsWithMapEnvPrefix(opts Options, mapKey string) Options {
+	return optionsWithPrefix(opts, fmt.Sprintf("%s%s_", opts.Prefix, mapKey))
+}
+
 func optionsWithEnvPrefix(field reflect.StructField, opts Options) Options {
-	return Options{
-		Environment:                  opts.Environment,
-		TagName:                      opts.TagName,
-		PrefixTagName:                opts.PrefixTagName,
-		DefaultValueTagName:          opts.DefaultValueTagName,
-		RequiredIfNoDef:              opts.RequiredIfNoDef,
-		OnSet:                        opts.OnSet,
-		Prefix:                       opts.Prefix + field.Tag.Get(opts.PrefixTagName),
-		UseFieldNameByDefault:        opts.UseFieldNameByDefault,
-		SetDefaultsForZeroValuesOnly: opts.SetDefaultsForZeroValuesOnly,
-		FuncMap:                      opts.FuncMap,
-		rawEnvVars:                   opts.rawEnvVars,
-	}
+	return optionsWithPrefix(opts, opts.Prefix+field.Tag.Get(opts.PrefixTagName))
 }
 
 // Parse parses a struct containing `env` tags and loads its values from
@@ -415,6 +411,10 @@ func doParseField(
 		return doParseSlice(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
+	if isMapOfStructs(refTypeField) {
+		return doParseMap(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
+	}
+
 	return nil
 }
 
@@ -431,6 +431,20 @@ func isSliceOfStructs(refTypeField reflect.StructField) bool {
 
 	// []struct{}
 	if field.Kind() == reflect.Slice && field.Elem().Kind() == reflect.Struct {
+		return true
+	}
+
+	return false
+}
+
+func isMapOfStructs(refTypeField reflect.StructField) bool {
+	field := refTypeField.Type
+
+	if field.Kind() == reflect.Ptr {
+		field = field.Elem()
+	}
+
+	if field.Kind() == reflect.Map && field.Elem().Kind() == reflect.Struct {
 		return true
 	}
 
@@ -496,6 +510,72 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 			}
 			ref.Set(result)
 		}
+	}
+
+	return nil
+}
+
+func doParseMap(ref reflect.Value, processField processFieldFn, opts Options) error {
+	if opts.Prefix != "" && !strings.HasSuffix(opts.Prefix, string(underscore)) {
+		opts.Prefix += string(underscore)
+	}
+
+	var environments []string
+	for environment := range opts.Environment {
+		if strings.HasPrefix(environment, opts.Prefix) {
+			environments = append(environments, environment)
+		}
+	}
+
+	// There are no map keys that match
+	if len(environments) == 0 {
+		return nil
+	}
+
+	// Create a new map if it's nil
+	if ref.IsNil() {
+		ref.Set(reflect.MakeMap(ref.Type()))
+	}
+
+	// Get the key and value types
+	keyType := ref.Type().Key()
+	valueType := ref.Type().Elem()
+
+	keyGroups := make(map[string]bool)
+	for _, env := range environments {
+		key := strings.TrimPrefix(env, opts.Prefix)
+		parts := strings.SplitN(key, string(underscore), 2)
+		if len(parts) == 2 {
+			keyGroups[parts[0]] = true
+		}
+	}
+
+	// Process each key group
+	for mapKey := range keyGroups {
+		value := reflect.New(valueType).Elem()
+		keyOpts := optionsWithMapEnvPrefix(opts, mapKey)
+
+		err := doParse(value, processField, keyOpts)
+		if err != nil {
+			return err
+		}
+
+		keyValue := reflect.ValueOf(mapKey)
+		parserFunc, ok := opts.FuncMap[keyType]
+		if !ok {
+			kind := keyType.Kind()
+			if parserFunc, ok = defaultBuiltInParsers[kind]; !ok {
+				return fmt.Errorf("unsupported map key type: %s", kind.String())
+			}
+		}
+
+		parsedKey, err := parserFunc(mapKey)
+		if err != nil {
+			return fmt.Errorf("failed to parse map key %q: %w", mapKey, err)
+		}
+		keyValue = reflect.ValueOf(parsedKey).Convert(keyType)
+
+		ref.SetMapIndex(keyValue, value)
 	}
 
 	return nil

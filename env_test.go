@@ -2411,3 +2411,44 @@ func TestEnvBleed(t *testing.T) {
 		isEqual(t, "", cfg.Foo)
 	})
 }
+
+func TestComplexConfigWithMap(t *testing.T) {
+	t.Run("Default with string key", func(t *testing.T) {
+
+		type Test struct {
+			Str string `env:"DAT_STR"`
+			Num int    `env:"DAT_NUM"`
+		}
+		type ComplexConfig struct {
+			Bar map[string]Test `envPrefix:"BAR_"`
+		}
+
+		t.Setenv("BAR_KEY1_T_DAT_STR", "b1t")
+		t.Setenv("BAR_KEY1_T_DAT_NUM", "201")
+
+		cfg := ComplexConfig{}
+
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, "b1t", cfg.Bar["KEY1_T"].Str)
+	})
+
+	t.Run("Default with float key", func(t *testing.T) {
+		type Test struct {
+			Str string `env:"STR"`
+			Num int    `env:"NUM"`
+		}
+		type ComplexConfig struct {
+			Bar map[float64]Test `envPrefix:"BAR_"`
+		}
+
+		t.Setenv("BAR_10.17_STR", "b1t")
+		t.Setenv("BAR_7.9_NUM", "201")
+
+		cfg := ComplexConfig{}
+
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, "b1t", cfg.Bar[10.17].Str)
+	})
+}
