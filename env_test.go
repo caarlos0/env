@@ -2413,25 +2413,42 @@ func TestEnvBleed(t *testing.T) {
 }
 
 func TestComplexConfigWithMap(t *testing.T) {
-	type Test struct {
-		Str string `env:"STR"`
-		Num int    `env:"NUM"`
-	}
-	type ComplexConfig struct {
-		Bar map[string]Test `envPrefix:"BAR_"`
-	}
+	t.Run("Default with string key", func(t *testing.T) {
 
-	t.Setenv("BAR_KEY1_STR", "b1t")
-	t.Setenv("BAR_KEY1_NUM", "201")
-	t.Setenv("BAR_KEY2_STR", "b2t")
-	t.Setenv("BAR_KEY2_NUM", "202")
+		type Test struct {
+			Str string `env:"DAT_STR"`
+			Num int    `env:"DAT_NUM"`
+		}
+		type ComplexConfig struct {
+			Bar map[string]Test `envPrefix:"BAR_"`
+		}
 
-	cfg := ComplexConfig{Bar: make(map[string]Test)}
+		t.Setenv("BAR_KEY1_T_DAT_STR", "b1t")
+		t.Setenv("BAR_KEY1_T_DAT_NUM", "201")
 
-	isNoErr(t, Parse(&cfg))
+		cfg := ComplexConfig{}
 
-	isEqual(t, "b1t", cfg.Bar["KEY1"].Str)
-	isEqual(t, 201, cfg.Bar["KEY1"].Num)
-	isEqual(t, "b2t", cfg.Bar["KEY2"].Str)
-	isEqual(t, 202, cfg.Bar["KEY2"].Num)
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, "b1t", cfg.Bar["KEY1_T"].Str)
+	})
+
+	t.Run("Default with float key", func(t *testing.T) {
+		type Test struct {
+			Str string `env:"STR"`
+			Num int    `env:"NUM"`
+		}
+		type ComplexConfig struct {
+			Bar map[float64]Test `envPrefix:"BAR_"`
+		}
+
+		t.Setenv("BAR_10.17_STR", "b1t")
+		t.Setenv("BAR_7.9_NUM", "201")
+
+		cfg := ComplexConfig{}
+
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, "b1t", cfg.Bar[10.17].Str)
+	})
 }
