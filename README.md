@@ -88,6 +88,71 @@ Pointers, slices and slices of pointers, and maps of those types are also suppor
 
 You may also add custom parsers for your types.
 
+### Supported Complex Types
+
+#### Slices of structs
+Use the `envPrefix` tag to define slices of structs. For example:
+```go
+type Server struct {
+    Host string `env:"HOST"`
+    Port int    `env:"PORT"`
+}
+type Config struct {
+    Servers []Server `envPrefix:"SERVER_"`
+}
+```
+
+Set environment variables with zero-based indices:
+```
+SERVER_0_HOST=localhost
+SERVER_0_PORT=8080
+SERVER_1_HOST=example.com
+SERVER_1_PORT=80
+```
+
+#### Maps of structs
+Use the `envPrefix` tag to define maps of structs. The library automatically handles the mapping:
+```go
+type Server struct {
+    Host string `env:"HOST"`
+    Port int    `env:"PORT"`
+}
+type Config struct {
+    Servers map[string]Server `envPrefix:"SERVER_"`
+}
+```
+
+Set environment variables using your chosen keys:
+```bash
+export SERVER_FOO_HOST=localhost
+export SERVER_FOO_PORT=8080
+```
+
+> [!IMPORTANT]
+> For nested maps, be careful with key naming to avoid conflicts.
+
+Example of nested maps:
+```go
+type Sub struct {
+    Value string `env:"VALUE"`
+}
+type Server struct {
+    Sub map[string]Sub `envPrefix:"SERVER_"`
+}
+type Config struct {
+    Entries map[string]Server `envPrefix:"ENTRIES_"`
+}
+```
+
+The library uses the rightmost `envPrefix` match as the key. For example:
+```bash
+# This won't work - VALUE becomes a key instead of a field
+export ENTRIES_FOO_SERVER_SERVER_SERVER_VALUE=foo
+
+# This works - KEY1 is the map key
+export ENTRIES_FOO_SERVER_SERVER_SERVER_KEY1_VALUE=foo
+```
+
 ### Tags
 
 The following tags are provided:
