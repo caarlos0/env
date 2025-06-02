@@ -2413,24 +2413,64 @@ func TestEnvBleed(t *testing.T) {
 }
 
 func TestComplexConfigWithMap(t *testing.T) {
-	t.Run("Default with string key", func(t *testing.T) {
-
+	t.Run("Default with empty key", func(t *testing.T) {
 		type Test struct {
 			Str string `env:"DAT_STR"`
-			Num int    `env:"DAT_NUM"`
 		}
+
 		type ComplexConfig struct {
 			Bar map[string]Test `envPrefix:"BAR_"`
 		}
 
-		t.Setenv("BAR_KEY1_T_DAT_STR", "b1t")
-		t.Setenv("BAR_KEY1_T_DAT_NUM", "201")
+		t.Setenv("BAR_DAT_STR", "b1t")
+
+		cfg := ComplexConfig{}
+
+		err := Parse(&cfg)
+		isErrorWithMessage(t, err, `env: malformed complex map struct for "DAT_STR"`)
+	})
+
+	t.Run("Default with struct without any env", func(t *testing.T) {
+		type Test struct {
+			Str string
+		}
+
+		type ComplexConfig struct {
+			Bar map[string]Test `envPrefix:"BAR_"`
+		}
+
+		t.Setenv("BAR_E_DAT_STR", "b1t")
+
+		cfg := ComplexConfig{}
+
+		err := Parse(&cfg)
+		isNoErr(t, err)
+	})
+
+	t.Run("Default with string key", func(t *testing.T) {
+		type SubTest struct {
+			Str string `env:"NEW_STR"`
+		}
+
+		type Test struct {
+			Str string  `env:"DAT_STR"`
+			Num int     `env:"DAT_NUM"`
+			Sub SubTest `envPrefix:"SUB_"`
+		}
+
+		type ComplexConfig struct {
+			Bar map[string]Test `envPrefix:"BAR_"`
+		}
+
+		t.Setenv("BAR_KEY1_DAT_STR", "b1t")
+		t.Setenv("BAR_KEY1_DAT_NUM", "201")
+		t.Setenv("BAR_KEY1_SUB_NEW_STR", "sub_b1t")
 
 		cfg := ComplexConfig{}
 
 		isNoErr(t, Parse(&cfg))
 
-		isEqual(t, "b1t", cfg.Bar["KEY1_T"].Str)
+		isEqual(t, "b1t", cfg.Bar["KEY1"].Str)
 	})
 
 	t.Run("Default with float key", func(t *testing.T) {
@@ -2450,5 +2490,30 @@ func TestComplexConfigWithMap(t *testing.T) {
 		isNoErr(t, Parse(&cfg))
 
 		isEqual(t, "b1t", cfg.Bar[10.17].Str)
+	})
+
+	t.Run("Default with string key", func(t *testing.T) {
+		type Employee struct {
+			Name string `env:"NAME"`
+		}
+
+		type Sub struct {
+			Name        string   `env:"NAME"`
+			NewEmployee Employee `envPrefix:"EMP_"`
+		}
+
+		type Test struct {
+			Str   Sub `envPrefix:"SUB_"`
+			ReStr Sub `envPrefix:"SUB_"`
+			Num   int `env:"DAT_NUM"`
+		}
+
+		type ComplexConfig struct {
+			Bar map[string]Test `envPrefix:"BAR_"`
+		}
+
+		// 1. The type has to be a struct internally
+		//     there is no way to figure out the type for this map[string]struct{}
+
 	})
 }
