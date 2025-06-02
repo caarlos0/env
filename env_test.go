@@ -2413,7 +2413,6 @@ func TestEnvBleed(t *testing.T) {
 }
 
 func TestComplexConfigWithMap(t *testing.T) {
-
 	t.Run("Should not parse struct map with empty key", func(t *testing.T) {
 		type Test struct {
 			Str string `env:"DAT_STR"`
@@ -2428,7 +2427,7 @@ func TestComplexConfigWithMap(t *testing.T) {
 		cfg := ComplexConfig{}
 
 		err := Parse(&cfg)
-		isErrorWithMessage(t, err, `env: malformed complex map struct for "DAT_STR"`)
+		isErrorWithMessage(t, err, "env: parse error on field \"Bar\" of type \"map[string]env.Test\": malformed complex map struct for \"DAT_STR\"")
 	})
 
 	t.Run("Should parse map with struct without any matching env", func(t *testing.T) {
@@ -2568,23 +2567,10 @@ func TestComplexConfigWithMap(t *testing.T) {
 			cfg := ComplexConfig{}
 
 			err := Parse(&cfg)
-			isErrorWithMessage(t, err, `env: malformed complex map struct for "NEW_STR"`)
+			isErrorWithMessage(t, err, "env: parse error on field \"Foo\" of type \"map[string]env.SubTest\": malformed complex map struct for \"NEW_STR\"")
 		})
 	})
 
-	// We identify the key by the prefix and the suffix
-	// We go through all environments and try to find the best match
-	// For example a struct could look like
-	// type SubStruct struct {
-	//     String string `env:"STR"`
-	//     NewString string `env:"NEW_STR"`
-	// }
-	// Map[string]SubStruct `env:"BAR_"`
-	// which could have the following environment variable keys
-	// BAR_STR and BAR_NEW_STR
-	// we would have the suffixes STR and NEW_STR, thus when we are
-	// processing `BAR_NEW_STR` both suffixes will be a match
-	// thus we need to find the best match
 	t.Run("Verify matching of similar names", func(t *testing.T) {
 		type SubTest struct {
 			Str1 string `env:"STR"`
@@ -2649,29 +2635,6 @@ func TestComplexConfigWithMap(t *testing.T) {
 
 	t.Run("Parse struct map nested in struct maps with duplicate field names", func(t *testing.T) {
 		type SubTest struct {
-			Str1 string `env:"STR"`
-		}
-
-		type Test struct {
-			Str1 string             `env:"NEW_STR"`
-			Foo  map[string]SubTest `envPrefix:"FOO_"`
-		}
-
-		type ComplexConfig struct {
-			Bar map[string]Test `envPrefix:"BAR_"`
-		}
-
-		cfg := ComplexConfig{}
-
-		t.Setenv("BAR_FOO_FOO_THERE_STR", "a1")
-		t.Setenv("BAR_FOO_NEW_STR", "a2")
-
-		isNoErr(t, Parse(&cfg))
-		isEqual(t, "b1t", "ee")
-	})
-
-	t.Run("Parse struct map nested in struct maps with duplicate field names", func(t *testing.T) {
-		type SubTest struct {
 			Str string `env:"FOO_FOO"`
 		}
 
@@ -2690,7 +2653,7 @@ func TestComplexConfigWithMap(t *testing.T) {
 		cfg := ComplexConfig{}
 
 		err := Parse(&cfg)
-		fmt.Println(err)
+		isNoErr(t, err)
 
 		invalidAssumedKey := map1Key + "_FOO_FOO"
 		result, ok := cfg.Bar[invalidAssumedKey]

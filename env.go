@@ -413,7 +413,7 @@ func doParseField(
 	}
 
 	if isMapOfStructs(refTypeField) {
-		return doParseMap(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
+		return doParseMap(refField, processField, optionsWithEnvPrefix(refTypeField, opts), refTypeField)
 	}
 
 	return nil
@@ -880,7 +880,7 @@ func isMapOfStructs(refTypeField reflect.StructField) bool {
 	return false
 }
 
-func doParseMap(ref reflect.Value, processField processFieldFn, opts Options) error {
+func doParseMap(ref reflect.Value, processField processFieldFn, opts Options, sf reflect.StructField) error {
 	if opts.Prefix != "" && !strings.HasSuffix(opts.Prefix, string(underscore)) {
 		opts.Prefix += string(underscore)
 	}
@@ -936,8 +936,7 @@ func doParseMap(ref reflect.Value, processField processFieldFn, opts Options) er
 			} else if strings.HasSuffix(key, innerEnvVar.value) {
 				if key == innerEnvVar.value {
 					// If the key is exactly the innerEnvVar, this means that the env var was malformed
-					// TODO: Look at using the newParseError function
-					return fmt.Errorf(`malformed complex map struct for %q`, key)
+					return newParseError(sf, fmt.Errorf(`malformed complex map struct for %q`, key))
 				}
 				newKey := strings.TrimSuffix(key, suffix)
 				// We had a better match which trimmed the key further
@@ -981,7 +980,7 @@ func doParseMap(ref reflect.Value, processField processFieldFn, opts Options) er
 
 		parsedKey, err := parserFunc(mapKey)
 		if err != nil {
-			return fmt.Errorf("failed to parse map key %q: %w", mapKey, err)
+			return newParseError(sf, fmt.Errorf("failed to parse map key %q: %w", mapKey, err))
 		}
 
 		keyValue := reflect.ValueOf(parsedKey).Convert(keyType)
