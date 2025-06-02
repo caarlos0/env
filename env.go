@@ -438,30 +438,6 @@ func isSliceOfStructs(refTypeField reflect.StructField) bool {
 	return false
 }
 
-func isMapOfStructs(refTypeField reflect.StructField) bool {
-	field := refTypeField.Type
-
-	if field.Kind() == reflect.Ptr {
-		field = field.Elem()
-	}
-
-	if field.Kind() == reflect.Map {
-		kind := field.Elem().Kind()
-		if kind == reflect.Struct {
-			return true
-		}
-
-		if kind == reflect.Ptr {
-			ptrField := field.Elem()
-			if ptrField.Elem().Kind() == reflect.Struct {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
 func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) error {
 	if opts.Prefix != "" && !strings.HasSuffix(opts.Prefix, string(underscore)) {
 		opts.Prefix += string(underscore)
@@ -880,6 +856,30 @@ func isInvalidPtr(v reflect.Value) bool {
 	return reflect.Ptr == v.Kind() && v.Elem().Kind() == reflect.Invalid
 }
 
+func isMapOfStructs(refTypeField reflect.StructField) bool {
+	field := refTypeField.Type
+
+	if field.Kind() == reflect.Ptr {
+		field = field.Elem()
+	}
+
+	if field.Kind() == reflect.Map {
+		kind := field.Elem().Kind()
+		if kind == reflect.Struct {
+			return true
+		}
+
+		if kind == reflect.Ptr {
+			ptrField := field.Elem()
+			if ptrField.Elem().Kind() == reflect.Struct {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 func doParseMap(ref reflect.Value, processField processFieldFn, opts Options) error {
 	if opts.Prefix != "" && !strings.HasSuffix(opts.Prefix, string(underscore)) {
 		opts.Prefix += string(underscore)
@@ -908,24 +908,48 @@ func doParseMap(ref reflect.Value, processField processFieldFn, opts Options) er
 
 	keyGroups := make(map[string]bool)
 
-	environmentVars := getPossibleEnvVars(valueType, opts)
+	structInnerSubEnvVars := getPossibleEnvVars(valueType, opts)
 
-	// We identify the key by the prefix and the suffix
-	// If there are multiple matches the first match in alphabetical order
-	// will be chosen
 	for _, env := range environments {
+		currKey := ""
 		key := strings.TrimPrefix(env, opts.Prefix)
 
-		for _, envVar := range environmentVars {
-			if strings.HasSuffix(key, envVar) {
-				if key == envVar {
-					// If the key is exactly the envVar, this means that the env var was malformed
+		// A user can have multiple environment variables which match to multiple keys
+		// for example BAR_KEY_STR and BAR_KEY_NEW_STR are valid envars
+		// If the struct has both "STR" and "NEW_STR" this would mean that
+		// "STR" matches to both as a suffix and would result in two map keys
+		// KEY_NEW and KEY, thus we match the suffix that would give the smallest key
+		// since the smallest suffix that gives the largest key may have its own
+		// different environment variable
+		for _, innerEnvVar := range structInnerSubEnvVars {
+			// If we are using a map of a map (we don't use the absolute path value, instead we use the prefix value)
+			suffix := string(underscore) + innerEnvVar.value
+			if innerEnvVar.useContains {
+				idx := strings.LastIndex(key, suffix)
+				if idx != -1 {
+					newKey := key[:idx]
+					// We had a better match which trimmed the key further
+					if newKey != "" && (currKey == "" || len(currKey) > len(newKey)) {
+						currKey = newKey
+					}
+				}
+			} else if strings.HasSuffix(key, innerEnvVar.value) {
+				if key == innerEnvVar.value {
+					// If the key is exactly the innerEnvVar, this means that the env var was malformed
 					// TODO: Look at using the newParseError function
 					return fmt.Errorf(`malformed complex map struct for %q`, key)
 				}
-				newKey := strings.TrimSuffix(key, "_"+envVar)
-				keyGroups[newKey] = true
+				newKey := strings.TrimSuffix(key, suffix)
+				// We had a better match which trimmed the key further
+				if newKey != "" && (currKey == "" || len(currKey) > len(newKey)) {
+					currKey = newKey
+				}
 			}
+		}
+
+		// If a key match has been found
+		if currKey != "" {
+			keyGroups[currKey] = true
 		}
 	}
 
@@ -947,12 +971,11 @@ func doParseMap(ref reflect.Value, processField processFieldFn, opts Options) er
 			return err
 		}
 
-		keyValue := reflect.ValueOf(mapKey)
 		parserFunc, ok := opts.FuncMap[keyType]
 		if !ok {
 			kind := keyType.Kind()
 			if parserFunc, ok = defaultBuiltInParsers[kind]; !ok {
-				return fmt.Errorf("unsupported map key type: %s", kind.String())
+				return newNoParserError(sf)
 			}
 		}
 
@@ -960,7 +983,8 @@ func doParseMap(ref reflect.Value, processField processFieldFn, opts Options) er
 		if err != nil {
 			return fmt.Errorf("failed to parse map key %q: %w", mapKey, err)
 		}
-		keyValue = reflect.ValueOf(parsedKey).Convert(keyType)
+
+		keyValue := reflect.ValueOf(parsedKey).Convert(keyType)
 
 		if initialKind == reflect.Ptr {
 			valuePtr := reflect.New(valueType.Elem())
@@ -974,33 +998,52 @@ func doParseMap(ref reflect.Value, processField processFieldFn, opts Options) er
 	return nil
 }
 
+type SuffixType struct {
+	useContains bool
+	value       string
+}
+
 // getPossibleEnvVars returns all possible environment variables that could be set for a given struct type.
-func getPossibleEnvVars(v reflect.Type, opts Options) []string {
-	envVars := make(map[string]struct{})
+func getPossibleEnvVars(v reflect.Type, opts Options) []SuffixType {
+	envVars := make(map[string]bool)
 
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
 
+	// The lib does not allow recursive structs technically
+	// Recursive structs need to have the parent reference type as Pointer,
+	// which means since pointer struct types do not get initialized by the parser by default,
+	// and only with the `env:,init` tag. However, when the `init` attribute is set
+	// the lib goes into an infinite loop because it does not support recursive structs
+	// Thus we do not handle recursive structs here
 	traverseStruct(v, "", opts, envVars)
 
 	// Convert map keys to slice and sort for deterministic order
-	result := make([]string, 0, len(envVars))
-	for k := range envVars {
-		result = append(result, k)
+	result := make([]SuffixType, 0, len(envVars))
+	for k, val := range envVars {
+		entry := SuffixType{
+			value:       k,
+			useContains: val,
+		}
+		result = append(result, entry)
 	}
-	slices.Sort(result)
+
+	slices.SortFunc(result, func(i, j SuffixType) int {
+		if i.useContains != j.useContains {
+			if i.useContains {
+				return 1
+			}
+			return -1
+		}
+		return strings.Compare(i.value, j.value)
+	})
 
 	return result
 }
 
-type EnvSuffixType struct {
-	useContains bool
-	value       string
-}
-
 // traverseStruct recursively traverses a struct type and collects all possible environment variables.
-func traverseStruct(t reflect.Type, prefix string, opts Options, envVars map[string]struct{}) {
+func traverseStruct(t reflect.Type, prefix string, opts Options, envVars map[string]bool) {
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 
@@ -1012,8 +1055,9 @@ func traverseStruct(t reflect.Type, prefix string, opts Options, envVars map[str
 
 		// Get env tag if exists
 		envTag := field.Tag.Get(opts.TagName)
+		key := prefix + envTag
 		if envTag != "" {
-			envVars[prefix+envTag] = struct{}{}
+			envVars[key] = false
 		}
 
 		// Handle nested structs and maps of structs
@@ -1032,16 +1076,7 @@ func traverseStruct(t reflect.Type, prefix string, opts Options, envVars map[str
 				elemType = elemType.Elem()
 			}
 			if elemType.Kind() == reflect.Struct {
-				// If the type is a map of structs, we don't know what are the possible keys
-				// When we don't have nested map.Struct types we can easily determine the key
-				// But this mean that we can have two dynamic keys instead of one
-				// Let's say that the parent map key is MAP and the envPrefix for the inner map is
-				// also MAP, and user enters MAP for both keys
-				// BAR_ "MAP_MAP" _MAP_"STRING"_SUBGRAPHS : Map_Map is Key one and "String" is key 2
-				// BAR_ "MAP" _MAP_"MAP"_FIELD : Map is the Key 1 and Map is the Key 2
-				// BAR_ "MAP_MAP" _MAP_"MAP"_FIELD : Map_Map is the Key 1 and Map is the Key 2
-				// If we look at the above example, we don't know how to dermine which is the prefix or which is the key then
-
+				envVars[key] = true
 			}
 		}
 	}
