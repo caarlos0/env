@@ -2553,13 +2553,11 @@ func TestComplexConfigWithMap(t *testing.T) {
 			Bar map[string]Test `env:"VALUE,init"`
 		}
 
-		t.Setenv("KEY1_DAT_STR", "b1t")
-
 		cfg := ComplexConfig{}
 
 		err := Parse(&cfg)
 		isEqual(t, nil, cfg.Bar)
-		isErrorWithMessage(t, err, "env: parse error on field \"Bar\" of type \"map[string]env.Test\": malformed complex map struct for \"DAT_STR\"")
+		isErrorWithMessage(t, err, "env: parse error on field \"Bar\" of type \"map[string]env.Test\": env key unsupported for struct map \"Bar\"")
 	})
 
 	t.Run("Should allow an env tag without a value to be set on the map", func(t *testing.T) {
