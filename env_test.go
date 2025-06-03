@@ -2457,7 +2457,7 @@ func TestComplexConfigWithMap(t *testing.T) {
 		cfg := ComplexConfig{}
 
 		err := Parse(&cfg)
-		isErrorWithMessage(t, err, "env: parse error on field \"Bar\" of type \"map[string]env.Host\": malformed complex map struct for \"DAT_STR\"")
+		isErrorWithMessage(t, err, "env: parse error on field \"Bar\" of type \"map[string]env.Test\": malformed complex map struct for \"DAT_STR\"")
 	})
 
 	t.Run("Should parse map with struct without any matching env", func(t *testing.T) {
