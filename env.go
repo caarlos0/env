@@ -412,7 +412,10 @@ func doParseField(
 		return doParseSlice(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
-	if isMapOfStructs(refTypeField) {
+	isValidMapOfStructs, err := isMapOfStructs(refTypeField, opts)
+	if err != nil {
+		return err
+	} else if isValidMapOfStructs {
 		return doParseMap(refField, processField, optionsWithEnvPrefix(refTypeField, opts), refTypeField)
 	}
 
@@ -856,7 +859,7 @@ func isInvalidPtr(v reflect.Value) bool {
 	return reflect.Ptr == v.Kind() && v.Elem().Kind() == reflect.Invalid
 }
 
-func isMapOfStructs(refTypeField reflect.StructField) bool {
+func isMapOfStructs(refTypeField reflect.StructField, opts Options) (bool, error) {
 	field := refTypeField.Type
 
 	if field.Kind() == reflect.Ptr {
@@ -865,19 +868,25 @@ func isMapOfStructs(refTypeField reflect.StructField) bool {
 
 	if field.Kind() == reflect.Map {
 		kind := field.Elem().Kind()
-		if kind == reflect.Struct {
-			return true
-		}
-
 		if kind == reflect.Ptr {
 			ptrField := field.Elem()
-			if ptrField.Elem().Kind() == reflect.Struct {
-				return true
+			kind = ptrField.Elem().Kind()
+		}
+
+		if kind == reflect.Struct {
+			val, _ := parseKeyForOption(refTypeField.Tag.Get(opts.TagName))
+			if val != "" {
+				return false, newParseError(refTypeField, fmt.Errorf(`env key unsupported for struct map %q`, refTypeField.Name))
+			}
+			// Only process if the env prefix tag is present
+			// This avoids the lib trying to set keys for a map without any prefix given
+			if refTypeField.Tag.Get(opts.PrefixTagName) != "" {
+				return true, nil
 			}
 		}
 	}
 
-	return false
+	return false, nil
 }
 
 func doParseMap(ref reflect.Value, processField processFieldFn, opts Options, sf reflect.StructField) error {

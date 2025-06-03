@@ -2163,6 +2163,36 @@ func TestIssue298ErrorNestedFieldRequiredNotSet(t *testing.T) {
 	isTrue(t, errors.Is(err, VarIsNotSetError{}))
 }
 
+func TestIssue298VerifyPrefixUsingEnvTagIsNotSupported(t *testing.T) {
+	type Test struct {
+		Str string `env:"STR"`
+		Num int    `env:"NUM"`
+	}
+	type ComplexConfig struct {
+		Foo *[]Test `env:"FOO_"`
+		Bar []Test  `env:"BAR"`
+		Baz []Test  `env:",init"`
+	}
+
+	t.Setenv("FOO_0_STR", "f0t")
+	t.Setenv("FOO_0_NUM", "101")
+	t.Setenv("FOO_1_STR", "f1t")
+	t.Setenv("FOO_1_NUM", "111")
+
+	t.Setenv("BAR_0_STR", "b0t")
+	t.Setenv("BAR_0_NUM", "127")
+	t.Setenv("BAR_1_STR", "b1t")
+	t.Setenv("BAR_1_NUM", "212")
+
+	cfg := ComplexConfig{}
+
+	isNoErr(t, Parse(&cfg))
+
+	isEqual(t, nil, cfg.Foo)
+	isEqual(t, nil, cfg.Baz)
+	isEqual(t, nil, cfg.Bar)
+}
+
 func TestIssue320(t *testing.T) {
 	type Test struct {
 		Str string `env:"STR"`
@@ -2427,7 +2457,7 @@ func TestComplexConfigWithMap(t *testing.T) {
 		cfg := ComplexConfig{}
 
 		err := Parse(&cfg)
-		isErrorWithMessage(t, err, "env: parse error on field \"Bar\" of type \"map[string]env.Test\": malformed complex map struct for \"DAT_STR\"")
+		isErrorWithMessage(t, err, "env: parse error on field \"Bar\" of type \"map[string]env.Host\": malformed complex map struct for \"DAT_STR\"")
 	})
 
 	t.Run("Should parse map with struct without any matching env", func(t *testing.T) {
@@ -2486,6 +2516,68 @@ func TestComplexConfigWithMap(t *testing.T) {
 			isEqual(t, 0, cfg.Bar["KEY1"].Num)
 			isEqual(t, "", cfg.Bar["KEY1"].Sub.Str)
 		})
+	})
+
+	t.Run("Should skip processing map when no tags are present on the map", func(t *testing.T) {
+		type SubTest struct {
+			Str string `env:"NEW_STR"`
+		}
+
+		type Test struct {
+			Str string  `env:"DAT_STR"`
+			Num int     `env:"DAT_NUM"`
+			Sub SubTest `envPrefix:"SUB_"`
+		}
+
+		type ComplexConfig struct {
+			Bar map[string]Test
+		}
+
+		t.Setenv("KEY1_TEST_DAT_STR", "b1t")
+		t.Setenv("KEY1_DAT_NUM", "201")
+		t.Setenv("KEY1_SUB_NEW_STR", "sub_b1t")
+
+		cfg := ComplexConfig{}
+
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, nil, cfg.Bar)
+	})
+
+	t.Run("Should not allow an env tag with a value to be set on the map", func(t *testing.T) {
+		type Test struct {
+			Str string `env:"DAT_STR"`
+		}
+
+		type ComplexConfig struct {
+			Bar map[string]Test `env:"VALUE,init"`
+		}
+
+		t.Setenv("KEY1_DAT_STR", "b1t")
+
+		cfg := ComplexConfig{}
+
+		err := Parse(&cfg)
+		isEqual(t, nil, cfg.Bar)
+		isErrorWithMessage(t, err, "env: parse error on field \"Bar\" of type \"map[string]env.Host\": env key unsupported for struct map \"Bar\"")
+	})
+
+	t.Run("Should allow an env tag without a value to be set on the map", func(t *testing.T) {
+		type Test struct {
+			Str string `env:"DAT_STR"`
+		}
+
+		type ComplexConfig struct {
+			Bar map[string]Test `env:",init"`
+		}
+
+		t.Setenv("KEY1_DAT_STR", "b1t")
+
+		cfg := ComplexConfig{}
+
+		err := Parse(&cfg)
+		isNoErr(t, err)
+		isEqual(t, nil, cfg.Bar)
 	})
 
 	t.Run("Should parse pointer struct map with", func(t *testing.T) {
@@ -2715,7 +2807,7 @@ func TestComplexConfigWithMap(t *testing.T) {
 		})
 	})
 
-	t.Run("Should parse we map with init and envDefault", func(t *testing.T) {
+	t.Run("Should parse struct map which contains fields with init and envDefault", func(t *testing.T) {
 		type SubStruct struct {
 			Str string `env:"STR"`
 		}
