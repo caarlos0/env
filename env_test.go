@@ -2681,4 +2681,64 @@ func TestComplexConfigWithMap(t *testing.T) {
 		isEqual(t, "b1t", cfg.Bar[10.17].Str)
 	})
 
+	t.Run("Should parse struct map with required key", func(t *testing.T) {
+		type Test struct {
+			Str string `env:"STR,required"`
+			Num int    `env:"NUM"`
+		}
+		type ComplexConfig struct {
+			Bar map[int64]Test `envPrefix:"BAR_"`
+		}
+
+		t.Run("Where required is present", func(t *testing.T) {
+			t.Setenv("BAR_7_STR", "b1t")
+			t.Setenv("BAR_7_NUM", "201")
+			t.Setenv("BAR_9_STR", "b1t")
+
+			cfg := ComplexConfig{}
+
+			isNoErr(t, Parse(&cfg))
+			isEqual(t, "b1t", cfg.Bar[7].Str)
+			isEqual(t, 201, cfg.Bar[7].Num)
+			isEqual(t, "b1t", cfg.Bar[9].Str)
+		})
+
+		t.Run("Where required is missing", func(t *testing.T) {
+			t.Setenv("BAR_7_STR", "b1t")
+			t.Setenv("BAR_7_NUM", "201")
+			t.Setenv("BAR_9_NUM", "7")
+
+			cfg := ComplexConfig{}
+
+			err := Parse(&cfg)
+			isErrorWithMessage(t, err, "env: required environment variable \"BAR_9_STR\" is not set")
+		})
+	})
+
+	t.Run("Should parse we map with init and envDefault", func(t *testing.T) {
+		type SubStruct struct {
+			Str string `env:"STR"`
+		}
+
+		type Test struct {
+			Str string     `env:"STR,required"`
+			Num int        `envDefault:"17" env:"NUM"`
+			Sub *SubStruct `env:",init" envPrefix:"SUB_"`
+		}
+
+		type ComplexConfig struct {
+			Bar map[int64]Test `envPrefix:"BAR_"`
+		}
+
+		t.Setenv("BAR_7_STR", "b1t")
+
+		cfg := ComplexConfig{}
+
+		err := Parse(&cfg)
+		isNoErr(t, err)
+
+		isFalse(t, cfg.Bar[7].Sub == nil)
+		isEqual(t, 17, cfg.Bar[7].Num)
+	})
+
 }

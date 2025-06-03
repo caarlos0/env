@@ -1052,10 +1052,11 @@ func traverseStruct(t reflect.Type, prefix string, opts Options, envVars map[str
 			prefix = prefix + fieldPrefix
 		}
 
+		ownKey, _ := parseKeyForOption(field.Tag.Get(opts.TagName))
+
 		// Get env tag if exists
-		envTag := field.Tag.Get(opts.TagName)
-		key := prefix + envTag
-		if envTag != "" {
+		key := prefix + ownKey
+		if ownKey != "" {
 			envVars[key] = false
 		}
 
