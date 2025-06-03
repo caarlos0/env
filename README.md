@@ -88,70 +88,12 @@ Pointers, slices and slices of pointers, and maps of those types are also suppor
 
 You may also add custom parsers for your types.
 
-### Supported Complex Types
-
-#### Slices of structs
-Use the `envPrefix` tag to define slices of structs. For example:
-```go
-type Server struct {
-    Host string `env:"HOST"`
-    Port int    `env:"PORT"`
-}
-type Config struct {
-    Servers []Server `envPrefix:"SERVER_"`
-}
-```
-
-Set environment variables with zero-based indices:
-```
-SERVER_0_HOST=localhost
-SERVER_0_PORT=8080
-SERVER_1_HOST=example.com
-SERVER_1_PORT=80
-```
-
-#### Maps of structs
-Use the `envPrefix` tag to define maps of structs. The library automatically handles the mapping:
-```go
-type Server struct {
-    Host string `env:"HOST"`
-    Port int    `env:"PORT"`
-}
-type Config struct {
-    Servers map[string]Server `envPrefix:"SERVER_"`
-}
-```
-
-Set environment variables using your chosen keys:
-```bash
-export SERVER_FOO_HOST=localhost
-export SERVER_FOO_PORT=8080
-```
+Additionally, the following are also supported
+- Slices of Structs
+- Map of Structs
 
 > [!IMPORTANT]
-> For nested maps, be careful with key naming to avoid conflicts.
-
-Example of nested maps:
-```go
-type Sub struct {
-    Value string `env:"VALUE"`
-}
-type Server struct {
-    Sub map[string]Sub `envPrefix:"SERVER_"`
-}
-type Config struct {
-    Entries map[string]Server `envPrefix:"ENTRIES_"`
-}
-```
-
-The library uses the rightmost `envPrefix` match as the key. For example:
-```bash
-# This won't work - VALUE becomes a key instead of a field
-export ENTRIES_FOO_SERVER_SERVER_SERVER_VALUE=foo
-
-# This works - KEY1 is the map key
-export ENTRIES_FOO_SERVER_SERVER_SERVER_KEY1_VALUE=foo
-```
+> For nested maps (i.e. map of structs inside map of structs), be careful with key naming to avoid conflicts.
 
 ### Tags
 
@@ -160,8 +102,8 @@ The following tags are provided:
 - `env`: sets the environment variable name and optionally takes the tag options described below
 - `envDefault`: sets the default value for the field
 - `envPrefix`: can be used in a field that is a complex type to set a prefix to all environment variables used in it
-- `envSeparator`: sets the character to be used to separate items in slices and maps (default: `,`)
-- `envKeyValSeparator`: sets the character to be used to separate keys and their values in maps (default: `:`)
+- `envSeparator`: sets the character to be used to separate items in slices and maps (which do not have structs as the value type) (default: `,`)
+- `envKeyValSeparator`: sets the character to be used to separate keys and their values in maps (which do not have structs as the value type) (default: `:`)
 
 ### `env` tag options
 
