@@ -156,6 +156,12 @@ type Options struct {
 	// Prefix define a prefix for every key.
 	Prefix string
 
+	// AutoPrefix automatically uses the parsed field key for prefix only when no prefix defined
+	AutoPrefix bool
+
+	// PrefixSeparator automatically uses provided prefix for nested key lookups
+	PrefixSeparator string
+
 	// UseFieldNameByDefault defines whether or not `env` should use the field
 	// name by default if the `env` key is missing.
 	// Note that the field name will be "converted" to conform with environment
@@ -249,6 +255,8 @@ func optionsWithSliceEnvPrefix(opts Options, index int) Options {
 		RequiredIfNoDef:              opts.RequiredIfNoDef,
 		OnSet:                        opts.OnSet,
 		Prefix:                       fmt.Sprintf("%s%d_", opts.Prefix, index),
+		AutoPrefix:                   opts.AutoPrefix,
+		PrefixSeparator:              opts.PrefixSeparator,
 		UseFieldNameByDefault:        opts.UseFieldNameByDefault,
 		SetDefaultsForZeroValuesOnly: opts.SetDefaultsForZeroValuesOnly,
 		FuncMap:                      opts.FuncMap,
@@ -264,7 +272,9 @@ func optionsWithEnvPrefix(field reflect.StructField, opts Options) Options {
 		DefaultValueTagName:          opts.DefaultValueTagName,
 		RequiredIfNoDef:              opts.RequiredIfNoDef,
 		OnSet:                        opts.OnSet,
-		Prefix:                       opts.Prefix + field.Tag.Get(opts.PrefixTagName),
+		Prefix:                       opts.Prefix + parseOwnPrefix(field, opts),
+		AutoPrefix:                   opts.AutoPrefix,
+		PrefixSeparator:              opts.PrefixSeparator,
 		UseFieldNameByDefault:        opts.UseFieldNameByDefault,
 		SetDefaultsForZeroValuesOnly: opts.SetDefaultsForZeroValuesOnly,
 		FuncMap:                      opts.FuncMap,
@@ -438,8 +448,12 @@ func isSliceOfStructs(refTypeField reflect.StructField) bool {
 }
 
 func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) error {
-	if opts.Prefix != "" && !strings.HasSuffix(opts.Prefix, string(underscore)) {
-		opts.Prefix += string(underscore)
+	var separator = string(underscore)
+	if opts.PrefixSeparator != "" {
+		separator = opts.PrefixSeparator
+	}
+	if opts.Prefix != "" && !strings.HasSuffix(opts.Prefix, separator) {
+		opts.Prefix += separator
 	}
 
 	var environments []string
@@ -453,7 +467,7 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 		counter := 0
 		for finished := false; !finished; {
 			finished = true
-			prefix := fmt.Sprintf("%s%d%c", opts.Prefix, counter, underscore)
+			prefix := opts.Prefix + strconv.Itoa(counter) + separator
 			for _, variable := range environments {
 				if strings.HasPrefix(variable, prefix) {
 					counter++
@@ -550,11 +564,28 @@ type FieldParams struct {
 	Ignored         bool
 }
 
-func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, error) {
+func parseOwnPrefix(field reflect.StructField, opts Options) string {
+	var ownPrefix string
+	ownPrefix = field.Tag.Get(opts.PrefixTagName)
+	if ownPrefix == "" && opts.AutoPrefix {
+		ownPrefix, _ = doParseKeyForOption(field, opts)
+	}
+	if opts.PrefixSeparator != "" && !strings.HasSuffix(ownPrefix, opts.PrefixSeparator) {
+		ownPrefix += opts.PrefixSeparator
+	}
+	return ownPrefix
+}
+
+func doParseKeyForOption(field reflect.StructField, opts Options) (string, []string) {
 	ownKey, tags := parseKeyForOption(field.Tag.Get(opts.TagName))
 	if ownKey == "" && opts.UseFieldNameByDefault {
 		ownKey = toEnvName(field.Name)
 	}
+	return ownKey, tags
+}
+
+func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, error) {
+	ownKey, tags := doParseKeyForOption(field, opts)
 
 	defaultValue, hasDefaultValue := field.Tag.Lookup(opts.DefaultValueTagName)
 
