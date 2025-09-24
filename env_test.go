@@ -32,8 +32,7 @@ func (d *unmarshaler) UnmarshalText(data []byte) (err error) {
 	return err
 }
 
-// nolint: maligned
-type Config struct {
+type Config struct { //nolint:maligned
 	String     string    `env:"STRING"`
 	StringPtr  *string   `env:"STRING"`
 	Strings    []string  `env:"STRINGS"`
@@ -2200,9 +2199,9 @@ func TestSetDefaultsForZeroValuesOnly(t *testing.T) {
 	type config struct {
 		Str string  `env:"STR" envDefault:"foo"`
 		Int int     `env:"INT" envDefault:"42"`
-		Url url.URL `env:"URL" envDefault:"https://github.com/caarlos0"`
+		URL url.URL `env:"URL" envDefault:"https://github.com/caarlos0"`
 	}
-	defUrl, err := url.Parse("https://github.com/caarlos0")
+	defURL, err := url.Parse("https://github.com/caarlos0")
 	isNoErr(t, err)
 
 	u, err := url.Parse("https://localhost/foo")
@@ -2219,7 +2218,7 @@ func TestSetDefaultsForZeroValuesOnly(t *testing.T) {
 			Expected: config{
 				Str: "isSet",
 				Int: 1,
-				Url: *u,
+				URL: *u,
 			},
 		},
 		{
@@ -2228,7 +2227,7 @@ func TestSetDefaultsForZeroValuesOnly(t *testing.T) {
 			Expected: config{
 				Str: "foo",
 				Int: 42,
-				Url: *defUrl,
+				URL: *defURL,
 			},
 		},
 		{
@@ -2237,7 +2236,7 @@ func TestSetDefaultsForZeroValuesOnly(t *testing.T) {
 			Expected: config{
 				Str: "foo",
 				Int: 42,
-				Url: *defUrl,
+				URL: *defURL,
 			},
 		},
 	} {
@@ -2245,7 +2244,7 @@ func TestSetDefaultsForZeroValuesOnly(t *testing.T) {
 			cfg := &config{
 				Str: "isSet",
 				Int: 1,
-				Url: *u,
+				URL: *u,
 			}
 			isNoErr(t, ParseWithOptions(cfg, tc.Options))
 			isEqual(t, tc.Expected, *cfg)

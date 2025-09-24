@@ -27,63 +27,60 @@ import (
 	"unicode"
 )
 
-// nolint: gochecknoglobals
-var (
-	defaultBuiltInParsers = map[reflect.Kind]ParserFunc{
-		reflect.Bool: func(v string) (interface{}, error) {
-			return strconv.ParseBool(v)
-		},
-		reflect.String: func(v string) (interface{}, error) {
-			return v, nil
-		},
-		reflect.Int: func(v string) (interface{}, error) {
-			i, err := strconv.ParseInt(v, 10, 32)
-			return int(i), err
-		},
-		reflect.Int16: func(v string) (interface{}, error) {
-			i, err := strconv.ParseInt(v, 10, 16)
-			return int16(i), err
-		},
-		reflect.Int32: func(v string) (interface{}, error) {
-			i, err := strconv.ParseInt(v, 10, 32)
-			return int32(i), err
-		},
-		reflect.Int64: func(v string) (interface{}, error) {
-			return strconv.ParseInt(v, 10, 64)
-		},
-		reflect.Int8: func(v string) (interface{}, error) {
-			i, err := strconv.ParseInt(v, 10, 8)
-			return int8(i), err
-		},
-		reflect.Uint: func(v string) (interface{}, error) {
-			i, err := strconv.ParseUint(v, 10, 32)
-			return uint(i), err
-		},
-		reflect.Uint16: func(v string) (interface{}, error) {
-			i, err := strconv.ParseUint(v, 10, 16)
-			return uint16(i), err
-		},
-		reflect.Uint32: func(v string) (interface{}, error) {
-			i, err := strconv.ParseUint(v, 10, 32)
-			return uint32(i), err
-		},
-		reflect.Uint64: func(v string) (interface{}, error) {
-			i, err := strconv.ParseUint(v, 10, 64)
-			return i, err
-		},
-		reflect.Uint8: func(v string) (interface{}, error) {
-			i, err := strconv.ParseUint(v, 10, 8)
-			return uint8(i), err
-		},
-		reflect.Float64: func(v string) (interface{}, error) {
-			return strconv.ParseFloat(v, 64)
-		},
-		reflect.Float32: func(v string) (interface{}, error) {
-			f, err := strconv.ParseFloat(v, 32)
-			return float32(f), err
-		},
-	}
-)
+var defaultBuiltInParsers = map[reflect.Kind]ParserFunc{ //nolint:gochecknoglobals
+	reflect.Bool: func(v string) (interface{}, error) {
+		return strconv.ParseBool(v)
+	},
+	reflect.String: func(v string) (interface{}, error) {
+		return v, nil
+	},
+	reflect.Int: func(v string) (interface{}, error) {
+		i, err := strconv.ParseInt(v, 10, 32)
+		return int(i), err
+	},
+	reflect.Int16: func(v string) (interface{}, error) {
+		i, err := strconv.ParseInt(v, 10, 16)
+		return int16(i), err
+	},
+	reflect.Int32: func(v string) (interface{}, error) {
+		i, err := strconv.ParseInt(v, 10, 32)
+		return int32(i), err
+	},
+	reflect.Int64: func(v string) (interface{}, error) {
+		return strconv.ParseInt(v, 10, 64)
+	},
+	reflect.Int8: func(v string) (interface{}, error) {
+		i, err := strconv.ParseInt(v, 10, 8)
+		return int8(i), err
+	},
+	reflect.Uint: func(v string) (interface{}, error) {
+		i, err := strconv.ParseUint(v, 10, 32)
+		return uint(i), err
+	},
+	reflect.Uint16: func(v string) (interface{}, error) {
+		i, err := strconv.ParseUint(v, 10, 16)
+		return uint16(i), err
+	},
+	reflect.Uint32: func(v string) (interface{}, error) {
+		i, err := strconv.ParseUint(v, 10, 32)
+		return uint32(i), err
+	},
+	reflect.Uint64: func(v string) (interface{}, error) {
+		i, err := strconv.ParseUint(v, 10, 64)
+		return i, err
+	},
+	reflect.Uint8: func(v string) (interface{}, error) {
+		i, err := strconv.ParseUint(v, 10, 8)
+		return uint8(i), err
+	},
+	reflect.Float64: func(v string) (interface{}, error) {
+		return strconv.ParseFloat(v, 64)
+	},
+	reflect.Float32: func(v string) (interface{}, error) {
+		f, err := strconv.ParseFloat(v, 32)
+		return float32(f), err
+	},
+}
 
 func defaultTypeParsers() map[reflect.Type]ParserFunc {
 	return map[reflect.Type]ParserFunc{
@@ -168,7 +165,7 @@ type Options struct {
 	// and the value is not a zero value for the the type
 	// and SetDefaultsForZeroValuesOnly=true
 	// the value from `envDefault` will be ignored
-	// Usefull for mixing default values from `envDefault` and struct initialization
+	// Useful for mixing default values from `envDefault` and struct initialization
 	SetDefaultsForZeroValuesOnly bool
 
 	// Custom parse functions for different types.
@@ -292,7 +289,7 @@ func ParseAs[T any]() (T, error) {
 	return t, err
 }
 
-// ParseWithOptions parses the given struct type containing `env` tags and
+// ParseAsWithOptions parses the given struct type containing `env` tags and
 // loads its values from environment variables.
 func ParseAsWithOptions[T any](opts Options) (T, error) {
 	var t T

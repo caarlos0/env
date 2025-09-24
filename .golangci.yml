@@ -1,32 +1,115 @@
-linters-settings:
-  gocritic:
-    enabled-checks:
-      - emptyStringTest
-      - evalOrder
-      - paramTypeCombine
-      - preferStringWriter
-      - sprintfQuotedString
-      - stringConcatSimplify
-      - yodaStyleExpr
-  revive:
-    rules:
-      - name: line-length-limit
-        arguments: [120]
-
-issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - revive
-      text: "line-length-limit:"
-
+version: "2"
+run:
+  go: "1.24"
 linters:
   enable:
-    - thelper
-    - gofumpt
+    - bodyclose
+    - copyloopvar
+    - depguard
+    - forbidigo
     - gocritic
+    - misspell
+    - noctx
+    - nolintlint
+    - perfsprint
+    - revive
+    - testifylint
+    - thelper
     - tparallel
     - unconvert
     - unparam
+    - usetesting
     - wastedassign
-    - revive
+  settings:
+    depguard:
+      rules:
+        main:
+          deny:
+            - pkg: github.com/pkg/errors
+              desc: use stdlib instead
+            - pkg: math/rand$
+              desc: use math/rand/v2 instead
+            - pkg: github.com/apex/log
+              desc: use caarlos0/log instead
+    forbidigo:
+      forbid:
+        - pattern: ioutil\.*
+    gocritic:
+      disabled-checks:
+        - appendAssign
+    perfsprint:
+      int-conversion: false
+      err-error: false
+      errorf: true
+      sprintf1: false
+      strconcat: false
+    revive:
+      enable-all-rules: false
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: comment-spacings
+        - name: dot-imports
+        - name: empty-block
+        - name: empty-lines
+        - name: error-naming
+        - name: error-return
+        - name: error-strings
+        - name: errorf
+        - name: increment-decrement
+        - name: indent-error-flow
+        - name: modifies-value-receiver
+        - name: range
+        - name: receiver-naming
+        - name: redefines-builtin-id
+        - name: superfluous-else
+        - name: time-naming
+        - name: unexported-return
+        - name: unreachable-code
+        - name: unused-parameter
+        - name: var-declaration
+        - name: var-naming
+        # we are not providing an API anyway... maybe someday...
+        # - name: exported
+        # - name: package-comments
+    staticcheck:
+      checks:
+        - all
+        - -SA1019
+    testifylint:
+      enable-all: true
+      disable:
+        - error-is-as
+    usetesting:
+      context-background: true
+      context-todo: true
+      os-chdir: true
+      os-mkdir-temp: true
+      os-setenv: true
+      os-create-temp: true
+      os-temp-dir: true
+  exclusions:
+    generated: lax
+    presets:
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - noctx
+          - perfsprint
+        path: _test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofumpt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

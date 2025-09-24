@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// An aggregated error wrapper to combine gathered errors.
+// AggregateError is an aggregated error wrapper to combine gathered errors.
 // This allows either to display all errors or convert them individually
 // List of the available errors
 // ParseError
@@ -56,7 +56,7 @@ func (e AggregateError) Is(err error) bool {
 	return false
 }
 
-// The error occurs when it's impossible to convert the value for given type.
+// ParseError occurs when it's impossible to convert the value for given type.
 type ParseError struct {
 	Name string
 	Type reflect.Type
@@ -71,14 +71,14 @@ func (e ParseError) Error() string {
 	return fmt.Sprintf("parse error on field %q of type %q: %v", e.Name, e.Type, e.Err)
 }
 
-// The error occurs when pass something that is not a pointer to a struct to Parse
+// NotStructPtrError occurs when pass something that is not a pointer to a struct to Parse.
 type NotStructPtrError struct{}
 
 func (e NotStructPtrError) Error() string {
 	return "expected a pointer to a Struct"
 }
 
-// This error occurs when there is no parser provided for given type.
+// NoParserError occurs when there is no parser provided for given type.
 type NoParserError struct {
 	Name string
 	Type reflect.Type
@@ -92,7 +92,7 @@ func (e NoParserError) Error() string {
 	return fmt.Sprintf("no parser found for field %q of type %q", e.Name, e.Type)
 }
 
-// This error occurs when the given tag is not supported.
+// NoSupportedTagOptionError occurs when the given tag is not supported.
 // Built-in supported tags: "", "file", "required", "unset", "notEmpty",
 // "expand", "envDefault", and "envSeparator".
 type NoSupportedTagOptionError struct {
@@ -107,12 +107,12 @@ func (e NoSupportedTagOptionError) Error() string {
 	return fmt.Sprintf("tag option %q not supported", e.Tag)
 }
 
-// This error occurs when the required variable is not set.
+// EnvVarIsNotSetError occurs when the required variable is not set.
 //
 // Deprecated: use VarIsNotSetError.
 type EnvVarIsNotSetError = VarIsNotSetError
 
-// This error occurs when the required variable is not set.
+// VarIsNotSetError occurs when the required variable is not set.
 type VarIsNotSetError struct {
 	Key string
 }
@@ -125,12 +125,12 @@ func (e VarIsNotSetError) Error() string {
 	return fmt.Sprintf(`required environment variable %q is not set`, e.Key)
 }
 
-// This error occurs when the variable which must be not empty is existing but has an empty value
+// EmptyEnvVarError occurs when the variable which must be not empty is existing but has an empty value
 //
 // Deprecated: use EmptyVarError.
 type EmptyEnvVarError = EmptyVarError
 
-// This error occurs when the variable which must be not empty is existing but has an empty value
+// EmptyVarError occurs when the variable which must be not empty is existing but has an empty value
 type EmptyVarError struct {
 	Key string
 }
@@ -143,7 +143,7 @@ func (e EmptyVarError) Error() string {
 	return fmt.Sprintf("environment variable %q should not be empty", e.Key)
 }
 
-// This error occurs when it's impossible to load the value from the file.
+// LoadFileContentError occurs when it's impossible to load the value from the file.
 type LoadFileContentError struct {
 	Filename string
 	Key      string
@@ -158,7 +158,7 @@ func (e LoadFileContentError) Error() string {
 	return fmt.Sprintf("could not load content of file %q from variable %s: %v", e.Filename, e.Key, e.Err)
 }
 
-// This error occurs when it's impossible to convert value using given parser.
+// ParseValueError occurs when it's impossible to convert value using given parser.
 type ParseValueError struct {
 	Msg string
 	Err error
