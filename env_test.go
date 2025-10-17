@@ -2410,3 +2410,20 @@ func TestEnvBleed(t *testing.T) {
 		isEqual(t, "", cfg.Foo)
 	})
 }
+
+func TestEmptyOverridesDefault(t *testing.T) {
+	type Test struct {
+		Foo    string `env:"FOO" envDefault:"foo"`
+		Bar    string `env:"BAR,emptyOverridesDefault" envDefault:"bar"`
+		NotSet string `env:"NOT_SET,emptyOverridesDefault" envDefault:"default"`
+	}
+
+	t.Setenv("FOO", "")
+	t.Setenv("BAR", "")
+
+	var cfg Test
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, "foo", cfg.Foo)
+	isEqual(t, "", cfg.Bar)
+	isEqual(t, "default", cfg.NotSet)
+}
