@@ -1133,6 +1133,49 @@ func TestIssue226(t *testing.T) {
 	isEqual(t, cfg.Lmn, []byte("b"))
 }
 
+func TestAllowBlankEnvValues(t *testing.T) {
+	type inner struct {
+		Field string `env:"INNER" envDefault:"default_inner"`
+	}
+	type config struct {
+		Str      string  `env:"STR" envDefault:"default_str"`
+		Ptr      *string `env:"PTR" envDefault:"default_ptr"`
+		Nested   inner   `envPrefix:"NESTED_"`
+		NotEmpty string  `env:"NOT_EMPTY,notEmpty" envDefault:"default_not_empty"`
+	}
+
+	t.Run("Feature Enabled: Blank strings should stay blank", func(t *testing.T) {
+		t.Setenv("STR", "")
+		t.Setenv("PTR", "")
+		t.Setenv("NESTED_INNER", "")
+
+		var cfg config
+		opts := Options{AllowBlankEnvValues: true}
+		isNoErr(t, ParseWithOptions(&cfg, opts))
+
+		isEqual(t, "", cfg.Str)
+		isEqual(t, "", *cfg.Ptr)
+		isEqual(t, "", cfg.Nested.Field)
+	})
+
+	t.Run("Feature Disabled: Blank strings should fallback to default", func(t *testing.T) {
+		t.Setenv("STR", "")
+		var cfg config
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, "default_str", cfg.Str)
+	})
+
+	t.Run("Conflict Check: notEmpty tag should still win", func(t *testing.T) {
+		t.Setenv("NOT_EMPTY", "")
+		var cfg config
+		opts := Options{AllowBlankEnvValues: true}
+		err := ParseWithOptions(&cfg, opts)
+
+		isTrue(t, errors.Is(err, EmptyVarError{}))
+	})
+}
+
 func TestParseWithOptionsNoPtr(t *testing.T) {
 	type foo struct{}
 	err := ParseWithOptions(foo{}, Options{})
