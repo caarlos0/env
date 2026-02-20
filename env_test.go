@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -1298,6 +1299,30 @@ func TestCustomParserNotCalledForNonAlias(t *testing.T) {
 	isNoErr(t, err)
 	isEqual(t, uint64(33), cfg.Val)
 	isEqual(t, U(44), cfg.Other)
+}
+
+func TestCustomParserCalledForTextMarshallImpl(t *testing.T) {
+	type config struct {
+		Val slog.Level `env:"" envDefault:"TRACE"`
+	}
+
+	tParser := func(s string) (interface{}, error) {
+		l := slog.LevelInfo
+		if s == "TRACE" {
+			return slog.LevelDebug - 4, nil
+		}
+		err := l.UnmarshalText([]byte(s))
+		return l, err
+	}
+
+	cfg := config{}
+
+	err := ParseWithOptions(&cfg, Options{FuncMap: map[reflect.Type]ParserFunc{
+		reflect.TypeOf(slog.Level(0)): tParser,
+	}})
+
+	isNoErr(t, err)
+	isEqual(t, slog.LevelDebug-4, cfg.Val)
 }
 
 func TestCustomParserBasicUnsupported(t *testing.T) {
