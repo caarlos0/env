@@ -2410,3 +2410,30 @@ func TestEnvBleed(t *testing.T) {
 		isEqual(t, "", cfg.Foo)
 	})
 }
+
+func TestAutoPrefix(t *testing.T) {
+	type Test struct {
+		Str string `env:"TEST"`
+	}
+	type ComplexConfig struct {
+		Foo   *Test `env:"FOO,init"`
+		Bar   Test  `envPrefix:"BAR"`
+		Baz   Test  `envPrefix:"NOT_FOO_"`
+		List  []Test
+		Clean *Test
+	}
+
+	t.Setenv("FOO_TEST", "kek")
+	t.Setenv("BAR_TEST", "pep")
+	t.Setenv("NOT_FOO_TEST", "lel")
+	t.Setenv("LIST_0_TEST", "mem1")
+	t.Setenv("LIST_1_TEST", "mem2")
+
+	cfg := ComplexConfig{}
+	isNoErr(t, ParseWithOptions(&cfg, Options{AutoPrefix: true, PrefixSeparator: "_", UseFieldNameByDefault: true}))
+	isEqual(t, "kek", cfg.Foo.Str)
+	isEqual(t, "pep", cfg.Bar.Str)
+	isEqual(t, "lel", cfg.Baz.Str)
+	isEqual(t, "mem1", cfg.List[0].Str)
+	isEqual(t, "mem2", cfg.List[1].Str)
+}
