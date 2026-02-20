@@ -480,3 +480,39 @@ func Example_setDefaultsForZeroValuesOnly() {
 	// Without SetDefaultsForZeroValuesOnly, the username would have been 'admin'.
 	// Output: {Username:root Password:qwerty}
 }
+
+func Example_useComplexStructMaps() {
+	type Service struct {
+		Username string `env:"USERNAME"`
+	}
+
+	type Host struct {
+		Address string `env:"ADDRESS"`
+		Port    int    `env:"PORT"`
+		// For nested maps, be careful with key naming to avoid conflicts.
+		// The library uses the rightmost `envPrefix` match as the key. For example:
+		// This means that won't work - USERNAME becomes a key instead of a field
+		//   export HOST_aws_server_SERVICE_SERVICE_USERNAME=Jakinson
+		// Thus you must make sure to name the keys appropriately correctly
+		Services map[string]Service `envPrefix:"SERVICE_"`
+	}
+
+	type Config struct {
+		// In the case of struct of slices, you can use it without a prefix
+		// however if a prefix is not specified processing this map will be skipped
+		Hosts map[string]Host `envPrefix:"HOST_"`
+	}
+
+	os.Setenv("HOST_aws_server_ADDRESS", "127.0.0.1")
+	os.Setenv("HOST_aws_server_PORT", "79")
+	os.Setenv("HOST_aws_server_SERVICE_Ec2_USERNAME", "Jakinson")
+	os.Setenv("HOST_aws_server_SERVICE_cloudfront_USERNAME", "Arnold")
+
+	cfg := Config{}
+
+	if err := Parse(&cfg); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(cfg)
+}
