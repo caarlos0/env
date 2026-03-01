@@ -499,13 +499,13 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 }
 
 func setField(refField reflect.Value, refTypeField reflect.StructField, opts Options, fieldParams FieldParams) error {
-	value, err := get(fieldParams, opts)
+	result, err := get(fieldParams, opts)
 	if err != nil {
 		return err
 	}
 
-	if value != "" && (!opts.SetDefaultsForZeroValuesOnly || refField.IsZero()) {
-		return set(refField, refTypeField, value, opts.FuncMap)
+	if result.value != "" && (!opts.SetDefaultsForZeroValuesOnly || !result.isDefault || refField.IsZero()) {
+		return set(refField, refTypeField, result.value, opts.FuncMap)
 	}
 
 	return nil
@@ -590,10 +590,19 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 	return result, nil
 }
 
-func get(fieldParams FieldParams, opts Options) (val string, err error) {
-	var exists, isDefault bool
+type gotValue struct {
+	value     string
+	isDefault bool
+}
 
-	val, exists, isDefault = getOr(
+func get(fieldParams FieldParams, opts Options) (gotValue, error) {
+	var (
+		err    error
+		result gotValue
+		exists bool
+	)
+
+	result.value, exists, result.isDefault = getOr(
 		fieldParams.Key,
 		fieldParams.DefaultValue,
 		fieldParams.HasDefaultValue,
@@ -601,37 +610,37 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	)
 
 	if fieldParams.Expand {
-		val = os.Expand(val, opts.getRawEnv)
+		result.value = os.Expand(result.value, opts.getRawEnv)
 	}
 
-	opts.rawEnvVars[fieldParams.OwnKey] = val
+	opts.rawEnvVars[fieldParams.OwnKey] = result.value
 
 	if fieldParams.Unset {
 		defer os.Unsetenv(fieldParams.Key)
 	}
 
 	if fieldParams.Required && !exists && fieldParams.OwnKey != "" {
-		return "", newVarIsNotSetError(fieldParams.Key)
+		return result, newVarIsNotSetError(fieldParams.Key)
 	}
 
-	if fieldParams.NotEmpty && val == "" {
-		return "", newEmptyVarError(fieldParams.Key)
+	if fieldParams.NotEmpty && result.value == "" {
+		return result, newEmptyVarError(fieldParams.Key)
 	}
 
-	if fieldParams.LoadFile && val != "" {
-		filename := val
-		val, err = getFromFile(filename)
+	if fieldParams.LoadFile && result.value != "" {
+		filename := result.value
+		result.value, err = getFromFile(filename)
 		if err != nil {
-			return "", newLoadFileContentError(filename, fieldParams.Key, err)
+			return result, newLoadFileContentError(filename, fieldParams.Key, err)
 		}
 	}
 
 	if opts.OnSet != nil {
 		if fieldParams.OwnKey != "" {
-			opts.OnSet(fieldParams.Key, val, isDefault)
+			opts.OnSet(fieldParams.Key, result.value, result.isDefault)
 		}
 	}
-	return val, err
+	return result, err
 }
 
 // split the env tag's key into the expected key and desired option, if any.
