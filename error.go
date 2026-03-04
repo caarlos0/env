@@ -94,7 +94,7 @@ func (e NoParserError) Error() string {
 
 // NoSupportedTagOptionError occurs when the given tag is not supported.
 // Built-in supported tags: "", "file", "required", "unset", "notEmpty",
-// "expand", "envDefault", and "envSeparator".
+// "expand", "envDefault", "envSeparator", and "envEnableIf".
 type NoSupportedTagOptionError struct {
 	Tag string
 }
