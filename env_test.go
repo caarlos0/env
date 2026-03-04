@@ -2410,3 +2410,18 @@ func TestEnvBleed(t *testing.T) {
 		isEqual(t, "", cfg.Foo)
 	})
 }
+
+func TestParse_Bug364EnvVarOverridesStructValue(t *testing.T) {
+	t.Setenv("USERNAME", "user1")
+
+	type cfg struct {
+		Username string `env:"USERNAME" envDefault:"admin"`
+	}
+	c := cfg{Username: "root"}
+
+	isNoErr(t, ParseWithOptions(&c, Options{
+		SetDefaultsForZeroValuesOnly: true,
+	}))
+
+	isEqual(t, c.Username, "user1")
+}
