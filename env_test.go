@@ -2509,3 +2509,302 @@ func TestEnvBleed(t *testing.T) {
 		isEqual(t, "", cfg.Foo)
 	})
 }
+
+func TestEnvEnableIf(t *testing.T) {
+	// Subtests use explicit Environment maps so variables exported by the
+	// developer or CI cannot leak in and change the outcome.
+	type external struct {
+		ExternalURLEnabled bool   `env:"EXTERNAL_URL_ENABLED"`
+		ExternalURL        string `env:"EXTERNAL_URL" envEnableIf:"EXTERNAL_URL_ENABLED"`
+	}
+
+	t.Run("disabled and env missing should not error", func(t *testing.T) {
+		cfg := external{}
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"EXTERNAL_URL_ENABLED": "false"},
+		}))
+		isEqual(t, cfg.ExternalURL, "")
+	})
+
+	t.Run("enabled but env missing should error", func(t *testing.T) {
+		cfg := external{}
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"EXTERNAL_URL_ENABLED": "true"},
+		})
+		isErrorWithMessage(t, err, `env: required environment variable "EXTERNAL_URL" is not set`)
+		isTrue(t, errors.Is(err, VarIsNotSetError{}))
+	})
+
+	t.Run("enabled but env empty should error", func(t *testing.T) {
+		cfg := external{}
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"EXTERNAL_URL_ENABLED": "true", "EXTERNAL_URL": ""},
+		})
+		isErrorWithMessage(t, err, `env: environment variable "EXTERNAL_URL" should not be empty`)
+		isTrue(t, errors.Is(err, EmptyVarError{}))
+	})
+
+	t.Run("enabled and env present should parse", func(t *testing.T) {
+		cfg := external{}
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{
+				"EXTERNAL_URL_ENABLED": "true",
+				"EXTERNAL_URL":         "https://foo.bar",
+			},
+		}))
+		isEqual(t, cfg.ExternalURL, "https://foo.bar")
+	})
+
+	t.Run("unset controller disables the field", func(t *testing.T) {
+		type config struct {
+			ExternalURL string `env:"EXTERNAL_URL" envEnableIf:"INVALID_KEY"`
+		}
+
+		cfg := config{}
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"EXTERNAL_URL": "https://foo.bar"},
+		}))
+		isEqual(t, cfg.ExternalURL, "")
+	})
+
+	t.Run("disabled field with invalid value should not error", func(t *testing.T) {
+		type config struct {
+			SMTPPort int `env:"SMTP_PORT" envEnableIf:"EMAIL_ENABLED"`
+		}
+
+		cfg := config{}
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"EMAIL_ENABLED": "false", "SMTP_PORT": "invalid"},
+		}))
+		isEqual(t, cfg.SMTPPort, 0)
+	})
+
+	t.Run("disabled required field missing should not error", func(t *testing.T) {
+		type config struct {
+			SMTPHost string `env:"SMTP_HOST,required,notEmpty" envEnableIf:"EMAIL_ENABLED"`
+		}
+
+		cfg := config{}
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"EMAIL_ENABLED": "false"},
+		}))
+		isEqual(t, cfg.SMTPHost, "")
+	})
+
+	t.Run("disabled field keeps preinitialized value", func(t *testing.T) {
+		type config struct {
+			SMTPPort int    `env:"SMTP_PORT" envEnableIf:"EMAIL_ENABLED"`
+			SMTPUser string `env:"SMTP_USER" envDefault:"admin" envEnableIf:"EMAIL_ENABLED"`
+		}
+
+		cfg := config{SMTPPort: 25, SMTPUser: "preset"}
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"EMAIL_ENABLED": "false", "SMTP_PORT": "587"},
+		}))
+		isEqual(t, cfg.SMTPPort, 25)
+		isEqual(t, cfg.SMTPUser, "preset")
+	})
+
+	t.Run("disabled field has no side effects", func(t *testing.T) {
+		t.Setenv("EMAIL_ENABLED", "false")
+		t.Setenv("SMTP_PASSWORD_FILE", "/nonexistent/path/to/secret")
+		t.Setenv("SMTP_TOKEN", "secret")
+
+		type config struct {
+			Password string `env:"SMTP_PASSWORD_FILE,file" envEnableIf:"EMAIL_ENABLED"`
+			Token    string `env:"SMTP_TOKEN,unset" envEnableIf:"EMAIL_ENABLED"`
+		}
+
+		var seen []string
+		cfg := config{}
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			OnSet: func(tag string, _ interface{}, _ bool) { seen = append(seen, tag) },
+		}))
+		isEqual(t, cfg.Password, "")
+		isEqual(t, cfg.Token, "")
+		isEqual(t, os.Getenv("SMTP_TOKEN"), "secret")
+		isEqual(t, len(seen), 0)
+	})
+
+	t.Run("disabled nested struct is not traversed", func(t *testing.T) {
+		type smtp struct {
+			Port int    `env:"PORT,required"`
+			Host string `env:"HOST,required"`
+		}
+		type config struct {
+			SMTP    smtp  `envPrefix:"SMTP_" envEnableIf:"EMAIL_ENABLED"`
+			SMTPPtr *smtp `envPrefix:"SMTP_" envEnableIf:"EMAIL_ENABLED"`
+			SMTPNew *smtp `envPrefix:"SMTP_" env:",init" envEnableIf:"EMAIL_ENABLED"`
+		}
+
+		cfg := config{SMTPPtr: &smtp{Port: 25}}
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"EMAIL_ENABLED": "false", "SMTP_PORT": "invalid"},
+		}))
+		isEqual(t, cfg.SMTP.Port, 0)
+		isEqual(t, cfg.SMTPPtr.Port, 25)
+		isTrue(t, cfg.SMTPNew == nil)
+	})
+
+	t.Run("controller is resolved with the global prefix", func(t *testing.T) {
+		type config struct {
+			EmailEnabled bool   `env:"EMAIL_ENABLED"`
+			SMTPHost     string `env:"SMTP_HOST" envEnableIf:"EMAIL_ENABLED"`
+		}
+
+		cfg := config{}
+		err := ParseWithOptions(&cfg, Options{
+			Prefix:      "APP_",
+			Environment: map[string]string{"APP_EMAIL_ENABLED": "true"},
+		})
+		isTrue(t, cfg.EmailEnabled)
+		isErrorWithMessage(t, err, `env: required environment variable "APP_SMTP_HOST" is not set`)
+
+		cfg = config{}
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			Prefix: "APP_",
+			Environment: map[string]string{
+				"APP_EMAIL_ENABLED": "true",
+				"APP_SMTP_HOST":     "smtp.example.com",
+			},
+		}))
+		isEqual(t, cfg.SMTPHost, "smtp.example.com")
+
+		// The unprefixed controller must not enable the prefixed field.
+		cfg = config{}
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			Prefix:      "APP_",
+			Environment: map[string]string{"EMAIL_ENABLED": "true"},
+		}))
+		isEqual(t, cfg.SMTPHost, "")
+	})
+
+	t.Run("nested instances resolve their own controllers", func(t *testing.T) {
+		type mailer struct {
+			Enabled bool   `env:"ENABLED"`
+			Host    string `env:"HOST" envEnableIf:"ENABLED"`
+			Port    int    `env:"PORT" envEnableIf:"ENABLED"`
+		}
+		type config struct {
+			Primary mailer  `envPrefix:"PRIMARY_"`
+			Backup  mailer  `envPrefix:"BACKUP_"`
+			Extra   *mailer `envPrefix:"EXTRA_"`
+		}
+
+		env := map[string]string{
+			"APP_PRIMARY_ENABLED": "true",
+			"APP_PRIMARY_HOST":    "primary.example.com",
+			"APP_PRIMARY_PORT":    "587",
+			"APP_BACKUP_ENABLED":  "false",
+			"APP_BACKUP_PORT":     "invalid",
+			"APP_EXTRA_ENABLED":   "true",
+		}
+
+		cfg := config{Extra: &mailer{}}
+		err := ParseWithOptions(&cfg, Options{Prefix: "APP_", Environment: env})
+		isErrorWithMessage(t, err, `env: required environment variable "APP_EXTRA_HOST" is not set; required environment variable "APP_EXTRA_PORT" is not set`)
+		isEqual(t, cfg.Primary.Host, "primary.example.com")
+		isEqual(t, cfg.Primary.Port, 587)
+		isEqual(t, cfg.Backup.Host, "")
+		isEqual(t, cfg.Backup.Port, 0)
+	})
+
+	t.Run("controller is resolved with the enclosing prefix for gated structs", func(t *testing.T) {
+		type smtp struct {
+			Host string `env:"HOST,required"`
+		}
+		type config struct {
+			SMTP smtp `envPrefix:"SMTP_" envEnableIf:"EMAIL_ENABLED"`
+		}
+
+		cfg := config{}
+		err := ParseWithOptions(&cfg, Options{
+			Prefix:      "APP_",
+			Environment: map[string]string{"APP_EMAIL_ENABLED": "true"},
+		})
+		isErrorWithMessage(t, err, `env: required environment variable "APP_SMTP_HOST" is not set`)
+	})
+
+	t.Run("field params report the prefixed controller key", func(t *testing.T) {
+		type config struct {
+			SMTPHost string `env:"SMTP_HOST" envEnableIf:"EMAIL_ENABLED"`
+		}
+
+		params, err := GetFieldParamsWithOptions(&config{}, Options{Prefix: "APP_"})
+		isNoErr(t, err)
+		isEqual(t, params[0].EnabledByEnv, "APP_EMAIL_ENABLED")
+	})
+
+	t.Run("enabled field with invalid value should error", func(t *testing.T) {
+		type config struct {
+			SMTPPort int `env:"SMTP_PORT" envEnableIf:"EMAIL_ENABLED"`
+		}
+
+		cfg := config{}
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"EMAIL_ENABLED": "true", "SMTP_PORT": "invalid"},
+		})
+		isTrue(t, errors.Is(err, ParseError{}))
+	})
+
+	t.Run("multiple fields using same envEnableIf", func(t *testing.T) {
+		type config struct {
+			FeatureEnabled bool   `env:"FEATURE_ENABLED"`
+			URL1           string `env:"URL_ONE" envEnableIf:"FEATURE_ENABLED"`
+			URL2           string `env:"URL_TWO" envEnableIf:"FEATURE_ENABLED"`
+		}
+
+		cfg := config{}
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{
+				"FEATURE_ENABLED": "true",
+				"URL_ONE":         "https://one.bar",
+				"URL_TWO":         "https://two.bar",
+			},
+		}))
+
+		isEqual(t, cfg.URL1, "https://one.bar")
+		isEqual(t, cfg.URL2, "https://two.bar")
+	})
+
+	t.Run("enabled grouping struct does not require its own variable", func(t *testing.T) {
+		type smtp struct {
+			Host string `env:"HOST,required"`
+		}
+		type config struct {
+			SMTP    smtp   `envPrefix:"SMTP_" envEnableIf:"EMAIL_ENABLED"`
+			SMTPPtr *smtp  `envPrefix:"SMTP_" env:",init" envEnableIf:"EMAIL_ENABLED"`
+			SMTPs   []smtp `envPrefix:"SMTPS" envEnableIf:"EMAIL_ENABLED"`
+		}
+
+		cfg := config{}
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			UseFieldNameByDefault: true,
+			Environment: map[string]string{
+				"EMAIL_ENABLED": "true",
+				"SMTP_HOST":     "smtp.example.com",
+			},
+		}))
+		isEqual(t, cfg.SMTP.Host, "smtp.example.com")
+		isEqual(t, cfg.SMTPPtr.Host, "smtp.example.com")
+
+		cfg = config{}
+		err := ParseWithOptions(&cfg, Options{
+			UseFieldNameByDefault: true,
+			Environment:           map[string]string{"EMAIL_ENABLED": "true"},
+		})
+		isErrorWithMessage(t, err, `env: required environment variable "SMTP_HOST" is not set; required environment variable "SMTP_HOST" is not set`)
+	})
+
+	t.Run("enabled value-bearing struct is still required", func(t *testing.T) {
+		type config struct {
+			Endpoint url.URL `env:"ENDPOINT" envEnableIf:"FEATURE_ENABLED"`
+		}
+
+		cfg := config{}
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"FEATURE_ENABLED": "true"},
+		})
+		isErrorWithMessage(t, err, `env: required environment variable "ENDPOINT" is not set`)
+	})
+}
