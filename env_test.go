@@ -2410,3 +2410,78 @@ func TestEnvBleed(t *testing.T) {
 		isEqual(t, "", cfg.Foo)
 	})
 }
+
+func TestEnvEnableIf(t *testing.T) {
+	t.Run("disabled and env missing should not error", func(t *testing.T) {
+		t.Setenv("EXTERNAL_URL_ENABLED", "false")
+
+		type external struct {
+			ExternalURLEnabled bool   `env:"EXTERNAL_URL_ENABLED"`
+			ExternalURL        string `env:"EXTERNAL_URL" envEnableIf:"EXTERNAL_URL_ENABLED"`
+		}
+
+		cfg := external{}
+		isNoErr(t, Parse(&cfg))
+		isEqual(t, cfg.ExternalURL, "")
+	})
+
+	t.Run("enabled but env missing should error", func(t *testing.T) {
+		t.Setenv("EXTERNAL_URL_ENABLED", "true")
+
+		type external struct {
+			ExternalURLEnabled bool   `env:"EXTERNAL_URL_ENABLED"`
+			ExternalURL        string `env:"EXTERNAL_URL" envEnableIf:"EXTERNAL_URL_ENABLED"`
+		}
+
+		cfg := external{}
+		err := Parse(&cfg)
+
+		if err == nil {
+			t.Fatalf("expected error when EXTERNAL_URL is missing but enabled")
+		}
+	})
+
+	t.Run("enabled and env present should parse", func(t *testing.T) {
+		t.Setenv("EXTERNAL_URL_ENABLED", "true")
+		t.Setenv("EXTERNAL_URL", "https://foo.bar")
+
+		type external struct {
+			ExternalURLEnabled bool   `env:"EXTERNAL_URL_ENABLED"`
+			ExternalURL        string `env:"EXTERNAL_URL" envEnableIf:"EXTERNAL_URL_ENABLED"`
+		}
+
+		cfg := external{}
+		isNoErr(t, Parse(&cfg))
+		isEqual(t, cfg.ExternalURL, "https://foo.bar")
+	})
+
+	t.Run("invalid envEnableIf key should not apply condition", func(t *testing.T) {
+		t.Setenv("EXTERNAL_URL", "https://foo.bar")
+
+		type external struct {
+			ExternalURL string `env:"EXTERNAL_URL" envEnableIf:"INVALID_KEY"`
+		}
+
+		cfg := external{}
+		isNoErr(t, Parse(&cfg))
+		isEqual(t, cfg.ExternalURL, "https://foo.bar")
+	})
+
+	t.Run("multiple fields using same envEnableIf", func(t *testing.T) {
+		t.Setenv("FEATURE_ENABLED", "true")
+		t.Setenv("URL_ONE", "https://one.bar")
+		t.Setenv("URL_TWO", "https://two.bar")
+
+		type external struct {
+			FeatureEnabled bool   `env:"FEATURE_ENABLED"`
+			URL1           string `env:"URL_ONE" envEnableIf:"FEATURE_ENABLED"`
+			URL2           string `env:"URL_TWO" envEnableIf:"FEATURE_ENABLED"`
+		}
+
+		cfg := external{}
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, cfg.URL1, "https://one.bar")
+		isEqual(t, cfg.URL2, "https://two.bar")
+	})
+}

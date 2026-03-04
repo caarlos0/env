@@ -97,6 +97,7 @@ The following tags are provided:
 - `envPrefix`: can be used in a field that is a complex type to set a prefix to all environment variables used in it
 - `envSeparator`: sets the character to be used to separate items in slices and maps (default: `,`)
 - `envKeyValSeparator`: sets the character to be used to separate keys and their values in maps (default: `:`)
+- `envEnableIf`: enables parsing of a field only if the specified environment variable is true. If it is false, the field is ignored. If it is true and the field’s environment variable is missing, an error is returned.
 
 ### `env` tag options
 
