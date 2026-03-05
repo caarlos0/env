@@ -2162,6 +2162,36 @@ func TestIssue298ErrorNestedFieldRequiredNotSet(t *testing.T) {
 	isTrue(t, errors.Is(err, VarIsNotSetError{}))
 }
 
+func TestIssue298VerifyPrefixUsingEnvTagIsNotSupported(t *testing.T) {
+	type Test struct {
+		Str string `env:"STR"`
+		Num int    `env:"NUM"`
+	}
+	type ComplexConfig struct {
+		Foo *[]Test `env:"FOO_"`
+		Bar []Test  `env:"BAR"`
+		Baz []Test  `env:",init"`
+	}
+
+	t.Setenv("FOO_0_STR", "f0t")
+	t.Setenv("FOO_0_NUM", "101")
+	t.Setenv("FOO_1_STR", "f1t")
+	t.Setenv("FOO_1_NUM", "111")
+
+	t.Setenv("BAR_0_STR", "b0t")
+	t.Setenv("BAR_0_NUM", "127")
+	t.Setenv("BAR_1_STR", "b1t")
+	t.Setenv("BAR_1_NUM", "212")
+
+	cfg := ComplexConfig{}
+
+	isNoErr(t, Parse(&cfg))
+
+	isEqual(t, nil, cfg.Foo)
+	isEqual(t, nil, cfg.Baz)
+	isEqual(t, nil, cfg.Bar)
+}
+
 func TestIssue320(t *testing.T) {
 	type Test struct {
 		Str string `env:"STR"`
@@ -2409,4 +2439,395 @@ func TestEnvBleed(t *testing.T) {
 		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: map[string]string{"BAR": "202"}}))
 		isEqual(t, "", cfg.Foo)
 	})
+}
+
+func TestComplexConfigWithMap(t *testing.T) {
+	t.Run("Should not parse struct map with empty key", func(t *testing.T) {
+		type Test struct {
+			Str string `env:"DAT_STR"`
+		}
+
+		type ComplexConfig struct {
+			Bar map[string]Test `envPrefix:"BAR_"`
+		}
+
+		t.Setenv("BAR_DAT_STR", "b1t")
+
+		cfg := ComplexConfig{}
+
+		err := Parse(&cfg)
+		isErrorWithMessage(t, err, "env: parse error on field \"Bar\" of type \"map[string]env.Test\": malformed complex map struct for \"DAT_STR\"")
+	})
+
+	t.Run("Should parse map with struct without any matching env", func(t *testing.T) {
+		type Test struct {
+			Str string
+		}
+
+		type ComplexConfig struct {
+			Bar map[string]Test `envPrefix:"BAR_"`
+		}
+
+		t.Setenv("BAR_E_TEST_DAT_STR", "b1t")
+
+		cfg := ComplexConfig{}
+
+		err := Parse(&cfg)
+		isNoErr(t, err)
+	})
+
+	t.Run("Should parse non pointer struct map with", func(t *testing.T) {
+		type SubTest struct {
+			Str string `env:"NEW_STR"`
+		}
+
+		type Test struct {
+			Str string  `env:"DAT_STR"`
+			Num int     `env:"DAT_NUM"`
+			Sub SubTest `envPrefix:"SUB_"`
+		}
+
+		type ComplexConfig struct {
+			Bar map[string]Test `envPrefix:"BAR_"`
+		}
+
+		t.Run("valid values", func(t *testing.T) {
+			t.Setenv("BAR_KEY1_TEST_DAT_STR", "b1t")
+			t.Setenv("BAR_KEY1_DAT_NUM", "201")
+			t.Setenv("BAR_KEY1_SUB_NEW_STR", "sub_b1t")
+
+			cfg := ComplexConfig{}
+
+			isNoErr(t, Parse(&cfg))
+
+			isEqual(t, "b1t", cfg.Bar["KEY1_TEST"].Str)
+			isEqual(t, 201, cfg.Bar["KEY1"].Num)
+			isEqual(t, "sub_b1t", cfg.Bar["KEY1"].Sub.Str)
+		})
+
+		t.Run("no values", func(t *testing.T) {
+			cfg := ComplexConfig{}
+
+			isNoErr(t, Parse(&cfg))
+
+			isEqual(t, 0, len(cfg.Bar))
+			isEqual(t, "", cfg.Bar["KEY1_TEST"].Str)
+			isEqual(t, 0, cfg.Bar["KEY1"].Num)
+			isEqual(t, "", cfg.Bar["KEY1"].Sub.Str)
+		})
+	})
+
+	t.Run("Should skip processing map when no tags are present on the map", func(t *testing.T) {
+		type SubTest struct {
+			Str string `env:"NEW_STR"`
+		}
+
+		type Test struct {
+			Str string  `env:"DAT_STR"`
+			Num int     `env:"DAT_NUM"`
+			Sub SubTest `envPrefix:"SUB_"`
+		}
+
+		type ComplexConfig struct {
+			Bar map[string]Test
+		}
+
+		t.Setenv("KEY1_TEST_DAT_STR", "b1t")
+		t.Setenv("KEY1_DAT_NUM", "201")
+		t.Setenv("KEY1_SUB_NEW_STR", "sub_b1t")
+
+		cfg := ComplexConfig{}
+
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, nil, cfg.Bar)
+	})
+
+	t.Run("Should not allow an env tag with a value to be set on the map", func(t *testing.T) {
+		type Test struct {
+			Str string `env:"DAT_STR"`
+		}
+
+		type ComplexConfig struct {
+			Bar map[string]Test `env:"VALUE,init"`
+		}
+
+		cfg := ComplexConfig{}
+
+		err := Parse(&cfg)
+		isEqual(t, nil, cfg.Bar)
+		isErrorWithMessage(t, err, "env: parse error on field \"Bar\" of type \"map[string]env.Test\": env key unsupported for struct map \"Bar\"")
+	})
+
+	t.Run("Should allow an env tag without a value to be set on the map", func(t *testing.T) {
+		type Test struct {
+			Str string `env:"DAT_STR"`
+		}
+
+		type ComplexConfig struct {
+			Bar map[string]Test `env:",init"`
+		}
+
+		t.Setenv("KEY1_DAT_STR", "b1t")
+
+		cfg := ComplexConfig{}
+
+		err := Parse(&cfg)
+		isNoErr(t, err)
+		isEqual(t, nil, cfg.Bar)
+	})
+
+	t.Run("Should parse pointer struct map with", func(t *testing.T) {
+		type SubTest struct {
+			Str string `env:"NEW_STR"`
+		}
+
+		type Test struct {
+			Str string  `env:"DAT_STR"`
+			Num int     `env:"DAT_NUM"`
+			Sub SubTest `envPrefix:"SUB_"`
+		}
+
+		type ComplexConfig struct {
+			Bar map[string]*Test `envPrefix:"BAR_"`
+		}
+
+		t.Run("valid values", func(t *testing.T) {
+			t.Setenv("BAR_KEY1_TEST_DAT_STR", "b1t")
+			t.Setenv("BAR_KEY1_DAT_NUM", "201")
+			t.Setenv("BAR_KEY1_SUB_NEW_STR", "sub_b1t")
+
+			cfg := ComplexConfig{}
+
+			isNoErr(t, Parse(&cfg))
+
+			isEqual(t, "b1t", cfg.Bar["KEY1_TEST"].Str)
+			isEqual(t, 201, cfg.Bar["KEY1"].Num)
+			isEqual(t, "sub_b1t", cfg.Bar["KEY1"].Sub.Str)
+		})
+
+		t.Run("no values", func(t *testing.T) {
+			cfg := ComplexConfig{}
+
+			isNoErr(t, Parse(&cfg))
+
+			isEqual(t, nil, cfg.Bar)
+		})
+	})
+
+	t.Run("Parse struct map nested in struct maps without any duplicate field names", func(t *testing.T) {
+		type SubTest struct {
+			Str string `env:"NEW_STR"`
+		}
+
+		type Test struct {
+			Foo map[string]SubTest `envPrefix:"FOO_"`
+		}
+
+		type ComplexConfig struct {
+			Bar map[string]Test `envPrefix:"BAR_"`
+		}
+
+		t.Run("Should succeed with valid values", func(t *testing.T) {
+			t.Setenv("BAR_KEY1_FOO_KEY2_NEW_STR", "b1t")
+
+			cfg := ComplexConfig{}
+
+			isNoErr(t, Parse(&cfg))
+			isEqual(t, "b1t", cfg.Bar["KEY1"].Foo["KEY2"].Str)
+		})
+
+		t.Run("Should succeed with envPrefix as key but nested map having unique key", func(t *testing.T) {
+			map1Key := "BAR_FOO_FOO_FOO_FOO_FOO_FOO"
+			map2Key := "KEY1"
+			t.Setenv(`BAR_`+map1Key+`_FOO_`+map2Key+`_NEW_STR`, "b1t")
+
+			cfg := ComplexConfig{}
+
+			isNoErr(t, Parse(&cfg))
+			isEqual(t, "b1t", cfg.Bar[map1Key].Foo[map2Key].Str)
+		})
+
+		t.Run("Should fail where nested map prefix is key for for parent map and nested map keys", func(t *testing.T) {
+			map1Key := "FOO_FOO_FOO_FOO_FOO_FOO"
+			map2Key := "FOO"
+			t.Setenv(`BAR_`+map1Key+`_FOO_`+map2Key+`_NEW_STR`, "b1t")
+
+			cfg := ComplexConfig{}
+
+			err := Parse(&cfg)
+			isErrorWithMessage(t, err, "env: parse error on field \"Foo\" of type \"map[string]env.SubTest\": malformed complex map struct for \"NEW_STR\"")
+		})
+	})
+
+	t.Run("Verify matching of similar names", func(t *testing.T) {
+		type SubTest struct {
+			Str1 string `env:"STR"`
+		}
+
+		type Test struct {
+			Str1 string `env:"NEW_STR"`
+			Str2 string `env:"STR"`
+			Str3 string `env:"NEW_STRING"`
+			Str4 string `env:"STR_NEWER"`
+			Str5 string `env:"NEW_STR_STR"`
+
+			SubStr map[string]SubTest `envPrefix:"SUBBER_"`
+		}
+
+		type ComplexConfig struct {
+			Bar map[string]Test `envPrefix:"BAR_"`
+		}
+
+		t.Run("partial environment variables", func(t *testing.T) {
+			cfg := ComplexConfig{}
+
+			t.Setenv("BAR_FOO_NEW_STR", "a1")
+			t.Setenv("BAR_FOO_NEW_STRING", "a3")
+
+			isNoErr(t, Parse(&cfg))
+			isEqual(t, "a1", cfg.Bar["FOO"].Str1)
+			isEqual(t, "", cfg.Bar["FOO"].Str2)
+			isEqual(t, "a3", cfg.Bar["FOO"].Str3)
+			isEqual(t, "", cfg.Bar["FOO"].Str4)
+			isEqual(t, "", cfg.Bar["FOO"].Str5)
+			isEqual(t, 0, len(cfg.Bar["FOO"].SubStr))
+		})
+
+		t.Run("full environment variables", func(t *testing.T) {
+			cfg := ComplexConfig{}
+
+			t.Setenv("BAR_FOO_NEW_STR", "a1")
+			t.Setenv("BAR_FOO_STR", "a2")
+			t.Setenv("BAR_FOO_NEW_STRING", "a3")
+			t.Setenv("BAR_FOO_STR_NEWER", "a4")
+			t.Setenv("BAR_FOO_NEW_STR_STR", "a5")
+
+			isNoErr(t, Parse(&cfg))
+			isEqual(t, "a1", cfg.Bar["FOO"].Str1)
+			isEqual(t, "a2", cfg.Bar["FOO"].Str2)
+			isEqual(t, "a3", cfg.Bar["FOO"].Str3)
+			isEqual(t, "a4", cfg.Bar["FOO"].Str4)
+			isEqual(t, "a5", cfg.Bar["FOO"].Str5)
+			isEqual(t, 0, len(cfg.Bar["FOO"].SubStr))
+		})
+
+		t.Run("the map", func(t *testing.T) {
+			cfg := ComplexConfig{}
+
+			t.Setenv("BAR_FOO_SUBBER_NEWER_STR", "a1")
+
+			isNoErr(t, Parse(&cfg))
+			isEqual(t, "a1", cfg.Bar["FOO"].SubStr["NEWER"].Str1)
+		})
+	})
+
+	t.Run("Parse struct map nested in struct maps with duplicate field names", func(t *testing.T) {
+		type SubTest struct {
+			Str string `env:"FOO_FOO"`
+		}
+
+		type Test struct {
+			Foo map[string]SubTest `envPrefix:"FOO_"`
+		}
+
+		type ComplexConfig struct {
+			Bar map[string]Test `envPrefix:"BAR_"`
+		}
+
+		map1Key := "FOO_FOO_FOO_FOO_FOO_FOO"
+		map2Key := "FOO"
+		t.Setenv(`BAR_`+map1Key+`_FOO_`+map2Key+`_FOO_FOO`, "b1t")
+
+		cfg := ComplexConfig{}
+
+		err := Parse(&cfg)
+		isNoErr(t, err)
+
+		invalidAssumedKey := map1Key + "_FOO_FOO"
+		result, ok := cfg.Bar[invalidAssumedKey]
+		isTrue(t, ok)
+		// The map would be initialized but no values set
+		isEqual(t, 0, len(result.Foo))
+	})
+
+	t.Run("Should parse struct map with float key", func(t *testing.T) {
+		type Test struct {
+			Str string `env:"STR"`
+			Num int    `env:"NUM"`
+		}
+		type ComplexConfig struct {
+			Bar map[float64]Test `envPrefix:"BAR_"`
+		}
+
+		t.Setenv("BAR_10.17_STR", "b1t")
+		t.Setenv("BAR_7.9_NUM", "201")
+
+		cfg := ComplexConfig{}
+
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, "b1t", cfg.Bar[10.17].Str)
+	})
+
+	t.Run("Should parse struct map with required key", func(t *testing.T) {
+		type Test struct {
+			Str string `env:"STR,required"`
+			Num int    `env:"NUM"`
+		}
+		type ComplexConfig struct {
+			Bar map[int64]Test `envPrefix:"BAR_"`
+		}
+
+		t.Run("Where required is present", func(t *testing.T) {
+			t.Setenv("BAR_7_STR", "b1t")
+			t.Setenv("BAR_7_NUM", "201")
+			t.Setenv("BAR_9_STR", "b1t")
+
+			cfg := ComplexConfig{}
+
+			isNoErr(t, Parse(&cfg))
+			isEqual(t, "b1t", cfg.Bar[7].Str)
+			isEqual(t, 201, cfg.Bar[7].Num)
+			isEqual(t, "b1t", cfg.Bar[9].Str)
+		})
+
+		t.Run("Where required is missing", func(t *testing.T) {
+			t.Setenv("BAR_7_STR", "b1t")
+			t.Setenv("BAR_7_NUM", "201")
+			t.Setenv("BAR_9_NUM", "7")
+
+			cfg := ComplexConfig{}
+
+			err := Parse(&cfg)
+			isErrorWithMessage(t, err, "env: required environment variable \"BAR_9_STR\" is not set")
+		})
+	})
+
+	t.Run("Should parse struct map which contains fields with init and envDefault", func(t *testing.T) {
+		type SubStruct struct {
+			Str string `env:"STR"`
+		}
+
+		type Test struct {
+			Str string     `env:"STR,required"`
+			Num int        `envDefault:"17" env:"NUM"`
+			Sub *SubStruct `env:",init" envPrefix:"SUB_"`
+		}
+
+		type ComplexConfig struct {
+			Bar map[int64]Test `envPrefix:"BAR_"`
+		}
+
+		t.Setenv("BAR_7_STR", "b1t")
+
+		cfg := ComplexConfig{}
+
+		err := Parse(&cfg)
+		isNoErr(t, err)
+
+		isFalse(t, cfg.Bar[7].Sub == nil)
+		isEqual(t, 17, cfg.Bar[7].Num)
+	})
+
 }
