@@ -153,4 +153,4 @@ Eventual bug fixes will keep being merged.
 
 ## Stargazers over time
 
-[![Stargazers over time](https://starchart.cc/caarlos0/env.svg)](https://starchart.cc/caarlos0/env)
+[![Stargazers over time](https://starchart.cc/caarlos0/env.svg?variant=adaptive)](https://starchart.cc/caarlos0/env)
