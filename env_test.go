@@ -2207,6 +2207,9 @@ func TestSetDefaultsForZeroValuesOnly(t *testing.T) {
 	u, err := url.Parse("https://localhost/foo")
 	isNoErr(t, err)
 
+	uByEnv, err := url.Parse("https://localhost/byEnv")
+	isNoErr(t, err)
+
 	for _, tc := range []struct {
 		Name     string
 		Options  Options
@@ -2228,6 +2231,24 @@ func TestSetDefaultsForZeroValuesOnly(t *testing.T) {
 				Str: "foo",
 				Int: 42,
 				URL: *defURL,
+			},
+		},
+		{
+			Name:    "true with env",
+			Options: Options{SetDefaultsForZeroValuesOnly: true, Environment: ToMap(append(os.Environ(), "URL=https://localhost/byEnv"))},
+			Expected: config{
+				Str: "isSet",
+				Int: 1,
+				Url: *uByEnv,
+			},
+		},
+		{
+			Name:    "false wtih env",
+			Options: Options{SetDefaultsForZeroValuesOnly: false, Environment: ToMap(append(os.Environ(), "URL=https://localhost/byEnv"))},
+			Expected: config{
+				Str: "foo",
+				Int: 42,
+				Url: *uByEnv,
 			},
 		},
 		{
