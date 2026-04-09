@@ -88,6 +88,13 @@ Pointers, slices and slices of pointers, and maps of those types are also suppor
 
 You may also add custom parsers for your types.
 
+Additionally, the following are also supported
+- Slices of Structs
+- Map of Structs
+
+> [!IMPORTANT]
+> For nested maps (i.e. map of structs inside map of structs), be careful with key naming to avoid conflicts.
+
 ### Tags
 
 The following tags are provided:
@@ -95,8 +102,8 @@ The following tags are provided:
 - `env`: sets the environment variable name and optionally takes the tag options described below
 - `envDefault`: sets the default value for the field
 - `envPrefix`: can be used in a field that is a complex type to set a prefix to all environment variables used in it
-- `envSeparator`: sets the character to be used to separate items in slices and maps (default: `,`)
-- `envKeyValSeparator`: sets the character to be used to separate keys and their values in maps (default: `:`)
+- `envSeparator`: sets the character to be used to separate items in slices and maps (which do not have structs as the value type) (default: `,`)
+- `envKeyValSeparator`: sets the character to be used to separate keys and their values in maps (which do not have structs as the value type) (default: `:`)
 
 ### `env` tag options
 
