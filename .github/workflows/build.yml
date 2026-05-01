@@ -40,30 +40,3 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.txt
-      - uses: goreleaser/goreleaser-action@1a80836c5c9d9e5755a25cb59ec6f45a3b5f41a8 # v7.2.1
-        if: success() && startsWith(github.ref, 'refs/tags/') && matrix.os == 'ubuntu-latest' && matrix.go-version == 'stable' # editorconfig-checker-disable-line
-        with:
-          version: latest
-          distribution: goreleaser-pro
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
-  dependabot:
-    needs: [build]
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: write
-    if: ${{ github.actor == 'dependabot[bot]' && github.event_name == 'pull_request'}}
-    steps:
-      - id: metadata
-        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
-        with:
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
-      - run: |
-          gh pr review --approve "$PR_URL"
-          gh pr merge --squash --auto "$PR_URL"
-        env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}

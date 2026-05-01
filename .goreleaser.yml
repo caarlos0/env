@@ -1,5 +1,16 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema-pro.json
 version: 2
+pro: true
+
 includes:
   - from_url:
       url: https://raw.githubusercontent.com/caarlos0/.goreleaserfiles/main/lib.yml
+
+source:
+  enabled: true
+
+sboms:
+  - artifacts: source
+
+checksum:
+  name_template: checksums.txt
