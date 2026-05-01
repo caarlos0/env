@@ -991,6 +991,12 @@ func TestParseExpandOption(t *testing.T) {
 		ExpandKey   string `env:"EXPAND_KEY"`
 		CompoundKey string `env:"HOST_PORT,expand" envDefault:"${HOST}:${PORT}"`
 		Default     string `env:"DEFAULT,expand" envDefault:"def1"`
+		Component   struct {
+			Port     int `env:"PORT" envDefault:"5000"`
+			Internal struct {
+				Host string `env:"INTERNAL_HOST,expand" envDefault:"${HOST}:${COMPONENT_PORT}"`
+			}
+		} `envPrefix:"COMPONENT_"`
 	}
 
 	t.Setenv("HOST", "localhost")
@@ -1008,6 +1014,7 @@ func TestParseExpandOption(t *testing.T) {
 	isEqual(t, "qwerty12345", cfg.ExpandKey)
 	isEqual(t, "localhost:3000", cfg.CompoundKey)
 	isEqual(t, "def1", cfg.Default)
+	isEqual(t, "localhost:5000", cfg.Component.Internal.Host)
 }
 
 func TestParseExpandWithDefaultOption(t *testing.T) {
