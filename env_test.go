@@ -2417,3 +2417,34 @@ func TestEnvBleed(t *testing.T) {
 		isEqual(t, "", cfg.Foo)
 	})
 }
+
+func TestCustomParserPointerToCustomType(t *testing.T) {
+	// Regression test for #385
+	type foo struct {
+		name string
+	}
+
+	t.Setenv("VAR_CUSTOM", "test")
+	t.Setenv("BLAH_CUSTOM", "test3")
+
+	type config struct {
+		Var foo  `env:"VAR_CUSTOM"`
+		Foo *foo `env:"BLAH_CUSTOM"`
+	}
+
+	cfg := &config{
+		Var: foo{"var"},
+		Foo: &foo{"foo"},
+	}
+
+	err := ParseWithOptions(cfg, Options{FuncMap: map[reflect.Type]ParserFunc{
+		reflect.TypeOf(foo{}): func(v string) (interface{}, error) {
+			return foo{name: v}, nil
+		},
+	}})
+
+	isNoErr(t, err)
+	isEqual(t, "test", cfg.Var.name)
+	isTrue(t, cfg.Foo != nil)
+	isEqual(t, "test3", cfg.Foo.name)
+}
