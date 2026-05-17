@@ -2259,6 +2259,41 @@ func TestSetDefaultsForZeroValuesOnly(t *testing.T) {
 	}
 }
 
+// Regression for #406. By default an explicitly-set-but-empty env value
+// falls back to envDefault. AllowEmpty:true keeps the empty value so
+// callers can clear out a string via the environment.
+func TestAllowEmpty(t *testing.T) {
+	type config struct {
+		Str string `env:"STR" envDefault:"foo"`
+	}
+
+	t.Run("default keeps falling back to envDefault", func(t *testing.T) {
+		var cfg config
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"STR": ""},
+		}))
+		isEqual(t, "foo", cfg.Str)
+	})
+
+	t.Run("AllowEmpty passes the empty value through", func(t *testing.T) {
+		var cfg config
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"STR": ""},
+			AllowEmpty:  true,
+		}))
+		isEqual(t, "", cfg.Str)
+	})
+
+	t.Run("AllowEmpty still uses default when env is unset", func(t *testing.T) {
+		var cfg config
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{},
+			AllowEmpty:  true,
+		}))
+		isEqual(t, "foo", cfg.Str)
+	})
+}
+
 // Regression for #364: SetDefaultsForZeroValuesOnly is about defaults.
 // An env value set in the environment should still win over a non-zero
 // field, otherwise users can't override pre-populated config via env at

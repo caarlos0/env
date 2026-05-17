@@ -168,6 +168,12 @@ type Options struct {
 	// Useful for mixing default values from `envDefault` and struct initialization
 	SetDefaultsForZeroValuesOnly bool
 
+	// AllowEmpty, when true, treats an explicitly-set-but-empty env variable as
+	// a real empty value instead of falling back to envDefault. The default
+	// behaviour (false) keeps the historical "empty env means use default"
+	// shortcut for backwards compatibility.
+	AllowEmpty bool
+
 	// Custom parse functions for different types.
 	FuncMap map[reflect.Type]ParserFunc
 
@@ -603,6 +609,7 @@ func get(fieldParams FieldParams, opts Options) (val string, isDefault bool, err
 		fieldParams.DefaultValue,
 		fieldParams.HasDefaultValue,
 		opts.Environment,
+		opts.AllowEmpty,
 	)
 
 	if fieldParams.Expand {
@@ -650,12 +657,12 @@ func getFromFile(filename string) (value string, err error) {
 	return string(b), err
 }
 
-func getOr(key, defaultValue string, defExists bool, envs map[string]string) (val string, exists, isDefault bool) {
+func getOr(key, defaultValue string, defExists bool, envs map[string]string, allowEmpty bool) (val string, exists, isDefault bool) {
 	value, exists := envs[key]
 	switch {
 	case (!exists || key == "") && defExists:
 		return defaultValue, true, true
-	case exists && value == "" && defExists:
+	case exists && value == "" && defExists && !allowEmpty:
 		return defaultValue, true, true
 	case !exists:
 		return "", false, false
