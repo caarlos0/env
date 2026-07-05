@@ -380,7 +380,12 @@ func doParseField(
 		return nil
 	}
 	if refField.Kind() == reflect.Ptr && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
-		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
+		// If the field has its own env tag, don't recurse into the struct.
+		// Let it fall through to setField, which handles custom parsers.
+		ownKey, _ := parseKeyForOption(refTypeField.Tag.Get(opts.TagName))
+		if ownKey == "" && !opts.UseFieldNameByDefault {
+			return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
+		}
 	}
 	if refField.Kind() == reflect.Struct && refField.CanAddr() && refField.Type().Name() == "" {
 		return parseInternal(refField.Addr().Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
