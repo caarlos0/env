@@ -150,7 +150,3 @@ Eventual bug fixes will keep being merged.
 ## Related projects
 
 - [envdoc](https://github.com/g4s8/envdoc) - generate documentation for environment variables from `env` tags
-
-## Stargazers over time
-
-[![Stargazers over time](https://starchart.cc/caarlos0/env.svg?variant=adaptive)](https://starchart.cc/caarlos0/env)
