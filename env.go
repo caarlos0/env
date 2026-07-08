@@ -545,6 +545,10 @@ type FieldParams struct {
 	Expand          bool
 	Init            bool
 	Ignored         bool
+	// EnabledByEnv holds the name of a boolean env var (from the `envEnableIf`
+	// struct tag). When that variable resolves to "true", this field is treated
+	// as both required and notEmpty regardless of its other tag options.
+	EnabledByEnv string
 }
 
 func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, error) {
@@ -562,6 +566,7 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 		DefaultValue:    defaultValue,
 		HasDefaultValue: hasDefaultValue,
 		Ignored:         ownKey == "-",
+		EnabledByEnv:    field.Tag.Get("envEnableIf"),
 	}
 
 	for _, tag := range tags {
@@ -590,6 +595,14 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 	return result, nil
 }
 
+// isEnvTrue reports whether the environment variable named key resolves to a
+// truthy value ("1", "t", "T", "TRUE", "true", "True") using the same rules as
+// strconv.ParseBool.
+func isEnvTrue(key string, envs map[string]string) bool {
+	v := strings.ToLower(strings.TrimSpace(envs[key]))
+	return v == "true" || v == "1" || v == "t"
+}
+
 func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	var exists, isDefault bool
 
@@ -610,12 +623,24 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 		defer os.Unsetenv(fieldParams.Key)
 	}
 
-	if fieldParams.Required && !exists && fieldParams.OwnKey != "" {
-		return "", newVarIsNotSetError(fieldParams.Key)
-	}
-
-	if fieldParams.NotEmpty && val == "" {
-		return "", newEmptyVarError(fieldParams.Key)
+	// envEnableIf: when the named controlling env var is truthy, this field
+	// is treated as both required and notEmpty.
+	if fieldParams.EnabledByEnv != "" && isEnvTrue(fieldParams.EnabledByEnv, opts.Environment) {
+		if !exists && fieldParams.OwnKey != "" {
+			return "", newVarIsNotSetError(fieldParams.Key)
+		}
+		if val == "" {
+			return "", newEmptyVarError(fieldParams.Key)
+		}
+		// Fall through so the value is used normally.
+	} else {
+		// Standard required / notEmpty checks (no EnabledByEnv override).
+		if fieldParams.Required && !exists && fieldParams.OwnKey != "" {
+			return "", newVarIsNotSetError(fieldParams.Key)
+		}
+		if fieldParams.NotEmpty && val == "" {
+			return "", newEmptyVarError(fieldParams.Key)
+		}
 	}
 
 	if fieldParams.LoadFile && val != "" {
