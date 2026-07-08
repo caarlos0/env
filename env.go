@@ -140,6 +140,9 @@ type Options struct {
 	// PrefixTagName specifies another prefix tag name to use rather than the default 'envPrefix'.
 	PrefixTagName string
 
+	// SuffixTagName specifies another suffix tag name to use rather than the default 'envSuffix'.
+	SuffixTagName string
+
 	// DefaultValueTagName specifies another default tag name to use rather than the default 'envDefault'.
 	DefaultValueTagName string
 
@@ -152,6 +155,9 @@ type Options struct {
 
 	// Prefix define a prefix for every key.
 	Prefix string
+
+	// Suffix define a suffix for every key.
+	Suffix string
 
 	// UseFieldNameByDefault defines whether or not `env` should use the field
 	// name by default if the `env` key is missing.
@@ -188,6 +194,7 @@ func defaultOptions() Options {
 	return Options{
 		TagName:             "env",
 		PrefixTagName:       "envPrefix",
+		SuffixTagName:       "envSuffix",
 		DefaultValueTagName: "envDefault",
 		Environment:         toMap(os.Environ()),
 		FuncMap:             defaultTypeParsers(),
@@ -242,10 +249,12 @@ func optionsWithSliceEnvPrefix(opts Options, index int) Options {
 		Environment:                  opts.Environment,
 		TagName:                      opts.TagName,
 		PrefixTagName:                opts.PrefixTagName,
+		SuffixTagName:                opts.SuffixTagName,
 		DefaultValueTagName:          opts.DefaultValueTagName,
 		RequiredIfNoDef:              opts.RequiredIfNoDef,
 		OnSet:                        opts.OnSet,
 		Prefix:                       fmt.Sprintf("%s%d_", opts.Prefix, index),
+		Suffix:                       opts.Suffix,
 		UseFieldNameByDefault:        opts.UseFieldNameByDefault,
 		SetDefaultsForZeroValuesOnly: opts.SetDefaultsForZeroValuesOnly,
 		FuncMap:                      opts.FuncMap,
@@ -253,15 +262,17 @@ func optionsWithSliceEnvPrefix(opts Options, index int) Options {
 	}
 }
 
-func optionsWithEnvPrefix(field reflect.StructField, opts Options) Options {
+func optionsWithEnvPrefixSuffix(field reflect.StructField, opts Options) Options {
 	return Options{
 		Environment:                  opts.Environment,
 		TagName:                      opts.TagName,
 		PrefixTagName:                opts.PrefixTagName,
+		SuffixTagName:                opts.SuffixTagName,
 		DefaultValueTagName:          opts.DefaultValueTagName,
 		RequiredIfNoDef:              opts.RequiredIfNoDef,
 		OnSet:                        opts.OnSet,
 		Prefix:                       opts.Prefix + field.Tag.Get(opts.PrefixTagName),
+		Suffix:                       field.Tag.Get(opts.SuffixTagName) + opts.Suffix,
 		UseFieldNameByDefault:        opts.UseFieldNameByDefault,
 		SetDefaultsForZeroValuesOnly: opts.SetDefaultsForZeroValuesOnly,
 		FuncMap:                      opts.FuncMap,
@@ -380,10 +391,10 @@ func doParseField(
 		return nil
 	}
 	if refField.Kind() == reflect.Ptr && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
-		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
+		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefixSuffix(refTypeField, opts))
 	}
 	if refField.Kind() == reflect.Struct && refField.CanAddr() && refField.Type().Name() == "" {
-		return parseInternal(refField.Addr().Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
+		return parseInternal(refField.Addr().Interface(), processField, optionsWithEnvPrefixSuffix(refTypeField, opts))
 	}
 
 	params, err := parseFieldParams(refTypeField, opts)
@@ -405,11 +416,11 @@ func doParseField(
 	}
 
 	if refField.Kind() == reflect.Struct {
-		return doParse(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
+		return doParse(refField, processField, optionsWithEnvPrefixSuffix(refTypeField, opts))
 	}
 
 	if isSliceOfStructs(refTypeField) {
-		return doParseSlice(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
+		return doParseSlice(refField, processField, optionsWithEnvPrefixSuffix(refTypeField, opts))
 	}
 
 	return nil
@@ -557,7 +568,7 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 
 	result := FieldParams{
 		OwnKey:          ownKey,
-		Key:             opts.Prefix + ownKey,
+		Key:             opts.Prefix + ownKey + opts.Suffix,
 		Required:        opts.RequiredIfNoDef,
 		DefaultValue:    defaultValue,
 		HasDefaultValue: hasDefaultValue,

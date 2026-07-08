@@ -95,6 +95,7 @@ The following tags are provided:
 - `env`: sets the environment variable name and optionally takes the tag options described below
 - `envDefault`: sets the default value for the field
 - `envPrefix`: can be used in a field that is a complex type to set a prefix to all environment variables used in it
+- `envSuffix`: can be used in a field that is a complex type to set a suffix to all environment variables used in it
 - `envSeparator`: sets the character to be used to separate items in slices and maps (default: `,`)
 - `envKeyValSeparator`: sets the character to be used to separate keys and their values in maps (default: `:`)
 
@@ -116,10 +117,12 @@ There are a few options available in the functions that end with `WithOptions`:
 - `Environment`: keys and values to be used instead of `os.Environ()`
 - `TagName`: specifies another tag name to use rather than the default `env`
 - `PrefixTagName`: specifies another prefix tag name to use rather than the default `envPrefix`
+- `SuffixTagName`: specifies another suffix tag name to use rather than the default `envSuffix`
 - `DefaultValueTagName`: specifies another default tag name to use rather than the default `envDefault`
 - `RequiredIfNoDef`: set all `env` fields as required if they do not declare `envDefault`
 - `OnSet`: allows to hook into the `env` parsing and do something when a value is set
 - `Prefix`: prefix to be used in all environment variables
+- `Suffix`: suffix to be used in all environment variables
 - `UseFieldNameByDefault`: defines whether or not `env` should use the field name by default if the `env` key is missing
 - `FuncMap`: custom parse functions for custom types
 
