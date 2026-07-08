@@ -168,6 +168,10 @@ type Options struct {
 	// Useful for mixing default values from `envDefault` and struct initialization
 	SetDefaultsForZeroValuesOnly bool
 
+	// AllowBlankEnvValues bypasses empty env variable checking, allowing variables set to their zero value to be
+	// assigned. Bypasses checks and may lead to errors.
+	AllowBlankEnvValues bool
+
 	// Custom parse functions for different types.
 	FuncMap map[reflect.Type]ParserFunc
 
@@ -248,6 +252,7 @@ func optionsWithSliceEnvPrefix(opts Options, index int) Options {
 		Prefix:                       fmt.Sprintf("%s%d_", opts.Prefix, index),
 		UseFieldNameByDefault:        opts.UseFieldNameByDefault,
 		SetDefaultsForZeroValuesOnly: opts.SetDefaultsForZeroValuesOnly,
+		AllowBlankEnvValues:          opts.AllowBlankEnvValues,
 		FuncMap:                      opts.FuncMap,
 		rawEnvVars:                   opts.rawEnvVars,
 	}
@@ -264,6 +269,7 @@ func optionsWithEnvPrefix(field reflect.StructField, opts Options) Options {
 		Prefix:                       opts.Prefix + field.Tag.Get(opts.PrefixTagName),
 		UseFieldNameByDefault:        opts.UseFieldNameByDefault,
 		SetDefaultsForZeroValuesOnly: opts.SetDefaultsForZeroValuesOnly,
+		AllowBlankEnvValues:          opts.AllowBlankEnvValues,
 		FuncMap:                      opts.FuncMap,
 		rawEnvVars:                   opts.rawEnvVars,
 	}
@@ -499,9 +505,12 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 }
 
 func setField(refField reflect.Value, refTypeField reflect.StructField, opts Options, fieldParams FieldParams) error {
-	value, err := get(fieldParams, opts)
+	value, exists, err := get(fieldParams, opts)
 	if err != nil {
 		return err
+	}
+	if value == "" && exists && opts.AllowBlankEnvValues {
+		return set(refField, refTypeField, value, opts.FuncMap)
 	}
 
 	if value != "" && (!opts.SetDefaultsForZeroValuesOnly || refField.IsZero()) {
@@ -590,14 +599,15 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 	return result, nil
 }
 
-func get(fieldParams FieldParams, opts Options) (val string, err error) {
-	var exists, isDefault bool
+func get(fieldParams FieldParams, opts Options) (val string, exists bool, err error) {
+	var isDefault bool
 
 	val, exists, isDefault = getOr(
 		fieldParams.Key,
 		fieldParams.DefaultValue,
 		fieldParams.HasDefaultValue,
 		opts.Environment,
+		opts.AllowBlankEnvValues,
 	)
 
 	if fieldParams.Expand {
@@ -611,18 +621,18 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	}
 
 	if fieldParams.Required && !exists && fieldParams.OwnKey != "" {
-		return "", newVarIsNotSetError(fieldParams.Key)
+		return "", false, newVarIsNotSetError(fieldParams.Key)
 	}
 
 	if fieldParams.NotEmpty && val == "" {
-		return "", newEmptyVarError(fieldParams.Key)
+		return "", exists, newEmptyVarError(fieldParams.Key)
 	}
 
 	if fieldParams.LoadFile && val != "" {
 		filename := val
 		val, err = getFromFile(filename)
 		if err != nil {
-			return "", newLoadFileContentError(filename, fieldParams.Key, err)
+			return "", exists, newLoadFileContentError(filename, fieldParams.Key, err)
 		}
 	}
 
@@ -631,7 +641,7 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 			opts.OnSet(fieldParams.Key, val, isDefault)
 		}
 	}
-	return val, err
+	return val, exists, err
 }
 
 // split the env tag's key into the expected key and desired option, if any.
@@ -645,12 +655,12 @@ func getFromFile(filename string) (value string, err error) {
 	return string(b), err
 }
 
-func getOr(key, defaultValue string, defExists bool, envs map[string]string) (val string, exists, isDefault bool) {
+func getOr(key, defaultValue string, defExists bool, envs map[string]string, allowBlank bool) (val string, exists, isDefault bool) {
 	value, exists := envs[key]
 	switch {
 	case (!exists || key == "") && defExists:
 		return defaultValue, true, true
-	case exists && value == "" && defExists:
+	case exists && value == "" && defExists && !allowBlank:
 		return defaultValue, true, true
 	case !exists:
 		return "", false, false
@@ -671,6 +681,9 @@ func set(field reflect.Value, sf reflect.StructField, value string, funcMap map[
 	fieldee := field
 	if typee.Kind() == reflect.Ptr {
 		typee = typee.Elem()
+		if field.IsNil() {
+			field.Set(reflect.New(typee))
+		}
 		fieldee = field.Elem()
 	}
 
