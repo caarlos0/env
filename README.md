@@ -108,6 +108,7 @@ Here are all the options available for the `env` tag:
 - `,notEmpty`: make the field errors if the environment variable is empty
 - `,required`: make the field errors if the environment variable is not set
 - `,unset`: unset the environment variable after use
+- `,emptyOverridesDefault`: treats an empty environment variable value as an explicit override of the default value
 
 ### Parse Options
 
