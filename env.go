@@ -499,12 +499,12 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 }
 
 func setField(refField reflect.Value, refTypeField reflect.StructField, opts Options, fieldParams FieldParams) error {
-	value, err := get(fieldParams, opts)
+	value, fromEnv, err := get(fieldParams, opts)
 	if err != nil {
 		return err
 	}
 
-	if value != "" && (!opts.SetDefaultsForZeroValuesOnly || refField.IsZero()) {
+	if fromEnv || (value != "" && (!opts.SetDefaultsForZeroValuesOnly || refField.IsZero())) {
 		return set(refField, refTypeField, value, opts.FuncMap)
 	}
 
@@ -590,7 +590,7 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 	return result, nil
 }
 
-func get(fieldParams FieldParams, opts Options) (val string, err error) {
+func get(fieldParams FieldParams, opts Options) (val string, fromEnv bool, err error) {
 	var exists, isDefault bool
 
 	val, exists, isDefault = getOr(
@@ -599,6 +599,9 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 		fieldParams.HasDefaultValue,
 		opts.Environment,
 	)
+	if _, ok := opts.Environment[fieldParams.Key]; ok && val != "" {
+		fromEnv = true
+	}
 
 	if fieldParams.Expand {
 		val = os.Expand(val, opts.getRawEnv)
@@ -611,18 +614,18 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	}
 
 	if fieldParams.Required && !exists && fieldParams.OwnKey != "" {
-		return "", newVarIsNotSetError(fieldParams.Key)
+		return "", false, newVarIsNotSetError(fieldParams.Key)
 	}
 
 	if fieldParams.NotEmpty && val == "" {
-		return "", newEmptyVarError(fieldParams.Key)
+		return "", false, newEmptyVarError(fieldParams.Key)
 	}
 
 	if fieldParams.LoadFile && val != "" {
 		filename := val
 		val, err = getFromFile(filename)
 		if err != nil {
-			return "", newLoadFileContentError(filename, fieldParams.Key, err)
+			return "", false, newLoadFileContentError(filename, fieldParams.Key, err)
 		}
 	}
 
@@ -631,7 +634,7 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 			opts.OnSet(fieldParams.Key, val, isDefault)
 		}
 	}
-	return val, err
+	return val, fromEnv, err
 }
 
 // split the env tag's key into the expected key and desired option, if any.
