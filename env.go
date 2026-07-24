@@ -168,6 +168,12 @@ type Options struct {
 	// Useful for mixing default values from `envDefault` and struct initialization
 	SetDefaultsForZeroValuesOnly bool
 
+	// AllowFileSuffix enables the Docker secrets pattern globally: when a
+	// variable KEY is empty or unset, and KEY_FILE is set, the value is read
+	// from the file path given by KEY_FILE.
+	// This can also be enabled per-field with the `allowFileSuffix` tag option.
+	AllowFileSuffix bool
+
 	// Custom parse functions for different types.
 	FuncMap map[reflect.Type]ParserFunc
 
@@ -248,6 +254,7 @@ func optionsWithSliceEnvPrefix(opts Options, index int) Options {
 		Prefix:                       fmt.Sprintf("%s%d_", opts.Prefix, index),
 		UseFieldNameByDefault:        opts.UseFieldNameByDefault,
 		SetDefaultsForZeroValuesOnly: opts.SetDefaultsForZeroValuesOnly,
+		AllowFileSuffix:              opts.AllowFileSuffix,
 		FuncMap:                      opts.FuncMap,
 		rawEnvVars:                   opts.rawEnvVars,
 	}
@@ -264,6 +271,7 @@ func optionsWithEnvPrefix(field reflect.StructField, opts Options) Options {
 		Prefix:                       opts.Prefix + field.Tag.Get(opts.PrefixTagName),
 		UseFieldNameByDefault:        opts.UseFieldNameByDefault,
 		SetDefaultsForZeroValuesOnly: opts.SetDefaultsForZeroValuesOnly,
+		AllowFileSuffix:              opts.AllowFileSuffix,
 		FuncMap:                      opts.FuncMap,
 		rawEnvVars:                   opts.rawEnvVars,
 	}
@@ -545,6 +553,7 @@ type FieldParams struct {
 	Expand          bool
 	Init            bool
 	Ignored         bool
+	AllowFileSuffix bool
 }
 
 func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, error) {
@@ -580,6 +589,8 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 			result.Expand = true
 		case "init":
 			result.Init = true
+		case "allowFileSuffix":
+			result.AllowFileSuffix = true
 		case "-":
 			result.Ignored = true
 		default:
@@ -599,6 +610,23 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 		fieldParams.HasDefaultValue,
 		opts.Environment,
 	)
+
+	// Docker secrets pattern: when KEY is empty/unset and KEY_FILE is set,
+	// load the value from the file path given by KEY_FILE.
+	if (opts.AllowFileSuffix || fieldParams.AllowFileSuffix) && fieldParams.Key != "" {
+		raw, rawExists := opts.Environment[fieldParams.Key]
+		if !rawExists || raw == "" {
+			fileKey := fieldParams.Key + "_FILE"
+			if filePath, ok := opts.Environment[fileKey]; ok && filePath != "" {
+				val, err = getFromFile(filePath)
+				if err != nil {
+					return "", newLoadFileContentError(filePath, fileKey, err)
+				}
+				exists = true
+				isDefault = false
+			}
+		}
+	}
 
 	if fieldParams.Expand {
 		val = os.Expand(val, opts.getRawEnv)

@@ -102,6 +102,7 @@ The following tags are provided:
 
 Here are all the options available for the `env` tag:
 
+- `,allowFileSuffix`: when the variable is empty/unset, if `KEY_FILE` is set, read the value from that file (Docker secrets pattern)
 - `,expand`: expands environment variables, e.g. `FOO_${BAR}`
 - `,file`: instructs that the content of the variable is a path to a file that should be read
 - `,init`: initialize nil pointers
@@ -121,6 +122,7 @@ There are a few options available in the functions that end with `WithOptions`:
 - `OnSet`: allows to hook into the `env` parsing and do something when a value is set
 - `Prefix`: prefix to be used in all environment variables
 - `UseFieldNameByDefault`: defines whether or not `env` should use the field name by default if the `env` key is missing
+- `AllowFileSuffix`: enable the Docker secrets `KEY`/`KEY_FILE` pattern for all fields
 - `FuncMap`: custom parse functions for custom types
 
 ### Documentation and examples
