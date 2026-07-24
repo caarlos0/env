@@ -414,6 +414,26 @@ func ExampleParse_fromFile() {
 	// Output: {Secret:super secret}
 }
 
+// The `allowFileSuffix` tag option (or Options.AllowFileSuffix) enables the
+// Docker secrets pattern: when KEY is empty or unset and KEY_FILE is set, the
+// value is read from the file path given by KEY_FILE.
+func ExampleParse_allowFileSuffix() {
+	f, _ := os.CreateTemp("", "")
+	_, _ = f.WriteString("super secret")
+	_ = f.Close()
+
+	type Config struct {
+		Password string `env:"PASSWORD,allowFileSuffix"`
+	}
+	os.Setenv("PASSWORD_FILE", f.Name())
+	var cfg Config
+	if err := Parse(&cfg); err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%+v", cfg)
+	// Output: {Password:super secret}
+}
+
 // TODO: envSeperator
 //
 

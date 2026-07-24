@@ -1515,6 +1515,181 @@ func TestFileWithDefault(t *testing.T) {
 	isEqual(t, "secret", cfg.SecretKey)
 }
 
+func TestAllowFileSuffixTag(t *testing.T) {
+	type config struct {
+		Password string `env:"PASSWORD,allowFileSuffix"`
+	}
+
+	dir := t.TempDir()
+	file := filepath.Join(dir, "password")
+	isNoErr(t, os.WriteFile(file, []byte("from-file"), 0o660))
+
+	t.Setenv("PASSWORD_FILE", file)
+
+	cfg := config{}
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, "from-file", cfg.Password)
+}
+
+func TestAllowFileSuffixOption(t *testing.T) {
+	type config struct {
+		Password string `env:"PASSWORD"`
+	}
+
+	dir := t.TempDir()
+	file := filepath.Join(dir, "password")
+	isNoErr(t, os.WriteFile(file, []byte("from-file"), 0o660))
+
+	cfg := config{}
+	isNoErr(t, ParseWithOptions(&cfg, Options{
+		AllowFileSuffix: true,
+		Environment: map[string]string{
+			"PASSWORD_FILE": file,
+		},
+	}))
+	isEqual(t, "from-file", cfg.Password)
+}
+
+func TestAllowFileSuffixPrefersEnvOverFile(t *testing.T) {
+	type config struct {
+		Password string `env:"PASSWORD,allowFileSuffix"`
+	}
+
+	dir := t.TempDir()
+	file := filepath.Join(dir, "password")
+	isNoErr(t, os.WriteFile(file, []byte("from-file"), 0o660))
+
+	t.Setenv("PASSWORD", "from-env")
+	t.Setenv("PASSWORD_FILE", file)
+
+	cfg := config{}
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, "from-env", cfg.Password)
+}
+
+func TestAllowFileSuffixEmptyEnvFallsBackToFile(t *testing.T) {
+	type config struct {
+		Password string `env:"PASSWORD,allowFileSuffix"`
+	}
+
+	dir := t.TempDir()
+	file := filepath.Join(dir, "password")
+	isNoErr(t, os.WriteFile(file, []byte("from-file"), 0o660))
+
+	t.Setenv("PASSWORD", "")
+	t.Setenv("PASSWORD_FILE", file)
+
+	cfg := config{}
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, "from-file", cfg.Password)
+}
+
+func TestAllowFileSuffixOverridesDefault(t *testing.T) {
+	type config struct {
+		Password string `env:"PASSWORD,allowFileSuffix" envDefault:"default-password"`
+	}
+
+	dir := t.TempDir()
+	file := filepath.Join(dir, "password")
+	isNoErr(t, os.WriteFile(file, []byte("from-file"), 0o660))
+
+	t.Setenv("PASSWORD_FILE", file)
+
+	cfg := config{}
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, "from-file", cfg.Password)
+}
+
+func TestAllowFileSuffixDefaultWhenNoFile(t *testing.T) {
+	type config struct {
+		Password string `env:"PASSWORD,allowFileSuffix" envDefault:"default-password"`
+	}
+
+	cfg := config{}
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, "default-password", cfg.Password)
+}
+
+func TestAllowFileSuffixRequired(t *testing.T) {
+	type config struct {
+		Password string `env:"PASSWORD,allowFileSuffix,required"`
+	}
+
+	err := Parse(&config{})
+	isErrorWithMessage(t, err, `env: required environment variable "PASSWORD" is not set`)
+	isTrue(t, errors.Is(err, VarIsNotSetError{}))
+}
+
+func TestAllowFileSuffixRequiredSatisfiedByFile(t *testing.T) {
+	type config struct {
+		Password string `env:"PASSWORD,allowFileSuffix,required"`
+	}
+
+	dir := t.TempDir()
+	file := filepath.Join(dir, "password")
+	isNoErr(t, os.WriteFile(file, []byte("from-file"), 0o660))
+
+	t.Setenv("PASSWORD_FILE", file)
+
+	cfg := config{}
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, "from-file", cfg.Password)
+}
+
+func TestAllowFileSuffixBadFile(t *testing.T) {
+	type config struct {
+		Password string `env:"PASSWORD,allowFileSuffix"`
+	}
+
+	filename := "not-a-real-file"
+	t.Setenv("PASSWORD_FILE", filename)
+
+	oserr := "no such file or directory"
+	if runtime.GOOS == "windows" {
+		oserr = "The system cannot find the file specified."
+	}
+
+	err := Parse(&config{})
+	isErrorWithMessage(t, err, fmt.Sprintf("env: could not load content of file %q from variable PASSWORD_FILE: open %s: %s", filename, filename, oserr))
+	isTrue(t, errors.Is(err, LoadFileContentError{}))
+}
+
+func TestAllowFileSuffixDisabledByDefault(t *testing.T) {
+	type config struct {
+		Password string `env:"PASSWORD"`
+	}
+
+	dir := t.TempDir()
+	file := filepath.Join(dir, "password")
+	isNoErr(t, os.WriteFile(file, []byte("from-file"), 0o660))
+
+	t.Setenv("PASSWORD_FILE", file)
+
+	cfg := config{}
+	isNoErr(t, Parse(&cfg))
+	isEqual(t, "", cfg.Password)
+}
+
+func TestAllowFileSuffixWithPrefix(t *testing.T) {
+	type config struct {
+		Password string `env:"PASSWORD"`
+	}
+
+	dir := t.TempDir()
+	file := filepath.Join(dir, "password")
+	isNoErr(t, os.WriteFile(file, []byte("from-file"), 0o660))
+
+	cfg := config{}
+	isNoErr(t, ParseWithOptions(&cfg, Options{
+		Prefix:          "DB_",
+		AllowFileSuffix: true,
+		Environment: map[string]string{
+			"DB_PASSWORD_FILE": file,
+		},
+	}))
+	isEqual(t, "from-file", cfg.Password)
+}
+
 func TestCustomSliceType(t *testing.T) {
 	type customslice []byte
 
@@ -1757,16 +1932,17 @@ func TestErrorIs(t *testing.T) {
 }
 
 type FieldParamsConfig struct {
-	Simple         []string `env:"SIMPLE"`
-	WithoutEnv     string
-	privateWithEnv string `env:"PRIVATE_WITH_ENV"` //nolint:unused
-	WithDefault    string `env:"WITH_DEFAULT" envDefault:"default"`
-	Required       string `env:"REQUIRED,required"`
-	File           string `env:"FILE,file"`
-	Unset          string `env:"UNSET,unset"`
-	NotEmpty       string `env:"NOT_EMPTY,notEmpty"`
-	Expand         string `env:"EXPAND,expand"`
-	NestedConfig   struct {
+	Simple          []string `env:"SIMPLE"`
+	WithoutEnv      string
+	privateWithEnv  string `env:"PRIVATE_WITH_ENV"` //nolint:unused
+	WithDefault     string `env:"WITH_DEFAULT" envDefault:"default"`
+	Required        string `env:"REQUIRED,required"`
+	File            string `env:"FILE,file"`
+	Unset           string `env:"UNSET,unset"`
+	NotEmpty        string `env:"NOT_EMPTY,notEmpty"`
+	Expand          string `env:"EXPAND,expand"`
+	AllowFileSuffix string `env:"ALLOW_FILE_SUFFIX,allowFileSuffix"`
+	NestedConfig    struct {
 		Simple []string `env:"SIMPLE"`
 	} `envPrefix:"NESTED_"`
 }
@@ -1784,6 +1960,7 @@ func TestGetFieldParams(t *testing.T) {
 		{OwnKey: "UNSET", Key: "UNSET", Unset: true},
 		{OwnKey: "NOT_EMPTY", Key: "NOT_EMPTY", NotEmpty: true},
 		{OwnKey: "EXPAND", Key: "EXPAND", Expand: true},
+		{OwnKey: "ALLOW_FILE_SUFFIX", Key: "ALLOW_FILE_SUFFIX", AllowFileSuffix: true},
 		{OwnKey: "SIMPLE", Key: "NESTED_SIMPLE"},
 	}
 	isTrue(t, len(params) == len(expectedParams))
@@ -1804,6 +1981,7 @@ func TestGetFieldParamsWithPrefix(t *testing.T) {
 		{OwnKey: "UNSET", Key: "FOO_UNSET", Unset: true},
 		{OwnKey: "NOT_EMPTY", Key: "FOO_NOT_EMPTY", NotEmpty: true},
 		{OwnKey: "EXPAND", Key: "FOO_EXPAND", Expand: true},
+		{OwnKey: "ALLOW_FILE_SUFFIX", Key: "FOO_ALLOW_FILE_SUFFIX", AllowFileSuffix: true},
 		{OwnKey: "SIMPLE", Key: "FOO_NESTED_SIMPLE"},
 	}
 	isTrue(t, len(params) == len(expectedParams))
