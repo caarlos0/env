@@ -162,7 +162,7 @@ type Options struct {
 	// SetDefaultsForZeroValuesOnly defines whether to set defaults for zero values
 	// If the `env` variable for the value is not set
 	// and `envDefault` is set
-	// and the value is not a zero value for the the type
+	// and the value is not a zero value for the type
 	// and SetDefaultsForZeroValuesOnly=true
 	// the value from `envDefault` will be ignored
 	// Useful for mixing default values from `envDefault` and struct initialization
