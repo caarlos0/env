@@ -2417,3 +2417,52 @@ func TestEnvBleed(t *testing.T) {
 		isEqual(t, "", cfg.Foo)
 	})
 }
+
+
+func TestCustomParserPointerToCustomType(t *testing.T) {
+	// Regression for #385: *CustomType fields must use FuncMap parsers.
+	type foo struct {
+		name string
+	}
+
+	t.Setenv("VAR_CUSTOM", "test")
+	t.Setenv("OTHER_CUSTOM", "test2")
+	t.Setenv("BLAH_CUSTOM", "test3")
+
+	type bar struct {
+		Name string `env:"OTHER_CUSTOM"`
+		Foo  *foo   `env:"BLAH_CUSTOM"`
+	}
+
+	type config struct {
+		Var   foo  `env:"VAR_CUSTOM"`
+		Foo   *foo `env:"BLAH_CUSTOM"`
+		NilFoo *foo `env:"BLAH_CUSTOM"`
+		Other *bar
+	}
+
+	cfg := &config{
+		Var: foo{"var"},
+		Foo: &foo{"foo"},
+		Other: &bar{
+			Name: "name",
+			Foo:  &foo{"foo"},
+		},
+	}
+
+	err := ParseWithOptions(cfg, Options{FuncMap: map[reflect.Type]ParserFunc{
+		reflect.TypeOf(foo{}): func(v string) (interface{}, error) {
+			return foo{name: v}, nil
+		},
+	}})
+
+	isNoErr(t, err)
+	isEqual(t, "test", cfg.Var.name)
+	isTrue(t, cfg.Foo != nil)
+	isEqual(t, "test3", cfg.Foo.name)
+	isTrue(t, cfg.NilFoo != nil)
+	isEqual(t, "test3", cfg.NilFoo.name)
+	isEqual(t, "test2", cfg.Other.Name)
+	isTrue(t, cfg.Other.Foo != nil)
+	isEqual(t, "test3", cfg.Other.Foo.name)
+}
