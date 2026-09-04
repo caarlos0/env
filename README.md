@@ -113,6 +113,7 @@ Here are all the options available for the `env` tag:
 - `,file`: instructs that the content of the variable is a path to a file that should be read
 - `,init`: initialize nil pointers
 - `,notEmpty`: make the field errors if the environment variable is empty
+- `,notEmptyIfDefined`: make the field errors if the environment variable is defined but empty (unset falls through to `envDefault`)
 - `,required`: make the field errors if the environment variable is not set
 - `,unset`: unset the environment variable after use
 
