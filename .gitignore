@@ -3,3 +3,4 @@ bin
 card.png
 dist
 codecov*
+.idea
