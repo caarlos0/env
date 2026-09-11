@@ -2417,3 +2417,54 @@ func TestEnvBleed(t *testing.T) {
 		isEqual(t, "", cfg.Foo)
 	})
 }
+
+
+
+func TestIssue435NonConsecutiveSliceIndices(t *testing.T) {
+	type Test struct {
+		Str string `env:"STR"`
+		Num int    `env:"NUM"`
+	}
+	type Config struct {
+		Foo []Test `envPrefix:"FOO"`
+	}
+
+	env := map[string]string{
+		"FOO_0_STR": "a",
+		"FOO_0_NUM": "1",
+		"FOO_1_STR": "b",
+		"FOO_1_NUM": "2",
+		"FOO_3_STR": "d",
+		"FOO_3_NUM": "4",
+	}
+
+	var cfg Config
+	isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
+	isEqual(t, 4, len(cfg.Foo))
+	isEqual(t, "a", cfg.Foo[0].Str)
+	isEqual(t, 1, cfg.Foo[0].Num)
+	isEqual(t, "b", cfg.Foo[1].Str)
+	isEqual(t, 2, cfg.Foo[1].Num)
+	isEqual(t, "", cfg.Foo[2].Str)
+	isEqual(t, 0, cfg.Foo[2].Num)
+	isEqual(t, "d", cfg.Foo[3].Str)
+	isEqual(t, 4, cfg.Foo[3].Num)
+}
+
+func TestSliceIndexTooLarge(t *testing.T) {
+	type Test struct {
+		Str string `env:"STR"`
+	}
+	type Config struct {
+		Foo []Test `envPrefix:"FOO"`
+	}
+
+	env := map[string]string{
+		"FOO_0_STR": "a",
+		fmt.Sprintf("FOO_%d_STR", maxSliceEnvIndex+1): "z",
+	}
+	var cfg Config
+	err := ParseWithOptions(&cfg, Options{Environment: env})
+	isTrue(t, err != nil)
+	isTrue(t, errors.Is(err, SliceIndexTooLargeError{}))
+}
