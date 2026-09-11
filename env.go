@@ -27,6 +27,11 @@ import (
 	"unicode"
 )
 
+// maxSliceEnvIndex is the highest numeric index accepted for envPrefix slices.
+// Larger indexes are rejected to avoid huge zero-filled allocations.
+const maxSliceEnvIndex = 1000
+
+
 var defaultBuiltInParsers = map[reflect.Kind]ParserFunc{ //nolint:gochecknoglobals
 	reflect.Bool: func(v string) (interface{}, error) {
 		return strconv.ParseBool(v)
@@ -447,18 +452,32 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 	}
 
 	if len(environments) > 0 {
-		counter := 0
-		for finished := false; !finished; {
-			finished = true
-			prefix := fmt.Sprintf("%s%d%c", opts.Prefix, counter, underscore)
-			for _, variable := range environments {
-				if strings.HasPrefix(variable, prefix) {
-					counter++
-					finished = false
-					break
-				}
+		// Preserve gaps: size the slice to maxIndex+1 so missing indexes stay
+		// zero-valued placeholders (see issue #435).
+		maxIndex := -1
+		for _, variable := range environments {
+			// environments already filtered by Prefix; slice off the prefix
+			// (TrimPrefix is a no-op when Prefix is empty, which is valid).
+			rest := variable[len(opts.Prefix):]
+			idxStr, _, _ := strings.Cut(rest, string(underscore))
+			if idxStr == "" {
+				continue
+			}
+			idx, err := strconv.Atoi(idxStr)
+			if err != nil || idx < 0 {
+				continue
+			}
+			if idx > maxIndex {
+				maxIndex = idx
 			}
 		}
+		if maxIndex < 0 {
+			return nil
+		}
+		if maxIndex > maxSliceEnvIndex {
+			return newAggregateError(SliceIndexTooLargeError{Prefix: opts.Prefix, Index: maxIndex, Max: maxSliceEnvIndex})
+		}
+		counter := maxIndex + 1
 
 		sliceType := ref.Type()
 		var initialized int
