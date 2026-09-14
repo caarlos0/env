@@ -1704,6 +1704,221 @@ func TestComplePrefix(t *testing.T) {
 	isEqual(t, "blahhh", cfg.Blah)
 }
 
+func TestSuffix(t *testing.T) {
+	type Config struct {
+		Home string `env:"HOME"`
+	}
+	type ComplexConfig struct {
+		Foo   Config `envSuffix:"_FOO"`
+		Bar   Config `envSuffix:"_BAR"`
+		Clean Config
+	}
+	cfg := ComplexConfig{}
+	isNoErr(t, ParseWithOptions(&cfg, Options{Environment: map[string]string{"HOME_FOO": "/foo", "HOME_BAR": "/bar", "HOME": "/clean"}}))
+	isEqual(t, "/foo", cfg.Foo.Home)
+	isEqual(t, "/bar", cfg.Bar.Home)
+	isEqual(t, "/clean", cfg.Clean.Home)
+}
+
+func TestSuffixPointers(t *testing.T) {
+	type Test struct {
+		Str string `env:"TEST"`
+	}
+	type ComplexConfig struct {
+		Foo   *Test `envSuffix:"_FOO"`
+		Bar   *Test `envSuffix:"_BAR"`
+		Clean *Test
+	}
+
+	cfg := ComplexConfig{
+		Foo:   &Test{},
+		Bar:   &Test{},
+		Clean: &Test{},
+	}
+	isNoErr(t, ParseWithOptions(&cfg, Options{Environment: map[string]string{"TEST_FOO": "kek", "TEST_BAR": "lel", "TEST": "clean"}}))
+	isEqual(t, "kek", cfg.Foo.Str)
+	isEqual(t, "lel", cfg.Bar.Str)
+	isEqual(t, "clean", cfg.Clean.Str)
+}
+
+func TestNestedSuffixPointer(t *testing.T) {
+	type ComplexConfig struct {
+		Foo struct {
+			Str string `env:"STR"`
+		} `envSuffix:"_FOO"`
+	}
+	cfg := ComplexConfig{}
+	isNoErr(t, ParseWithOptions(&cfg, Options{Environment: map[string]string{"STR_FOO": "str_foo"}}))
+	isEqual(t, "str_foo", cfg.Foo.Str)
+
+	type ComplexConfig2 struct {
+		Foo struct {
+			Bar struct {
+				Str string `env:"STR"`
+			} `envSuffix:"_BAR"`
+			Bar2 string `env:"BAR2"`
+		} `envSuffix:"_FOO"`
+	}
+	cfg2 := ComplexConfig2{}
+	isNoErr(t, ParseWithOptions(&cfg2, Options{Environment: map[string]string{"STR_BAR_FOO": "kek", "BAR2_FOO": "lel"}}))
+	isEqual(t, "lel", cfg2.Foo.Bar2)
+	isEqual(t, "kek", cfg2.Foo.Bar.Str)
+}
+
+func TestComplexSuffix(t *testing.T) {
+	type Config struct {
+		Home string `env:"HOME"`
+	}
+	type ComplexConfig struct {
+		Foo   Config `envSuffix:"_FOO"`
+		Clean Config
+		Bar   Config `envSuffix:"_BAR"`
+		Blah  string `env:"BLAH"`
+	}
+	cfg := ComplexConfig{}
+	isNoErr(t, ParseWithOptions(&cfg, Options{
+		Suffix: "_T",
+		Environment: map[string]string{
+			"HOME_FOO_T": "/foo",
+			"HOME_BAR_T": "/bar",
+			"BLAH_T":     "blahhh",
+			"HOME_T":     "/clean",
+		},
+	}))
+	isEqual(t, "/foo", cfg.Foo.Home)
+	isEqual(t, "/bar", cfg.Bar.Home)
+	isEqual(t, "/clean", cfg.Clean.Home)
+	isEqual(t, "blahhh", cfg.Blah)
+}
+
+func TestGetFieldParamsWithSuffix(t *testing.T) {
+	var config FieldParamsConfig
+	params, err := GetFieldParamsWithOptions(&config, Options{Suffix: "_FOO"})
+	isNoErr(t, err)
+
+	expectedParams := []FieldParams{
+		{OwnKey: "SIMPLE", Key: "SIMPLE_FOO"},
+		{OwnKey: "WITH_DEFAULT", Key: "WITH_DEFAULT_FOO", DefaultValue: "default", HasDefaultValue: true},
+		{OwnKey: "REQUIRED", Key: "REQUIRED_FOO", Required: true},
+		{OwnKey: "FILE", Key: "FILE_FOO", LoadFile: true},
+		{OwnKey: "UNSET", Key: "UNSET_FOO", Unset: true},
+		{OwnKey: "NOT_EMPTY", Key: "NOT_EMPTY_FOO", NotEmpty: true},
+		{OwnKey: "EXPAND", Key: "EXPAND_FOO", Expand: true},
+		{OwnKey: "SIMPLE", Key: "NESTED_SIMPLE_FOO"},
+	}
+	isTrue(t, len(params) == len(expectedParams))
+	isTrue(t, areEqual(params, expectedParams))
+}
+
+func TestParseWithOptionsRenamedSuffix(t *testing.T) {
+	type Config struct {
+		Str string `env:"STR"`
+	}
+	type ComplexConfig struct {
+		Foo Config `envSuffix:"_FOO" mySuffix:"_BAR"`
+	}
+
+	t.Setenv("STR_FOO", "101")
+	t.Setenv("STR_BAR", "202")
+	t.Setenv("STR_BAR_APP", "303")
+
+	cfg := &ComplexConfig{}
+	isNoErr(t, ParseWithOptions(cfg, Options{SuffixTagName: "mySuffix"}))
+	isEqual(t, "202", cfg.Foo.Str)
+
+	isNoErr(t, ParseWithOptions(cfg, Options{SuffixTagName: "mySuffix", Suffix: "_APP"}))
+	isEqual(t, "303", cfg.Foo.Str)
+
+	isNoErr(t, Parse(cfg))
+	isEqual(t, "101", cfg.Foo.Str)
+}
+
+func TestPrefixAndSuffix(t *testing.T) {
+	type Config struct {
+		Home string `env:"HOME"`
+	}
+	cfg := Config{}
+	isNoErr(t, ParseWithOptions(&cfg, Options{
+		Prefix: "PRE_",
+		Suffix: "_SUF",
+		Environment: map[string]string{
+			"PRE_HOME_SUF": "/home",
+		},
+	}))
+	isEqual(t, "/home", cfg.Home)
+}
+
+func TestComplexPrefixAndSuffix(t *testing.T) {
+	type Config struct {
+		Home string `env:"HOME"`
+	}
+	type ComplexConfig struct {
+		Foo    Config `envPrefix:"FOO_"`
+		Bar    Config `envSuffix:"_BAR"`
+		FooBar Config `envPrefix:"FOO_" envSuffix:"_BAR"`
+		Clean  Config
+		Blah   string `env:"BLAH"`
+	}
+	cfg := ComplexConfig{}
+	isNoErr(t, ParseWithOptions(&cfg, Options{
+		Prefix: "T_",
+		Suffix: "_T",
+		Environment: map[string]string{
+			"T_FOO_HOME_T":     "/foo",
+			"T_HOME_BAR_T":     "/bar",
+			"T_FOO_HOME_BAR_T": "/foobar",
+			"T_HOME_T":         "/clean",
+			"T_BLAH_T":         "blahhh",
+		},
+	}))
+	isEqual(t, "/foo", cfg.Foo.Home)
+	isEqual(t, "/bar", cfg.Bar.Home)
+	isEqual(t, "/foobar", cfg.FooBar.Home)
+	isEqual(t, "/clean", cfg.Clean.Home)
+	isEqual(t, "blahhh", cfg.Blah)
+}
+
+func TestNestedPrefixAndSuffix(t *testing.T) {
+	type ComplexConfig struct {
+		Foo struct {
+			Bar struct {
+				Str string `env:"STR"`
+			} `envSuffix:"_BAR"`
+			Str2 string `env:"STR2"`
+		} `envPrefix:"FOO_"`
+	}
+	cfg := ComplexConfig{}
+	isNoErr(t, ParseWithOptions(&cfg, Options{
+		Prefix: "T_",
+		Suffix: "_T",
+		Environment: map[string]string{
+			"T_FOO_STR_BAR_T": "nested",
+			"T_FOO_STR2_T":    "str2val",
+		},
+	}))
+	isEqual(t, "nested", cfg.Foo.Bar.Str)
+	isEqual(t, "str2val", cfg.Foo.Str2)
+}
+
+func TestGetFieldParamsWithPrefixAndSuffix(t *testing.T) {
+	var config FieldParamsConfig
+	params, err := GetFieldParamsWithOptions(&config, Options{Prefix: "FOO_", Suffix: "_BAR"})
+	isNoErr(t, err)
+
+	expectedParams := []FieldParams{
+		{OwnKey: "SIMPLE", Key: "FOO_SIMPLE_BAR"},
+		{OwnKey: "WITH_DEFAULT", Key: "FOO_WITH_DEFAULT_BAR", DefaultValue: "default", HasDefaultValue: true},
+		{OwnKey: "REQUIRED", Key: "FOO_REQUIRED_BAR", Required: true},
+		{OwnKey: "FILE", Key: "FOO_FILE_BAR", LoadFile: true},
+		{OwnKey: "UNSET", Key: "FOO_UNSET_BAR", Unset: true},
+		{OwnKey: "NOT_EMPTY", Key: "FOO_NOT_EMPTY_BAR", NotEmpty: true},
+		{OwnKey: "EXPAND", Key: "FOO_EXPAND_BAR", Expand: true},
+		{OwnKey: "SIMPLE", Key: "FOO_NESTED_SIMPLE_BAR"},
+	}
+	isTrue(t, len(params) == len(expectedParams))
+	isTrue(t, areEqual(params, expectedParams))
+}
+
 func TestNoEnvKey(t *testing.T) {
 	type Config struct {
 		Foo      string
