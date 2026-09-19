@@ -18,6 +18,45 @@ import (
 	"time"
 )
 
+func TestNativeIntegerRange(t *testing.T) {
+	minInt, maxInt, maxUint := "-2147483648", "2147483647", "4294967295"
+	intOverflow, uintOverflow := "2147483648", "4294967296"
+	if strconv.IntSize == 64 {
+		minInt, maxInt, maxUint = "-9223372036854775808", "9223372036854775807", "18446744073709551615"
+		intOverflow, uintOverflow = "9223372036854775808", "18446744073709551616"
+	}
+
+	t.Run("valid", func(t *testing.T) {
+		var cfg struct {
+			MinInt  int  `env:"MIN_INT"`
+			MaxInt  int  `env:"MAX_INT"`
+			MaxUint uint `env:"MAX_UINT"`
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: map[string]string{
+			"MIN_INT": minInt, "MAX_INT": maxInt, "MAX_UINT": maxUint,
+		}}))
+		isEqual(t, minInt, strconv.FormatInt(int64(cfg.MinInt), 10))
+		isEqual(t, maxInt, strconv.FormatInt(int64(cfg.MaxInt), 10))
+		isEqual(t, maxUint, strconv.FormatUint(uint64(cfg.MaxUint), 10))
+	})
+
+	t.Run("int_overflow", func(t *testing.T) {
+		var cfg struct {
+			Value int `env:"VALUE"`
+		}
+		err := ParseWithOptions(&cfg, Options{Environment: map[string]string{"VALUE": intOverflow}})
+		isErrorWithMessage(t, err, `env: parse error on field "Value" of type "int": strconv.ParseInt: parsing `+strconv.Quote(intOverflow)+`: value out of range`)
+	})
+
+	t.Run("uint_overflow", func(t *testing.T) {
+		var cfg struct {
+			Value uint `env:"VALUE"`
+		}
+		err := ParseWithOptions(&cfg, Options{Environment: map[string]string{"VALUE": uintOverflow}})
+		isErrorWithMessage(t, err, `env: parse error on field "Value" of type "uint": strconv.ParseUint: parsing `+strconv.Quote(uintOverflow)+`: value out of range`)
+	})
+}
+
 type unmarshaler struct {
 	time.Duration
 }
