@@ -448,15 +448,15 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 
 	if len(environments) > 0 {
 		counter := 0
-		for finished := false; !finished; {
-			finished = true
-			prefix := fmt.Sprintf("%s%d%c", opts.Prefix, counter, underscore)
-			for _, variable := range environments {
-				if strings.HasPrefix(variable, prefix) {
-					counter++
-					finished = false
-					break
-				}
+		for _, variable := range environments {
+			indexAndField := strings.TrimPrefix(variable, opts.Prefix)
+			index, _, ok := strings.Cut(indexAndField, string(underscore))
+			if !ok {
+				continue
+			}
+			n, err := strconv.Atoi(index)
+			if err == nil && n >= counter && n < int(^uint(0)>>1) {
+				counter = n + 1
 			}
 		}
 
