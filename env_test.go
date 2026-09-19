@@ -2152,6 +2152,27 @@ func TestIssue298(t *testing.T) {
 	isEqual(t, 10, cfg.Baz[1].Num)
 }
 
+func TestIssue435(t *testing.T) {
+	type Test struct {
+		Str string `env:"STR"`
+		Num int    `env:"NUM"`
+	}
+	type Config struct {
+		Foo []Test `envPrefix:"ISSUE435_FOO"`
+	}
+
+	t.Setenv("ISSUE435_FOO_0_STR", "a")
+	t.Setenv("ISSUE435_FOO_0_NUM", "1")
+	t.Setenv("ISSUE435_FOO_2_STR", "c")
+	t.Setenv("ISSUE435_FOO_2_NUM", "3")
+	t.Setenv("ISSUE435_FOO_3_STR", "d")
+	t.Setenv("ISSUE435_FOO_3_NUM", "4")
+
+	cfg, err := ParseAs[Config]()
+	isNoErr(t, err)
+	isEqual(t, []Test{{Str: "a", Num: 1}, {}, {Str: "c", Num: 3}, {Str: "d", Num: 4}}, cfg.Foo)
+}
+
 func TestIssue298ErrorNestedFieldRequiredNotSet(t *testing.T) {
 	type Test struct {
 		Str string `env:"STR,required"`
