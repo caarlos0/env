@@ -380,7 +380,9 @@ func doParseField(
 		return nil
 	}
 	if refField.Kind() == reflect.Ptr && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
-		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
+		if _, hasParser := opts.FuncMap[refField.Type().Elem()]; !hasParser {
+			return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
+		}
 	}
 	if refField.Kind() == reflect.Struct && refField.CanAddr() && refField.Type().Name() == "" {
 		return parseInternal(refField.Addr().Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))

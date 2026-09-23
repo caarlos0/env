@@ -1112,6 +1112,28 @@ func TestCustomParser(t *testing.T) {
 	}
 }
 
+func TestCustomParserPreinitializedStructPointer(t *testing.T) {
+	type custom struct{ value string }
+	type nested struct {
+		Parsed *custom `env:"CUSTOM"`
+	}
+	type config struct {
+		Parsed *custom `env:"CUSTOM"`
+		Nested *nested
+	}
+	cfg := config{
+		Parsed: &custom{value: "old"},
+		Nested: &nested{Parsed: &custom{value: "old"}},
+	}
+	t.Setenv("CUSTOM", "new")
+	err := ParseWithOptions(&cfg, Options{FuncMap: map[reflect.Type]ParserFunc{
+		reflect.TypeOf(custom{}): func(s string) (interface{}, error) { return custom{value: s}, nil },
+	}})
+	isNoErr(t, err)
+	isEqual(t, cfg.Parsed.value, "new")
+	isEqual(t, cfg.Nested.Parsed.value, "new")
+}
+
 func TestIssue226(t *testing.T) {
 	type config struct {
 		Inner struct {
