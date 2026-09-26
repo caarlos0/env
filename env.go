@@ -379,6 +379,10 @@ func doParseField(
 	if !refField.CanSet() {
 		return nil
 	}
+	params, err := parseFieldParams(refTypeField, opts)
+	if err == nil && params.Ignored {
+		return nil
+	}
 	if refField.Kind() == reflect.Ptr && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
 		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
@@ -386,13 +390,8 @@ func doParseField(
 		return parseInternal(refField.Addr().Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
-	params, err := parseFieldParams(refTypeField, opts)
 	if err != nil {
 		return err
-	}
-
-	if params.Ignored {
-		return nil
 	}
 
 	if err := processField(refField, refTypeField, opts, params); err != nil {
