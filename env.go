@@ -379,17 +379,18 @@ func doParseField(
 	if !refField.CanSet() {
 		return nil
 	}
-	scalar := isScalarStruct(refField.Type(), opts.FuncMap)
+	params, err := parseFieldParams(refTypeField, opts)
+	if err != nil {
+		return err
+	}
+
+	scalar := isScalarStruct(refField.Type(), opts.FuncMap) &&
+		(params.OwnKey != "" || params.HasDefaultValue)
 	if !scalar && refField.Kind() == reflect.Ptr && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
 		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 	if !scalar && refField.Kind() == reflect.Struct && refField.CanAddr() && refField.Type().Name() == "" {
 		return parseInternal(refField.Addr().Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
-	}
-
-	params, err := parseFieldParams(refTypeField, opts)
-	if err != nil {
-		return err
 	}
 
 	if params.Ignored {

@@ -1447,6 +1447,34 @@ func TestParseCustomScalarStructWithFieldNames(t *testing.T) {
 	isEqual(t, "parsed", cfg.Scalar.Value)
 }
 
+func TestParseCustomScalarStructAsNestedContainer(t *testing.T) {
+	type scalar struct {
+		Value string `env:"VALUE"`
+	}
+	var cfg struct {
+		Scalar *scalar `env:"SCALAR"`
+		Nested *scalar `envPrefix:"NESTED_"`
+	}
+	cfg.Scalar = &scalar{Value: "old"}
+	cfg.Nested = &scalar{Value: "old"}
+
+	err := ParseWithOptions(&cfg, Options{
+		Environment: map[string]string{
+			"SCALAR":       "scalar",
+			"NESTED_VALUE": "nested",
+		},
+		FuncMap: map[reflect.Type]ParserFunc{
+			reflect.TypeOf(scalar{}): func(value string) (interface{}, error) {
+				return scalar{Value: value}, nil
+			},
+		},
+	})
+
+	isNoErr(t, err)
+	isEqual(t, "scalar", cfg.Scalar.Value)
+	isEqual(t, "nested", cfg.Nested.Value)
+}
+
 func TestScalarFieldParamsPreserveNilPointer(t *testing.T) {
 	var cfg struct{ Timeout *unmarshaler }
 
