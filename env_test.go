@@ -2417,3 +2417,41 @@ func TestEnvBleed(t *testing.T) {
 		isEqual(t, "", cfg.Foo)
 	})
 }
+
+func TestUseFieldNameByDefault_URLAndTextUnmarshaler(t *testing.T) {
+	type config struct {
+		URL url.URL `env:"URL"`
+	}
+
+	environ := map[string]string{
+		"URL":  "http://example.com/a/b",
+		"PATH": "/usr/bin",
+		"HOST": "evil",
+	}
+
+	t.Run("by tag", func(t *testing.T) {
+		var cfg config
+		err := ParseWithOptions(&cfg, Options{Environment: environ})
+		isNoErr(t, err)
+		isEqual(t, "http://example.com/a/b", cfg.URL.String())
+	})
+
+	t.Run("with UseFieldNameByDefault", func(t *testing.T) {
+		var cfg config
+		err := ParseWithOptions(&cfg, Options{Environment: environ, UseFieldNameByDefault: true})
+		isNoErr(t, err)
+		isEqual(t, "http://example.com/a/b", cfg.URL.String())
+	})
+
+	t.Run("with UseFieldNameByDefault and RequiredIfNoDef", func(t *testing.T) {
+		var cfg config
+		err := ParseWithOptions(&cfg, Options{
+			Environment:           map[string]string{"URL": "http://example.com/a/b"},
+			UseFieldNameByDefault: true,
+			RequiredIfNoDef:       true,
+		})
+		isNoErr(t, err)
+		isEqual(t, "http://example.com/a/b", cfg.URL.String())
+	})
+}
+
