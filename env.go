@@ -379,7 +379,7 @@ func doParseField(
 	if !refField.CanSet() {
 		return nil
 	}
-	if refField.Kind() == reflect.Pointer && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
+	if refField.Kind() == reflect.Pointer && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() && !hasCustomOrTextParserType(refTypeField.Type, opts.FuncMap) {
 		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 	if refField.Kind() == reflect.Struct && refField.CanAddr() && refField.Type().Name() == "" {
@@ -404,31 +404,31 @@ func doParseField(
 		refField = refField.Elem()
 	}
 
-	if refField.Kind() == reflect.Struct {
+	if refField.Kind() == reflect.Struct && !hasCustomOrTextParserType(refTypeField.Type, opts.FuncMap) {
 		return doParse(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
-	if isSliceOfStructs(refTypeField) {
+	if isSliceOfStructs(refTypeField, opts) {
 		return doParseSlice(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
 	return nil
 }
 
-func isSliceOfStructs(refTypeField reflect.StructField) bool {
+func isSliceOfStructs(refTypeField reflect.StructField, opts Options) bool {
 	field := refTypeField.Type
 
 	// *[]struct
 	if field.Kind() == reflect.Pointer {
 		field = field.Elem()
-		if field.Kind() == reflect.Slice && field.Elem().Kind() == reflect.Struct {
-			return true
-		}
 	}
 
-	// []struct{}
 	if field.Kind() == reflect.Slice && field.Elem().Kind() == reflect.Struct {
-		return true
+		elemType := field.Elem()
+		if elemType.Kind() == reflect.Pointer {
+			elemType = elemType.Elem()
+		}
+		return !hasCustomOrTextParserType(elemType, opts.FuncMap)
 	}
 
 	return false
@@ -850,4 +850,19 @@ func ToMap(env []string) map[string]string {
 
 func isInvalidPtr(v reflect.Value) bool {
 	return reflect.Pointer == v.Kind() && v.Elem().Kind() == reflect.Invalid
+}
+
+var textUnmarshalerType = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem() //nolint:gochecknoglobals
+
+func hasCustomOrTextParserType(t reflect.Type, funcMap map[reflect.Type]ParserFunc) bool {
+	if t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	if _, ok := funcMap[t]; ok {
+		return true
+	}
+	if t.Implements(textUnmarshalerType) || reflect.PointerTo(t).Implements(textUnmarshalerType) {
+		return true
+	}
+	return false
 }
