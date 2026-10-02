@@ -525,6 +525,8 @@ func toEnvName(input string) string {
 				if unicode.IsLower(peek) || unicode.IsLower(rune(input[i-1])) {
 					output = append(output, underscore)
 				}
+			} else if i > 0 && unicode.IsLower(rune(input[i-1])) {
+				output = append(output, underscore)
 			}
 		}
 		output = append(output, unicode.ToUpper(c))
