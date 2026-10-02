@@ -2418,15 +2418,29 @@ func TestEnvBleed(t *testing.T) {
 	})
 }
 
+type customTextUnmarshaler struct {
+	Value string
+}
+
+func (c *customTextUnmarshaler) UnmarshalText(text []byte) error {
+	c.Value = string(text)
+	return nil
+}
+
 func TestUseFieldNameByDefault_URLAndTextUnmarshaler(t *testing.T) {
 	type config struct {
-		URL url.URL `env:"URL"`
+		URL       url.URL                `env:"URL"`
+		Custom    customTextUnmarshaler  `env:"CUSTOM"`
+		CustomPtr *customTextUnmarshaler `env:"CUSTOM_PTR"`
 	}
 
 	environ := map[string]string{
-		"URL":  "http://example.com/a/b",
-		"PATH": "/usr/bin",
-		"HOST": "evil",
+		"URL":        "http://example.com/a/b",
+		"PATH":       "/usr/bin",
+		"HOST":       "evil",
+		"CUSTOM":     "custom-value",
+		"CUSTOM_PTR": "custom-ptr-value",
+		"VALUE":      "evil-nested",
 	}
 
 	t.Run("by tag", func(t *testing.T) {
@@ -2434,6 +2448,8 @@ func TestUseFieldNameByDefault_URLAndTextUnmarshaler(t *testing.T) {
 		err := ParseWithOptions(&cfg, Options{Environment: environ})
 		isNoErr(t, err)
 		isEqual(t, "http://example.com/a/b", cfg.URL.String())
+		isEqual(t, "custom-value", cfg.Custom.Value)
+		isEqual(t, "custom-ptr-value", cfg.CustomPtr.Value)
 	})
 
 	t.Run("with UseFieldNameByDefault", func(t *testing.T) {
@@ -2441,17 +2457,26 @@ func TestUseFieldNameByDefault_URLAndTextUnmarshaler(t *testing.T) {
 		err := ParseWithOptions(&cfg, Options{Environment: environ, UseFieldNameByDefault: true})
 		isNoErr(t, err)
 		isEqual(t, "http://example.com/a/b", cfg.URL.String())
+		isEqual(t, "custom-value", cfg.Custom.Value)
+		isEqual(t, "custom-ptr-value", cfg.CustomPtr.Value)
 	})
 
 	t.Run("with UseFieldNameByDefault and RequiredIfNoDef", func(t *testing.T) {
 		var cfg config
 		err := ParseWithOptions(&cfg, Options{
-			Environment:           map[string]string{"URL": "http://example.com/a/b"},
+			Environment: map[string]string{
+				"URL":        "http://example.com/a/b",
+				"CUSTOM":     "custom-value",
+				"CUSTOM_PTR": "custom-ptr-value",
+			},
 			UseFieldNameByDefault: true,
 			RequiredIfNoDef:       true,
 		})
 		isNoErr(t, err)
 		isEqual(t, "http://example.com/a/b", cfg.URL.String())
+		isEqual(t, "custom-value", cfg.Custom.Value)
+		isEqual(t, "custom-ptr-value", cfg.CustomPtr.Value)
 	})
 }
+
 
