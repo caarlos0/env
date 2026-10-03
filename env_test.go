@@ -2259,6 +2259,22 @@ func TestSetDefaultsForZeroValuesOnly(t *testing.T) {
 	}
 }
 
+// Regression for #364: SetDefaultsForZeroValuesOnly is about defaults.
+// An env value set in the environment should still win over a non-zero
+// field, otherwise users can't override pre-populated config via env at
+// all.
+func TestSetDefaultsForZeroValuesOnly_EnvOverridesNonZero(t *testing.T) {
+	type Config struct {
+		Username string `env:"USERNAME" envDefault:"admin"`
+	}
+	cfg := Config{Username: "root"}
+	isNoErr(t, ParseWithOptions(&cfg, Options{
+		Environment:                  map[string]string{"USERNAME": "user1"},
+		SetDefaultsForZeroValuesOnly: true,
+	}))
+	isEqual(t, "user1", cfg.Username)
+}
+
 func TestParseWithOptionsRenamedPrefix(t *testing.T) {
 	type Config struct {
 		Str string `env:"STR"`
