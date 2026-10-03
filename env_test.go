@@ -1386,6 +1386,106 @@ func TestParseURL(t *testing.T) {
 	isEqual(t, "https://google.com", cfg.ExampleURL.String())
 }
 
+func TestParseScalarStructsWithFieldNames(t *testing.T) {
+	for _, required := range []bool{false, true} {
+		t.Run(fmt.Sprintf("required=%t", required), func(t *testing.T) {
+			var cfg struct {
+				Endpoint url.URL
+				Pointer  *url.URL
+				Existing *url.URL
+				Timeout  unmarshaler
+			}
+			cfg.Existing = &url.URL{Host: "old.example"}
+			err := ParseWithOptions(&cfg, Options{
+				UseFieldNameByDefault: true,
+				RequiredIfNoDef:       required,
+				Environment: map[string]string{
+					"ENDPOINT": "https://example.com/value",
+					"POINTER":  "https://example.com/pointer",
+					"EXISTING": "https://example.com/existing",
+					"TIMEOUT":  "2s",
+					"HOST":     "wrong.example",
+					"PATH":     "/wrong",
+					"DURATION": "3s",
+				},
+			})
+			isNoErr(t, err)
+			isEqual(t, "https://example.com/value", cfg.Endpoint.String())
+			isEqual(t, "https://example.com/pointer", cfg.Pointer.String())
+			isEqual(t, "https://example.com/existing", cfg.Existing.String())
+			isEqual(t, 2*time.Second, cfg.Timeout.Duration)
+		})
+	}
+}
+
+func TestParseURLPreservesValueWithAmbientFieldNames(t *testing.T) {
+	t.Setenv("ENDPOINT", "https://example.com/value")
+	t.Setenv("HOST", "wrong.example")
+	t.Setenv("PATH", "/wrong")
+	var cfg struct{ Endpoint url.URL }
+
+	err := ParseWithOptions(&cfg, Options{UseFieldNameByDefault: true})
+
+	isNoErr(t, err)
+	isEqual(t, "https://example.com/value", cfg.Endpoint.String())
+}
+
+func TestParseCustomScalarStructWithFieldNames(t *testing.T) {
+	type scalar struct{ Value string }
+	var cfg struct{ Scalar scalar }
+	err := ParseWithOptions(&cfg, Options{
+		UseFieldNameByDefault: true,
+		RequiredIfNoDef:       true,
+		Environment:           map[string]string{"SCALAR": "parsed"},
+		FuncMap: map[reflect.Type]ParserFunc{
+			reflect.TypeOf(scalar{}): func(value string) (interface{}, error) {
+				return scalar{Value: value}, nil
+			},
+		},
+	})
+	isNoErr(t, err)
+	isEqual(t, "parsed", cfg.Scalar.Value)
+}
+
+func TestParseCustomScalarStructAsNestedContainer(t *testing.T) {
+	type scalar struct {
+		Value string `env:"VALUE"`
+	}
+	var cfg struct {
+		Scalar *scalar `env:"SCALAR"`
+		Nested *scalar `envPrefix:"NESTED_"`
+	}
+	cfg.Scalar = &scalar{Value: "old"}
+	cfg.Nested = &scalar{Value: "old"}
+
+	err := ParseWithOptions(&cfg, Options{
+		Environment: map[string]string{
+			"SCALAR":       "scalar",
+			"NESTED_VALUE": "nested",
+		},
+		FuncMap: map[reflect.Type]ParserFunc{
+			reflect.TypeOf(scalar{}): func(value string) (interface{}, error) {
+				return scalar{Value: value}, nil
+			},
+		},
+	})
+
+	isNoErr(t, err)
+	isEqual(t, "scalar", cfg.Scalar.Value)
+	isEqual(t, "nested", cfg.Nested.Value)
+}
+
+func TestScalarFieldParamsPreserveNilPointer(t *testing.T) {
+	var cfg struct{ Timeout *unmarshaler }
+
+	params, err := GetFieldParamsWithOptions(&cfg, Options{UseFieldNameByDefault: true})
+
+	isNoErr(t, err)
+	isEqual(t, (*unmarshaler)(nil), cfg.Timeout)
+	isEqual(t, 1, len(params))
+	isEqual(t, "TIMEOUT", params[0].Key)
+}
+
 func TestParseInvalidURL(t *testing.T) {
 	type config struct {
 		ExampleURL url.URL `env:"EXAMPLE_URL_2"`
