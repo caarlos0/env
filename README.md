@@ -55,6 +55,12 @@ You can see the full documentation and list of examples at [pkg.go.dev](https://
 > `envDefault` value, if any. Neither `required` nor `notEmpty` guard against
 > this: `required` is satisfied by the default, while `notEmpty` only sees the
 > value after the default has been applied.
+>
+> With an `envDefault` in place, `env` cannot tell a variable that is set to an
+> empty value from one that is not set at all. If that difference matters for a
+> field, leave out the `envDefault`: `notEmpty` then rejects the empty value,
+> and `os.LookupEnv` lets you apply a fallback only when the variable is really
+> unset.
 
 ### Functions
 
