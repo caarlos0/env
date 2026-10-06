@@ -176,12 +176,24 @@ type Options struct {
 	rawEnvVars map[string]string
 }
 
-func (opts *Options) getRawEnv(s string) string {
-	val := opts.rawEnvVars[s]
-	if val == "" {
-		val = opts.Environment[s]
-	}
-	return os.Expand(val, opts.getRawEnv)
+// expand replaces ${var} or $var in val, expanding the values it refers to
+// as well. visiting holds the variables being expanded, so a reference back
+// to one of them (e.g. A=${A}) expands to an empty string instead of
+// recursing until the stack overflows.
+func (opts *Options) expand(val string, visiting map[string]bool) string {
+	return os.Expand(val, func(s string) string {
+		if visiting[s] {
+			return ""
+		}
+		visiting[s] = true
+		defer delete(visiting, s)
+
+		raw := opts.rawEnvVars[s]
+		if raw == "" {
+			raw = opts.Environment[s]
+		}
+		return opts.expand(raw, visiting)
+	})
 }
 
 func defaultOptions() Options {
@@ -601,7 +613,7 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	)
 
 	if fieldParams.Expand {
-		val = os.Expand(val, opts.getRawEnv)
+		val = opts.expand(val, map[string]bool{fieldParams.Key: true})
 	}
 
 	opts.rawEnvVars[fieldParams.Key] = val
