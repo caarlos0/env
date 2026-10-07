@@ -9,6 +9,11 @@
 go get github.com/caarlos0/env/v11
 ```
 
+###### Supported Go versions
+
+`env` supports the two latest major Go releases, following the
+[Go release policy](https://go.dev/doc/devel/release#policy).
+
 ###### Getting started
 
 ```go
