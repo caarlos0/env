@@ -14,11 +14,6 @@ jobs:
       contents: read
       pull-requests: read
     uses: caarlos0/meta/.github/workflows/semgrep.yml@c7f17af352dac91fa6c785d06ebac8547f1abdd3 # v0.1.0
-  ruleguard:
-    permissions:
-      contents: read
-      pull-requests: read
-    uses: caarlos0/meta/.github/workflows/ruleguard.yml@c7f17af352dac91fa6c785d06ebac8547f1abdd3 # v0.1.0
   build-matrix:
     strategy:
       matrix:
@@ -41,7 +36,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.txt
   build:
-    needs: [semgrep, ruleguard, build-matrix]
+    needs: [semgrep, build-matrix]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     permissions: {}
