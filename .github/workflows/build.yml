@@ -19,7 +19,7 @@ jobs:
       contents: read
       pull-requests: read
     uses: caarlos0/meta/.github/workflows/ruleguard.yml@c7f17af352dac91fa6c785d06ebac8547f1abdd3 # v0.1.0
-  build:
+  build-matrix:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -40,3 +40,17 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.txt
+  build:
+    needs: [semgrep, ruleguard, build-matrix]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Check required jobs
+        env:
+          SUCCESS: ${{ !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && !contains(needs.*.result, 'skipped') }}
+        run: |
+          if [ "$SUCCESS" != true ]; then
+            echo "::error::All required jobs must succeed."
+            exit 1
+          fi
