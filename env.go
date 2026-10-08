@@ -168,6 +168,11 @@ type Options struct {
 	// Useful for mixing default values from `envDefault` and struct initialization
 	SetDefaultsForZeroValuesOnly bool
 
+	// CallPresetMethodBeforeParse recursively calls the `func (T) Preset() T` methods into structures if they exist
+	// Useful for exposing initialized values before parsing in structures bound to constants from other packages
+	// Often used in combination with SetDefaultsForZeroValuesOnly=true
+	CallPresetMethodBeforeParse bool
+
 	// Custom parse functions for different types.
 	FuncMap map[reflect.Type]ParserFunc
 
@@ -332,6 +337,56 @@ func GetFieldParamsWithOptions(v interface{}, opts Options) ([]FieldParams, erro
 	return result, nil
 }
 
+// callPreset - implementation of
+func callPreset(v reflect.Value) reflect.Value {
+	if !v.IsValid() {
+		return v
+	}
+
+	if v.Kind() == reflect.Pointer {
+		if v.IsNil() {
+			return v
+		}
+
+		if elem := callPreset(v.Elem()); elem.IsValid() && v.Elem().CanSet() {
+			v.Elem().Set(elem)
+		}
+
+		return v
+	}
+
+	if v.Kind() == reflect.Struct {
+		for _, field := range v.Fields() {
+			callPreset(field)
+		}
+
+		method := v.MethodByName("Preset")
+
+		if method.IsValid() {
+			methodType := method.Type()
+
+			if methodType.NumIn() == 0 &&
+				methodType.NumOut() == 1 &&
+				methodType.Out(0) == v.Type() {
+
+				result := method.Call(nil)[0]
+
+				if v.CanSet() {
+					v.Set(result)
+				} else {
+					v = result
+				}
+			}
+		}
+	}
+
+	return v
+}
+
+type Presetter[T any] interface {
+	Preset() T
+}
+
 func parseInternal(v interface{}, processField processFieldFn, opts Options) error {
 	ptrRef := reflect.ValueOf(v)
 	if ptrRef.Kind() != reflect.Pointer {
@@ -340,6 +395,10 @@ func parseInternal(v interface{}, processField processFieldFn, opts Options) err
 	ref := ptrRef.Elem()
 	if ref.Kind() != reflect.Struct {
 		return newAggregateError(NotStructPtrError{})
+	}
+
+	if opts.CallPresetMethodBeforeParse {
+		callPreset(ref)
 	}
 
 	return doParse(ref, processField, opts)
@@ -402,6 +461,10 @@ func doParseField(
 	if params.Init && isInvalidPtr(refField) {
 		refField.Set(reflect.New(refField.Type().Elem()))
 		refField = refField.Elem()
+
+		if opts.CallPresetMethodBeforeParse {
+			callPreset(refField)
+		}
 	}
 
 	if refField.Kind() == reflect.Struct {
