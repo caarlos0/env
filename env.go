@@ -35,7 +35,7 @@ var defaultBuiltInParsers = map[reflect.Kind]ParserFunc{ //nolint:gochecknogloba
 		return v, nil
 	},
 	reflect.Int: func(v string) (interface{}, error) {
-		i, err := strconv.ParseInt(v, 10, 32)
+		i, err := strconv.ParseInt(v, 10, strconv.IntSize)
 		return int(i), err
 	},
 	reflect.Int16: func(v string) (interface{}, error) {
@@ -54,7 +54,7 @@ var defaultBuiltInParsers = map[reflect.Kind]ParserFunc{ //nolint:gochecknogloba
 		return int8(i), err
 	},
 	reflect.Uint: func(v string) (interface{}, error) {
-		i, err := strconv.ParseUint(v, 10, 32)
+		i, err := strconv.ParseUint(v, 10, strconv.IntSize)
 		return uint(i), err
 	},
 	reflect.Uint16: func(v string) (interface{}, error) {
