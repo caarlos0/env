@@ -168,6 +168,8 @@ type Options struct {
 	// Useful for mixing default values from `envDefault` and struct initialization
 	SetDefaultsForZeroValuesOnly bool
 
+	//Added options for recursively calls the `func (T) Preset() T` methods into structures if they exist (before Parse)
+
 	// CallPresetMethodBeforeParse recursively calls the `func (T) Preset() T` methods into structures if they exist
 	// Useful for exposing initialized values before parsing in structures bound to constants from other packages
 	// Often used in combination with SetDefaultsForZeroValuesOnly=true
@@ -361,20 +363,34 @@ func callPreset(v reflect.Value) reflect.Value {
 		}
 
 		method := v.MethodByName("Preset")
+		if !method.IsValid() && v.CanAddr() {
+			method = v.Addr().MethodByName("Preset")
+		}
 
 		if method.IsValid() {
 			methodType := method.Type()
 
-			if methodType.NumIn() == 0 &&
-				methodType.NumOut() == 1 &&
-				methodType.Out(0) == v.Type() {
+			if methodType.NumIn() == 0 {
+				if methodType.NumOut() == 1 {
+					result := method.Call(nil)[0]
 
-				result := method.Call(nil)[0]
-
-				if v.CanSet() {
-					v.Set(result)
-				} else {
-					v = result
+					if result.Type() == v.Type() {
+						if v.CanSet() {
+							v.Set(result)
+						} else {
+							v = result
+						}
+					} else if result.Kind() == reflect.Pointer &&
+						result.Type().Elem() == v.Type() &&
+						!result.IsNil() {
+						if v.CanSet() {
+							v.Set(result.Elem())
+						} else {
+							v = result.Elem()
+						}
+					}
+				} else if methodType.NumOut() == 0 {
+					method.Call(nil)
 				}
 			}
 		}
