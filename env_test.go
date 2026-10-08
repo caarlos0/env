@@ -149,8 +149,9 @@ type ParentStruct struct {
 }
 
 type InnerStruct struct {
-	Inner  string `env:"innervar"`
-	Number uint   `env:"innernum"`
+	Inner   string `env:"innervar"`
+	Number  uint   `env:"innernum"`
+	Default uint   `env:"innerdef" envDefault:"1000"`
 }
 
 type ForNestedStruct struct {
@@ -159,6 +160,62 @@ type ForNestedStruct struct {
 
 type NestedStruct struct {
 	NestedVar string `env:"nestedvar"`
+}
+
+func (s ParentStruct) Preset() ParentStruct {
+	s.unexported = &InnerStruct{
+		Inner: string(underscore),
+	}
+
+	return s
+}
+
+func (s InnerStruct) Preset() InnerStruct {
+	s.Number = 100
+	s.Default = 500
+
+	return s
+}
+
+func TestCallPresetMethodBeforeParse(t *testing.T) {
+	{
+		var cfg ParentStruct
+		isNoErr(t, ParseWithOptions(&cfg, Options{}))
+		isEqual(t, cfg.InnerStruct.Default, uint(1000))
+		isEqual(t, cfg.InnerStruct.Number, uint(0))
+		isEqual(t, cfg.unexported, nil)
+	}
+
+	t.Setenv("innerdef", "300")
+
+	{
+		var cfg ParentStruct
+		isNoErr(t, ParseWithOptions(&cfg, Options{}))
+		isEqual(t, cfg.InnerStruct.Default, uint(300))
+		isEqual(t, cfg.InnerStruct.Number, uint(0))
+		isEqual(t, cfg.unexported, nil)
+	}
+
+	{
+		var cfg ParentStruct
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			CallPresetMethodBeforeParse: true,
+		}))
+		isEqual(t, cfg.InnerStruct.Default, uint(300))
+		isEqual(t, cfg.InnerStruct.Number, uint(100))
+		isEqual(t, cfg.unexported.Inner, string(underscore))
+	}
+
+	{
+		var cfg ParentStruct
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			CallPresetMethodBeforeParse:  true,
+			SetDefaultsForZeroValuesOnly: true,
+		}))
+		isEqual(t, cfg.InnerStruct.Default, uint(500))
+		isEqual(t, cfg.InnerStruct.Number, uint(100))
+		isEqual(t, cfg.unexported.Inner, string(underscore))
+	}
 }
 
 func TestIssue245(t *testing.T) {
