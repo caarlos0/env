@@ -168,8 +168,6 @@ type Options struct {
 	// Useful for mixing default values from `envDefault` and struct initialization
 	SetDefaultsForZeroValuesOnly bool
 
-	//Added options for recursively calls the `func (T) Preset() T` methods into structures if they exist (before Parse)
-
 	// CallPresetMethodBeforeParse recursively calls the `func (T) Preset() T` methods into structures if they exist
 	// Useful for exposing initialized values before parsing in structures bound to constants from other packages
 	// Often used in combination with SetDefaultsForZeroValuesOnly=true
