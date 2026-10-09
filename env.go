@@ -379,7 +379,7 @@ func doParseField(
 	if !refField.CanSet() {
 		return nil
 	}
-	if refField.Kind() == reflect.Pointer && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
+	if refField.Kind() == reflect.Pointer && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() && !isCustomParsedStruct(refField.Elem().Type(), opts) {
 		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 	if refField.Kind() == reflect.Struct && refField.CanAddr() && refField.Type().Name() == "" {
@@ -405,14 +405,48 @@ func doParseField(
 	}
 
 	if refField.Kind() == reflect.Struct {
+		if isCustomParsedStruct(refField.Type(), opts) {
+			return nil
+		}
 		return doParse(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
-	if isSliceOfStructs(refTypeField) {
+	if isSliceOfStructs(refTypeField) && !isCustomParsedStruct(sliceElemType(refTypeField), opts) {
 		return doParseSlice(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
 	return nil
+}
+
+func isCustomParsedStruct(t reflect.Type, opts Options) bool {
+	if t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	if t.Kind() != reflect.Struct {
+		return false
+	}
+	if _, ok := opts.FuncMap[t]; ok {
+		return true
+	}
+	if _, ok := opts.FuncMap[reflect.PointerTo(t)]; ok {
+		return true
+	}
+	textUnmarshalerType := reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
+	return t.Implements(textUnmarshalerType) || reflect.PointerTo(t).Implements(textUnmarshalerType)
+}
+
+func sliceElemType(refTypeField reflect.StructField) reflect.Type {
+	field := refTypeField.Type
+	if field.Kind() == reflect.Pointer {
+		field = field.Elem()
+	}
+	if field.Kind() == reflect.Slice {
+		field = field.Elem()
+	}
+	if field.Kind() == reflect.Pointer {
+		field = field.Elem()
+	}
+	return field
 }
 
 func isSliceOfStructs(refTypeField reflect.StructField) bool {
