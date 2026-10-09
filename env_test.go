@@ -2189,6 +2189,146 @@ func TestIssue320(t *testing.T) {
 	isEqual(t, cfg.Baz, nil)
 }
 
+func TestIssue435NonConsecutiveSliceIndices(t *testing.T) {
+	type Test struct {
+		Str string `env:"STR"`
+		Num int    `env:"NUM"`
+	}
+
+	t.Run("missing intermediate indices", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		t.Setenv("FOO_0_STR", "zero")
+		t.Setenv("FOO_0_NUM", "10")
+		t.Setenv("FOO_2_STR", "two")
+		t.Setenv("FOO_2_NUM", "20")
+		t.Setenv("FOO_5_STR", "five")
+		t.Setenv("FOO_5_NUM", "50")
+
+		cfg := Config{}
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, 3, len(cfg.Foo))
+		isEqual(t, "zero", cfg.Foo[0].Str)
+		isEqual(t, 10, cfg.Foo[0].Num)
+		isEqual(t, "two", cfg.Foo[1].Str)
+		isEqual(t, 20, cfg.Foo[1].Num)
+		isEqual(t, "five", cfg.Foo[2].Str)
+		isEqual(t, 50, cfg.Foo[2].Num)
+	})
+
+	t.Run("missing index 0", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		t.Setenv("FOO_1_STR", "one")
+		t.Setenv("FOO_3_STR", "three")
+
+		cfg := Config{}
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, 2, len(cfg.Foo))
+		isEqual(t, "one", cfg.Foo[0].Str)
+		isEqual(t, "three", cfg.Foo[1].Str)
+	})
+
+	t.Run("numeric ordering with multi-digit indices", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		t.Setenv("FOO_10_STR", "ten")
+		t.Setenv("FOO_2_STR", "two")
+		t.Setenv("FOO_0_STR", "zero")
+
+		cfg := Config{}
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, 3, len(cfg.Foo))
+		isEqual(t, "zero", cfg.Foo[0].Str)
+		isEqual(t, "two", cfg.Foo[1].Str)
+		isEqual(t, "ten", cfg.Foo[2].Str)
+	})
+
+	t.Run("pointer to slice of structs", func(t *testing.T) {
+		type Config struct {
+			Foo *[]Test `envPrefix:"FOO_"`
+		}
+
+		t.Setenv("FOO_0_STR", "zero")
+		t.Setenv("FOO_4_STR", "four")
+
+		cfg := Config{}
+		isNoErr(t, Parse(&cfg))
+
+		isTrue(t, cfg.Foo != nil)
+		isEqual(t, 2, len(*cfg.Foo))
+		isEqual(t, "zero", (*cfg.Foo)[0].Str)
+		isEqual(t, "four", (*cfg.Foo)[1].Str)
+	})
+
+	t.Run("pre-initialized slice", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		sample := []Test{
+			{Str: "init0", Num: 100},
+		}
+		cfg := Config{Foo: sample}
+
+		t.Setenv("FOO_0_STR", "updated0")
+		t.Setenv("FOO_3_STR", "new3")
+		t.Setenv("FOO_3_NUM", "300")
+
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, 2, len(cfg.Foo))
+		isEqual(t, "updated0", cfg.Foo[0].Str)
+		isEqual(t, 100, cfg.Foo[0].Num)
+		isEqual(t, "new3", cfg.Foo[1].Str)
+		isEqual(t, 300, cfg.Foo[1].Num)
+	})
+
+	t.Run("unprefixed slice", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `env:",init"`
+		}
+
+		t.Setenv("0_STR", "zero")
+		t.Setenv("3_STR", "three")
+
+		cfg := Config{}
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, 2, len(cfg.Foo))
+		isEqual(t, "zero", cfg.Foo[0].Str)
+		isEqual(t, "three", cfg.Foo[1].Str)
+	})
+
+	t.Run("non-integer and invalid index formats ignored", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		t.Setenv("FOO_0_STR", "zero")
+		t.Setenv("FOO_BAR_STR", "ignored")
+		t.Setenv("FOO_-1_STR", "negative")
+		t.Setenv("FOO_00_STR", "leading_zero")
+		t.Setenv("FOO_2_STR", "two")
+
+		cfg := Config{}
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, 2, len(cfg.Foo))
+		isEqual(t, "zero", cfg.Foo[0].Str)
+		isEqual(t, "two", cfg.Foo[1].Str)
+	})
+}
+
 func TestParseWithOptionsRenamedDefault(t *testing.T) {
 	type config struct {
 		Str string `env:"STR" envDefault:"foo" myDefault:"bar"`

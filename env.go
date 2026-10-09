@@ -21,6 +21,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -439,60 +440,67 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 		opts.Prefix += string(underscore)
 	}
 
-	var environments []string
+	indexSet := make(map[int]struct{})
 	for environment := range opts.Environment {
-		if strings.HasPrefix(environment, opts.Prefix) {
-			environments = append(environments, environment)
+		if !strings.HasPrefix(environment, opts.Prefix) {
+			continue
 		}
+		rest := environment[len(opts.Prefix):]
+		idxStr, _, found := strings.Cut(rest, string(underscore))
+		if !found {
+			continue
+		}
+		idx, err := strconv.Atoi(idxStr)
+		if err != nil || idx < 0 || strconv.Itoa(idx) != idxStr {
+			continue
+		}
+		indexSet[idx] = struct{}{}
 	}
 
-	if len(environments) > 0 {
-		counter := 0
-		for finished := false; !finished; {
-			finished = true
-			prefix := fmt.Sprintf("%s%d%c", opts.Prefix, counter, underscore)
-			for _, variable := range environments {
-				if strings.HasPrefix(variable, prefix) {
-					counter++
-					finished = false
-					break
-				}
-			}
-		}
+	if len(indexSet) == 0 {
+		return nil
+	}
 
-		sliceType := ref.Type()
-		var initialized int
-		if reflect.Pointer == ref.Kind() {
-			sliceType = sliceType.Elem()
-			// Due to the rest of code the pre-initialized slice has no chance for this situation
-			initialized = 0
-		} else {
-			initialized = ref.Len()
-		}
+	indices := make([]int, 0, len(indexSet))
+	for idx := range indexSet {
+		indices = append(indices, idx)
+	}
+	slices.Sort(indices)
 
-		var capacity int
-		if capacity = initialized; counter > initialized {
-			capacity = counter
+	sliceType := ref.Type()
+	var initialized int
+	if reflect.Pointer == ref.Kind() {
+		sliceType = sliceType.Elem()
+		// Due to the rest of code the pre-initialized slice has no chance for this situation
+		initialized = 0
+	} else {
+		initialized = ref.Len()
+	}
+
+	capacity := initialized
+	if len(indices) > initialized {
+		capacity = len(indices)
+	}
+	result := reflect.MakeSlice(sliceType, capacity, capacity)
+	for i := 0; i < capacity; i++ {
+		item := result.Index(i)
+		if i < initialized {
+			item.Set(ref.Index(i))
 		}
-		result := reflect.MakeSlice(sliceType, capacity, capacity)
-		for i := 0; i < capacity; i++ {
-			item := result.Index(i)
-			if i < initialized {
-				item.Set(ref.Index(i))
-			}
-			if err := doParse(item, processField, optionsWithSliceEnvPrefix(opts, i)); err != nil {
+		if i < len(indices) {
+			if err := doParse(item, processField, optionsWithSliceEnvPrefix(opts, indices[i])); err != nil {
 				return err
 			}
 		}
+	}
 
-		if result.Len() > 0 {
-			if reflect.Pointer == ref.Kind() {
-				resultPtr := reflect.New(sliceType)
-				resultPtr.Elem().Set(result)
-				result = resultPtr
-			}
-			ref.Set(result)
+	if result.Len() > 0 {
+		if reflect.Pointer == ref.Kind() {
+			resultPtr := reflect.New(sliceType)
+			resultPtr.Elem().Set(result)
+			result = resultPtr
 		}
+		ref.Set(result)
 	}
 
 	return nil
