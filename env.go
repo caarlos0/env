@@ -613,7 +613,13 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	)
 
 	if fieldParams.Expand {
-		val = opts.expand(val, map[string]bool{fieldParams.Key: true})
+		visiting := map[string]bool{}
+		// A reference to this field's own key is a cycle, unless an earlier
+		// field with the same key already cached a value to read.
+		if opts.rawEnvVars[fieldParams.Key] == "" {
+			visiting[fieldParams.Key] = true
+		}
+		val = opts.expand(val, visiting)
 	}
 
 	opts.rawEnvVars[fieldParams.Key] = val
