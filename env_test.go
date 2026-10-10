@@ -1074,6 +1074,20 @@ func TestParseExpandCyclicReference(t *testing.T) {
 	isEqual(t, "11", cfg.Twice)
 }
 
+func TestParseExpandReadsEarlierFieldWithSameKey(t *testing.T) {
+	type config struct {
+		RawPort string `env:"PORT" envDefault:"3000"`
+		Port    int    `env:"PORT,expand" envDefault:"${PORT}"`
+	}
+
+	var cfg config
+	err := ParseWithOptions(&cfg, Options{Environment: map[string]string{}})
+
+	isNoErr(t, err)
+	isEqual(t, "3000", cfg.RawPort)
+	isEqual(t, 3000, cfg.Port)
+}
+
 func TestParseUnsetRequireOptions(t *testing.T) {
 	type config struct {
 		Password string `env:"PASSWORD,unset,required"`
