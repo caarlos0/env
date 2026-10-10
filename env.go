@@ -384,8 +384,10 @@ func doParseField(
 		return err
 	}
 
+	explicitKey, _ := parseKeyForOption(refTypeField.Tag.Get(opts.TagName))
+	_, hasPrefix := refTypeField.Tag.Lookup(opts.PrefixTagName)
 	scalar := isScalarStruct(refField.Type(), opts.FuncMap) &&
-		(params.OwnKey != "" || params.HasDefaultValue)
+		(explicitKey != "" || params.HasDefaultValue || params.OwnKey != "" && !hasPrefix)
 	if !scalar && refField.Kind() == reflect.Ptr && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
 		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
