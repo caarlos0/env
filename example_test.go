@@ -482,15 +482,26 @@ func Example_setDefaultsForZeroValuesOnly() {
 }
 
 // An environment variable that is set but empty falls back to envDefault.
+//
+// Neither `required` nor `notEmpty` guards against this: `required` is already
+// satisfied by the default, and `notEmpty` only sees the value after the
+// default was applied.
 func Example_parseEmptyEnvFallsBackToDefault() {
 	type Config struct {
-		Foo string `env:"FOO" envDefault:"fallback"`
+		Foo string `env:"EMPTY_FOO" envDefault:"fallback"`
+		Bar string `env:"EMPTY_BAR,notEmpty" envDefault:"fallback"`
+		Baz string `env:"EMPTY_BAZ,required" envDefault:"fallback"`
 	}
 
-	os.Setenv("FOO", "")
+	os.Setenv("EMPTY_FOO", "")
+	os.Setenv("EMPTY_BAR", "")
+	os.Setenv("EMPTY_BAZ", "")
 
-	cfg, _ := ParseAs[Config]()
+	cfg, err := ParseAs[Config]()
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	fmt.Println(cfg.Foo)
-	// Output: fallback
+	fmt.Printf("%+v", cfg)
+	// Output: {Foo:fallback Bar:fallback Baz:fallback}
 }
