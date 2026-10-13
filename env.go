@@ -534,17 +534,18 @@ func toEnvName(input string) string {
 
 // FieldParams contains information about parsed field tags.
 type FieldParams struct {
-	OwnKey          string
-	Key             string
-	DefaultValue    string
-	HasDefaultValue bool
-	Required        bool
-	LoadFile        bool
-	Unset           bool
-	NotEmpty        bool
-	Expand          bool
-	Init            bool
-	Ignored         bool
+	OwnKey            string
+	Key               string
+	DefaultValue      string
+	HasDefaultValue   bool
+	Required          bool
+	LoadFile          bool
+	Unset             bool
+	NotEmpty          bool
+	NotEmptyIfDefined bool
+	Expand            bool
+	Init              bool
+	Ignored           bool
 }
 
 func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, error) {
@@ -576,6 +577,8 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 			result.Unset = true
 		case "notEmpty":
 			result.NotEmpty = true
+		case "notEmptyIfDefined":
+			result.NotEmptyIfDefined = true
 		case "expand":
 			result.Expand = true
 		case "init":
@@ -616,6 +619,12 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 
 	if fieldParams.NotEmpty && val == "" {
 		return "", newEmptyVarError(fieldParams.Key)
+	}
+
+	if fieldParams.NotEmptyIfDefined {
+		if raw, defined := opts.Environment[fieldParams.Key]; defined && raw == "" {
+			return "", newEmptyVarError(fieldParams.Key)
+		}
 	}
 
 	if fieldParams.LoadFile && val != "" {

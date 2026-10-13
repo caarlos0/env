@@ -1757,16 +1757,17 @@ func TestErrorIs(t *testing.T) {
 }
 
 type FieldParamsConfig struct {
-	Simple         []string `env:"SIMPLE"`
-	WithoutEnv     string
-	privateWithEnv string `env:"PRIVATE_WITH_ENV"` //nolint:unused
-	WithDefault    string `env:"WITH_DEFAULT" envDefault:"default"`
-	Required       string `env:"REQUIRED,required"`
-	File           string `env:"FILE,file"`
-	Unset          string `env:"UNSET,unset"`
-	NotEmpty       string `env:"NOT_EMPTY,notEmpty"`
-	Expand         string `env:"EXPAND,expand"`
-	NestedConfig   struct {
+	Simple            []string `env:"SIMPLE"`
+	WithoutEnv        string
+	privateWithEnv    string `env:"PRIVATE_WITH_ENV"` //nolint:unused
+	WithDefault       string `env:"WITH_DEFAULT" envDefault:"default"`
+	Required          string `env:"REQUIRED,required"`
+	File              string `env:"FILE,file"`
+	Unset             string `env:"UNSET,unset"`
+	NotEmpty          string `env:"NOT_EMPTY,notEmpty"`
+	NotEmptyIfDefined string `env:"NOT_EMPTY_IF_DEFINED,notEmptyIfDefined"`
+	Expand            string `env:"EXPAND,expand"`
+	NestedConfig      struct {
 		Simple []string `env:"SIMPLE"`
 	} `envPrefix:"NESTED_"`
 }
@@ -1783,6 +1784,7 @@ func TestGetFieldParams(t *testing.T) {
 		{OwnKey: "FILE", Key: "FILE", LoadFile: true},
 		{OwnKey: "UNSET", Key: "UNSET", Unset: true},
 		{OwnKey: "NOT_EMPTY", Key: "NOT_EMPTY", NotEmpty: true},
+		{OwnKey: "NOT_EMPTY_IF_DEFINED", Key: "NOT_EMPTY_IF_DEFINED", NotEmptyIfDefined: true},
 		{OwnKey: "EXPAND", Key: "EXPAND", Expand: true},
 		{OwnKey: "SIMPLE", Key: "NESTED_SIMPLE"},
 	}
@@ -1803,6 +1805,7 @@ func TestGetFieldParamsWithPrefix(t *testing.T) {
 		{OwnKey: "FILE", Key: "FOO_FILE", LoadFile: true},
 		{OwnKey: "UNSET", Key: "FOO_UNSET", Unset: true},
 		{OwnKey: "NOT_EMPTY", Key: "FOO_NOT_EMPTY", NotEmpty: true},
+		{OwnKey: "NOT_EMPTY_IF_DEFINED", Key: "FOO_NOT_EMPTY_IF_DEFINED", NotEmptyIfDefined: true},
 		{OwnKey: "EXPAND", Key: "FOO_EXPAND", Expand: true},
 		{OwnKey: "SIMPLE", Key: "FOO_NESTED_SIMPLE"},
 	}
@@ -2416,4 +2419,43 @@ func TestEnvBleed(t *testing.T) {
 		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: map[string]string{"BAR": "202"}}))
 		isEqual(t, "", cfg.Foo)
 	})
+}
+
+func TestNotEmptyIfDefinedSetEmpty(t *testing.T) {
+	t.Setenv("IS_REQUIRED", "")
+	type config struct {
+		IsRequired string `env:"IS_REQUIRED,notEmptyIfDefined"`
+	}
+	err := Parse(&config{})
+	isErrorWithMessage(t, err, `env: environment variable "IS_REQUIRED" should not be empty`)
+	isTrue(t, errors.Is(err, EmptyVarError{}))
+}
+
+func TestNotEmptyIfDefinedSetEmptyWithDefault(t *testing.T) {
+	t.Setenv("IS_REQUIRED", "")
+	type config struct {
+		IsRequired string `env:"IS_REQUIRED,notEmptyIfDefined" envDefault:"important"`
+	}
+	err := Parse(&config{})
+	isErrorWithMessage(t, err, `env: environment variable "IS_REQUIRED" should not be empty`)
+	isTrue(t, errors.Is(err, EmptyVarError{}))
+}
+
+func TestNotEmptyIfDefinedNotSetWithDefault(t *testing.T) {
+	type config struct {
+		IsRequired string `env:"IS_REQUIRED,notEmptyIfDefined" envDefault:"important"`
+	}
+	cfg := &config{}
+	isNoErr(t, Parse(cfg))
+	isEqual(t, "important", cfg.IsRequired)
+}
+
+func TestNotEmptyIfDefinedSetValue(t *testing.T) {
+	t.Setenv("IS_REQUIRED", "value")
+	type config struct {
+		IsRequired string `env:"IS_REQUIRED,notEmptyIfDefined"`
+	}
+	cfg := &config{}
+	isNoErr(t, Parse(cfg))
+	isEqual(t, "value", cfg.IsRequired)
 }
