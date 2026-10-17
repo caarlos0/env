@@ -2478,5 +2478,3 @@ func TestUseFieldNameByDefault_URLAndTextUnmarshaler(t *testing.T) {
 		isEqual(t, "custom-ptr-value", cfg.CustomPtr.Value)
 	})
 }
-
-
