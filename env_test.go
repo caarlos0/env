@@ -464,6 +464,121 @@ func TestParsesEnv_Map(t *testing.T) {
 	isEqual(t, withCustomSeparator, cfg.CustomSeparatorMapStringString)
 }
 
+func TestParseMapStringToStringSlice(t *testing.T) {
+	type config struct {
+		Map map[string][]string `env:"MAP_STRING_TO_STRINGS"`
+	}
+	type customConfig struct {
+		Map map[string][]string `env:"MAP_STRING_TO_STRINGS" envSeparator:"|" envKeyValSeparator:"="`
+	}
+	type defaultConfig struct {
+		Map map[string][]string `env:"MAP_STRING_TO_STRINGS" envDefault:"foo:bar,foo:baz"`
+	}
+
+	tests := []struct {
+		name    string
+		env     map[string]string
+		custom  bool
+		withDef bool
+		want    map[string][]string
+		wantErr bool
+	}{
+		{
+			name: "single value",
+			env:  map[string]string{"MAP_STRING_TO_STRINGS": "foo:bar"},
+			want: map[string][]string{"foo": {"bar"}},
+		},
+		{
+			name: "multiple values append on duplicate keys",
+			env:  map[string]string{"MAP_STRING_TO_STRINGS": "foo:bar,foo:baz"},
+			want: map[string][]string{"foo": {"bar", "baz"}},
+		},
+		{
+			name: "interleaved keys keep append order",
+			env:  map[string]string{"MAP_STRING_TO_STRINGS": "foo:bar,bar:qux,foo:baz"},
+			want: map[string][]string{
+				"foo": {"bar", "baz"},
+				"bar": {"qux"},
+			},
+		},
+		{
+			name: "empty value",
+			env:  map[string]string{"MAP_STRING_TO_STRINGS": "foo:"},
+			want: map[string][]string{"foo": {""}},
+		},
+		{
+			name:   "custom separators",
+			env:    map[string]string{"MAP_STRING_TO_STRINGS": "foo=bar|foo=baz"},
+			custom: true,
+			want:   map[string][]string{"foo": {"bar", "baz"}},
+		},
+		{
+			name:    "empty env falls back to envDefault",
+			env:     map[string]string{"MAP_STRING_TO_STRINGS": ""},
+			withDef: true,
+			want:    map[string][]string{"foo": {"bar", "baz"}},
+		},
+		{
+			name: "unset env leaves map nil",
+			env:  map[string]string{},
+			want: nil,
+		},
+		{
+			name:    "invalid pair",
+			env:     map[string]string{"MAP_STRING_TO_STRINGS": "foo"},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := Options{Environment: tt.env}
+			var (
+				err error
+				got map[string][]string
+			)
+			switch {
+			case tt.custom:
+				var cfg customConfig
+				err = ParseWithOptions(&cfg, opts)
+				got = cfg.Map
+			case tt.withDef:
+				var cfg defaultConfig
+				err = ParseWithOptions(&cfg, opts)
+				got = cfg.Map
+			default:
+				var cfg config
+				err = ParseWithOptions(&cfg, opts)
+				got = cfg.Map
+			}
+			if tt.wantErr {
+				isTrue(t, errors.Is(err, ParseError{}))
+				return
+			}
+			isNoErr(t, err)
+			isEqual(t, tt.want, got)
+		})
+	}
+}
+
+func TestParseMapSliceCustomParserKeepsLastValue(t *testing.T) {
+	type config struct {
+		Map map[string][]string `env:"MAP_STRING_TO_STRINGS"`
+	}
+
+	var cfg config
+	err := ParseWithOptions(&cfg, Options{
+		Environment: map[string]string{"MAP_STRING_TO_STRINGS": "foo:a+b,foo:c+d"},
+		FuncMap: map[reflect.Type]ParserFunc{
+			reflect.TypeOf([]string{}): func(v string) (interface{}, error) {
+				return strings.Split(v, "+"), nil
+			},
+		},
+	})
+	isNoErr(t, err)
+	isEqual(t, map[string][]string{"foo": {"c", "d"}}, cfg.Map)
+}
+
 func TestParsesEnvInvalidMap(t *testing.T) {
 	type config struct {
 		MapStringString map[string]string `env:"MAP_STRING_STRING" envSeparator:","`

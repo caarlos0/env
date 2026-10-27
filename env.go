@@ -761,6 +761,68 @@ func handleMap(field reflect.Value, value string, sf reflect.StructField, funcMa
 	elemParserFunc, ok := funcMap[elemType]
 	if !ok {
 		elemParserFunc, ok = defaultBuiltInParsers[elemType.Kind()]
+	}
+	// map[K][]V has no parser for the slice itself. Each pair contributes one
+	// element and duplicate keys append, unless a custom parser is registered
+	// for the slice type (that path keeps the previous last-value-wins behavior).
+	if !ok && elemType.Kind() == reflect.Slice {
+		return handleMapSlice(field, value, sf, funcMap, keyType, keyParserFunc)
+	}
+	if !ok {
+		return newNoParserError(sf)
+	}
+
+	separator := sf.Tag.Get("envSeparator")
+	if separator == "" {
+		separator = ","
+	}
+
+	keyValSeparator := sf.Tag.Get("envKeyValSeparator")
+	if keyValSeparator == "" {
+		keyValSeparator = ":"
+	}
+
+	result := reflect.MakeMap(sf.Type)
+	for _, part := range strings.Split(value, separator) {
+		pairs := strings.SplitN(part, keyValSeparator, 2)
+		if len(pairs) != 2 {
+			return newParseError(sf, fmt.Errorf(`%q should be in "key%svalue" format`, part, keyValSeparator))
+		}
+
+		key, err := keyParserFunc(pairs[0])
+		if err != nil {
+			return newParseError(sf, err)
+		}
+
+		elem, err := elemParserFunc(pairs[1])
+		if err != nil {
+			return newParseError(sf, err)
+		}
+
+		result.SetMapIndex(reflect.ValueOf(key).Convert(keyType), reflect.ValueOf(elem).Convert(elemType))
+	}
+
+	field.Set(result)
+	return nil
+}
+
+// handleMapSlice parses map values that are slices, such as map[string][]string.
+// Pairs use the same envSeparator (default ",") and envKeyValSeparator (default ":")
+// tags as scalar maps. A repeated key appends another element instead of replacing
+// the slice. Slice elements are parsed with FuncMap or the built-in parsers.
+func handleMapSlice(
+	field reflect.Value,
+	value string,
+	sf reflect.StructField,
+	funcMap map[reflect.Type]ParserFunc,
+	keyType reflect.Type,
+	keyParserFunc ParserFunc,
+) error {
+	elemType := sf.Type.Elem()
+	sliceElemType := elemType.Elem()
+	elemParserFunc, ok := funcMap[sliceElemType]
+	if !ok {
+		elemParserFunc, ok = defaultBuiltInParsers[sliceElemType.Kind()]
 		if !ok {
 			return newNoParserError(sf)
 		}
@@ -793,7 +855,13 @@ func handleMap(field reflect.Value, value string, sf reflect.StructField, funcMa
 			return newParseError(sf, err)
 		}
 
-		result.SetMapIndex(reflect.ValueOf(key).Convert(keyType), reflect.ValueOf(elem).Convert(elemType))
+		keyValue := reflect.ValueOf(key).Convert(keyType)
+		current := result.MapIndex(keyValue)
+		if !current.IsValid() {
+			current = reflect.MakeSlice(elemType, 0, 1)
+		}
+		current = reflect.Append(current, reflect.ValueOf(elem).Convert(sliceElemType))
+		result.SetMapIndex(keyValue, current)
 	}
 
 	field.Set(result)
