@@ -14,29 +14,41 @@ jobs:
       contents: read
       pull-requests: read
     uses: caarlos0/meta/.github/workflows/semgrep.yml@c7f17af352dac91fa6c785d06ebac8547f1abdd3 # v0.1.0
-  ruleguard:
-    permissions:
-      contents: read
-      pull-requests: read
-    uses: caarlos0/meta/.github/workflows/ruleguard.yml@c7f17af352dac91fa6c785d06ebac8547f1abdd3 # v0.1.0
-  build:
+  build-matrix:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: [1.18, oldstable, stable]
+        go-version: [oldstable, stable]
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: ${{ matrix.go-version }}
       - run: make setup ci
-      - uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         if: matrix.os == 'ubuntu-latest' && matrix.go-version == 'stable'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.txt
+  build:
+    needs: [semgrep, build-matrix]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Check required jobs
+        env:
+          SUCCESS: >-
+            ${{ !contains(needs.*.result, 'failure') &&
+            !contains(needs.*.result, 'cancelled') &&
+            !contains(needs.*.result, 'skipped') }}
+        run: |
+          if [ "$SUCCESS" != true ]; then
+            echo "::error::All required jobs must succeed."
+            exit 1
+          fi

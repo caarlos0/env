@@ -480,3 +480,17 @@ func Example_setDefaultsForZeroValuesOnly() {
 	// Without SetDefaultsForZeroValuesOnly, the username would have been 'admin'.
 	// Output: {Username:root Password:qwerty}
 }
+
+// An environment variable that is set but empty falls back to envDefault.
+func Example_parseEmptyEnvFallsBackToDefault() {
+	type Config struct {
+		Foo string `env:"FOO" envDefault:"fallback"`
+	}
+
+	os.Setenv("FOO", "")
+
+	cfg, _ := ParseAs[Config]()
+
+	fmt.Println(cfg.Foo)
+	// Output: fallback
+}

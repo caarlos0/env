@@ -9,6 +9,11 @@
 go get github.com/caarlos0/env/v11
 ```
 
+###### Supported Go versions
+
+`env` supports the two latest major Go releases, following the
+[Go release policy](https://go.dev/doc/devel/release#policy).
+
 ###### Getting started
 
 ```go
@@ -48,6 +53,13 @@ You can see the full documentation and list of examples at [pkg.go.dev](https://
 >
 > _Unexported fields_ will be **ignored** by `env`.
 > This is by design and will not change.
+
+> [!CAUTION]
+>
+> An environment variable that is set but _empty_ will fall back to the
+> `envDefault` value, if any. Neither `required` nor `notEmpty` guard against
+> this: `required` is satisfied by the default, while `notEmpty` only sees the
+> value after the default has been applied.
 
 ### Functions
 
@@ -93,7 +105,7 @@ You may also add custom parsers for your types.
 The following tags are provided:
 
 - `env`: sets the environment variable name and optionally takes the tag options described below
-- `envDefault`: sets the default value for the field
+- `envDefault`: sets the default value for the field (also used when the environment variable is set but empty)
 - `envPrefix`: can be used in a field that is a complex type to set a prefix to all environment variables used in it
 - `envSeparator`: sets the character to be used to separate items in slices and maps (default: `,`)
 - `envKeyValSeparator`: sets the character to be used to separate keys and their values in maps (default: `:`)
@@ -150,7 +162,3 @@ Eventual bug fixes will keep being merged.
 ## Related projects
 
 - [envdoc](https://github.com/g4s8/envdoc) - generate documentation for environment variables from `env` tags
-
-## Stargazers over time
-
-[![Stargazers over time](https://starchart.cc/caarlos0/env.svg?variant=adaptive)](https://starchart.cc/caarlos0/env)
