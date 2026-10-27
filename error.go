@@ -171,3 +171,15 @@ func newParseValueError(message string, err error) error {
 func (e ParseValueError) Error() string {
 	return fmt.Sprintf("%s: %v", e.Msg, e.Err)
 }
+
+// SliceIndexTooLargeError occurs when a prefixed slice env index exceeds the
+// safety limit (guards against FOO_1000000-style allocations).
+type SliceIndexTooLargeError struct {
+	Prefix string
+	Index  int
+	Max    int
+}
+
+func (e SliceIndexTooLargeError) Error() string {
+	return fmt.Sprintf("env prefix %q has index %d which exceeds max allowed index %d", e.Prefix, e.Index, e.Max)
+}
