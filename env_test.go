@@ -1478,6 +1478,45 @@ func TestParseCustomScalarStructAsNestedContainer(t *testing.T) {
 			isEqual(t, "scalar", cfg.Scalar.Value)
 			isEqual(t, "nested", cfg.Nested.Value)
 		})
+		for _, test := range []struct {
+			name        string
+			environment map[string]string
+			want        string
+		}{
+			{
+				name:        "absent inferred input",
+				environment: map[string]string{"SCALAR": "scalar", "VALUE": "nested"},
+				want:        "nested",
+			},
+			{
+				name:        "present inferred input",
+				environment: map[string]string{"SCALAR": "scalar", "NESTED": "parsed", "VALUE": "nested"},
+				want:        "parsed",
+			},
+		} {
+			t.Run(fmt.Sprintf("%s/required=%t", test.name, required), func(t *testing.T) {
+				var cfg struct {
+					Scalar scalar `env:"SCALAR"`
+					Nested *scalar
+				}
+				cfg.Nested = &scalar{Value: "old"}
+
+				err := ParseWithOptions(&cfg, Options{
+					UseFieldNameByDefault: true,
+					RequiredIfNoDef:       required,
+					Environment:           test.environment,
+					FuncMap: map[reflect.Type]ParserFunc{
+						reflect.TypeOf(scalar{}): func(value string) (interface{}, error) {
+							return scalar{Value: value}, nil
+						},
+					},
+				})
+
+				isNoErr(t, err)
+				isEqual(t, "scalar", cfg.Scalar.Value)
+				isEqual(t, test.want, cfg.Nested.Value)
+			})
+		}
 	}
 }
 
