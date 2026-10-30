@@ -379,16 +379,22 @@ func doParseField(
 	if !refField.CanSet() {
 		return nil
 	}
-	if refField.Kind() == reflect.Pointer && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
-		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
-	}
-	if refField.Kind() == reflect.Struct && refField.CanAddr() && refField.Type().Name() == "" {
-		return parseInternal(refField.Addr().Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
-	}
 
 	params, err := parseFieldParams(refTypeField, opts)
 	if err != nil {
 		return err
+	}
+
+	explicitKey, _ := parseKeyForOption(refTypeField.Tag.Get(opts.TagName))
+	_, hasPrefix := refTypeField.Tag.Lookup(opts.PrefixTagName)
+	_, hasValue := opts.Environment[params.Key]
+	scalar := isScalarStruct(refField.Type(), opts.FuncMap) &&
+		(explicitKey != "" || params.HasDefaultValue || params.OwnKey != "" && !hasPrefix && hasValue)
+	if !scalar && refField.Kind() == reflect.Pointer && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
+		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
+	}
+	if !scalar && refField.Kind() == reflect.Struct && refField.CanAddr() && refField.Type().Name() == "" {
+		return parseInternal(refField.Addr().Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
 	if params.Ignored {
@@ -404,31 +410,35 @@ func doParseField(
 		refField = refField.Elem()
 	}
 
+	if scalar {
+		return nil
+	}
+
 	if refField.Kind() == reflect.Struct {
 		return doParse(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
-	if isSliceOfStructs(refTypeField) {
+	if isSliceOfStructs(refTypeField, opts) {
 		return doParseSlice(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
 	return nil
 }
 
-func isSliceOfStructs(refTypeField reflect.StructField) bool {
+func isSliceOfStructs(refTypeField reflect.StructField, opts Options) bool {
 	field := refTypeField.Type
 
 	// *[]struct
 	if field.Kind() == reflect.Pointer {
 		field = field.Elem()
-		if field.Kind() == reflect.Slice && field.Elem().Kind() == reflect.Struct {
-			return true
-		}
 	}
 
-	// []struct{}
 	if field.Kind() == reflect.Slice && field.Elem().Kind() == reflect.Struct {
-		return true
+		elemType := field.Elem()
+		if elemType.Kind() == reflect.Pointer {
+			elemType = elemType.Elem()
+		}
+		return !isScalarStruct(elemType, opts.FuncMap)
 	}
 
 	return false
@@ -850,4 +860,19 @@ func ToMap(env []string) map[string]string {
 
 func isInvalidPtr(v reflect.Value) bool {
 	return reflect.Pointer == v.Kind() && v.Elem().Kind() == reflect.Invalid
+}
+
+var textUnmarshalerType = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem() //nolint:gochecknoglobals
+
+func isScalarStruct(fieldType reflect.Type, funcMap map[reflect.Type]ParserFunc) bool {
+	if fieldType.Kind() == reflect.Pointer {
+		fieldType = fieldType.Elem()
+	}
+	if fieldType.Kind() != reflect.Struct {
+		return false
+	}
+	if _, ok := funcMap[fieldType]; ok {
+		return true
+	}
+	return fieldType.Implements(textUnmarshalerType) || reflect.PointerTo(fieldType).Implements(textUnmarshalerType)
 }

@@ -2417,3 +2417,137 @@ func TestEnvBleed(t *testing.T) {
 		isEqual(t, "", cfg.Foo)
 	})
 }
+
+type customTextUnmarshaler struct {
+	Value string
+}
+
+func (c *customTextUnmarshaler) UnmarshalText(text []byte) error {
+	c.Value = string(text)
+	return nil
+}
+
+func TestUseFieldNameByDefault_URLAndTextUnmarshaler(t *testing.T) {
+	type config struct {
+		URL       url.URL                `env:"URL"`
+		Custom    customTextUnmarshaler  `env:"CUSTOM"`
+		CustomPtr *customTextUnmarshaler `env:"CUSTOM_PTR"`
+	}
+
+	environ := map[string]string{
+		"URL":        "http://example.com/a/b",
+		"PATH":       "/usr/bin",
+		"HOST":       "evil",
+		"CUSTOM":     "custom-value",
+		"CUSTOM_PTR": "custom-ptr-value",
+		"VALUE":      "evil-nested",
+	}
+
+	t.Run("by tag", func(t *testing.T) {
+		var cfg config
+		err := ParseWithOptions(&cfg, Options{Environment: environ})
+		isNoErr(t, err)
+		isEqual(t, "http://example.com/a/b", cfg.URL.String())
+		isEqual(t, "custom-value", cfg.Custom.Value)
+		isEqual(t, "custom-ptr-value", cfg.CustomPtr.Value)
+	})
+
+	t.Run("with UseFieldNameByDefault", func(t *testing.T) {
+		var cfg config
+		err := ParseWithOptions(&cfg, Options{Environment: environ, UseFieldNameByDefault: true})
+		isNoErr(t, err)
+		isEqual(t, "http://example.com/a/b", cfg.URL.String())
+		isEqual(t, "custom-value", cfg.Custom.Value)
+		isEqual(t, "custom-ptr-value", cfg.CustomPtr.Value)
+	})
+
+	t.Run("with UseFieldNameByDefault and RequiredIfNoDef", func(t *testing.T) {
+		var cfg config
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{
+				"URL":        "http://example.com/a/b",
+				"CUSTOM":     "custom-value",
+				"CUSTOM_PTR": "custom-ptr-value",
+			},
+			UseFieldNameByDefault: true,
+			RequiredIfNoDef:       true,
+		})
+		isNoErr(t, err)
+		isEqual(t, "http://example.com/a/b", cfg.URL.String())
+		isEqual(t, "custom-value", cfg.Custom.Value)
+		isEqual(t, "custom-ptr-value", cfg.CustomPtr.Value)
+	})
+}
+
+func TestParseCustomScalarStructAsNestedContainer(t *testing.T) {
+	type scalar struct {
+		Value string `env:"VALUE"`
+	}
+	for _, required := range []bool{false, true} {
+		t.Run(fmt.Sprintf("required=%t", required), func(t *testing.T) {
+			var cfg struct {
+				Scalar *scalar `env:"SCALAR"`
+				Nested *scalar `envPrefix:"NESTED_"`
+			}
+			cfg.Scalar = &scalar{Value: "old"}
+			cfg.Nested = &scalar{Value: "old"}
+
+			err := ParseWithOptions(&cfg, Options{
+				UseFieldNameByDefault: true,
+				RequiredIfNoDef:       required,
+				Environment: map[string]string{
+					"SCALAR":       "scalar",
+					"NESTED_VALUE": "nested",
+				},
+				FuncMap: map[reflect.Type]ParserFunc{
+					reflect.TypeOf(scalar{}): func(value string) (interface{}, error) {
+						return scalar{Value: value}, nil
+					},
+				},
+			})
+
+			isNoErr(t, err)
+			isEqual(t, "scalar", cfg.Scalar.Value)
+			isEqual(t, "nested", cfg.Nested.Value)
+		})
+		for _, test := range []struct {
+			name        string
+			environment map[string]string
+			want        string
+		}{
+			{
+				name:        "absent inferred input",
+				environment: map[string]string{"SCALAR": "scalar", "VALUE": "nested"},
+				want:        "nested",
+			},
+			{
+				name:        "present inferred input",
+				environment: map[string]string{"SCALAR": "scalar", "NESTED": "parsed", "VALUE": "nested"},
+				want:        "parsed",
+			},
+		} {
+			t.Run(fmt.Sprintf("%s/required=%t", test.name, required), func(t *testing.T) {
+				var cfg struct {
+					Scalar scalar `env:"SCALAR"`
+					Nested *scalar
+				}
+				cfg.Nested = &scalar{Value: "old"}
+
+				err := ParseWithOptions(&cfg, Options{
+					UseFieldNameByDefault: true,
+					RequiredIfNoDef:       required,
+					Environment:           test.environment,
+					FuncMap: map[reflect.Type]ParserFunc{
+						reflect.TypeOf(scalar{}): func(value string) (interface{}, error) {
+							return scalar{Value: value}, nil
+						},
+					},
+				})
+
+				isNoErr(t, err)
+				isEqual(t, "scalar", cfg.Scalar.Value)
+				isEqual(t, test.want, cfg.Nested.Value)
+			})
+		}
+	}
+}
