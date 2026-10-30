@@ -379,16 +379,22 @@ func doParseField(
 	if !refField.CanSet() {
 		return nil
 	}
-	if refField.Kind() == reflect.Pointer && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() && !hasCustomOrTextParserType(refTypeField.Type, opts.FuncMap) {
-		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
-	}
-	if refField.Kind() == reflect.Struct && refField.CanAddr() && refField.Type().Name() == "" {
-		return parseInternal(refField.Addr().Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
-	}
 
 	params, err := parseFieldParams(refTypeField, opts)
 	if err != nil {
 		return err
+	}
+
+	explicitKey, _ := parseKeyForOption(refTypeField.Tag.Get(opts.TagName))
+	_, hasPrefix := refTypeField.Tag.Lookup(opts.PrefixTagName)
+	_, hasValue := opts.Environment[params.Key]
+	scalar := isScalarStruct(refField.Type(), opts.FuncMap) &&
+		(explicitKey != "" || params.HasDefaultValue || params.OwnKey != "" && !hasPrefix && hasValue)
+	if !scalar && refField.Kind() == reflect.Pointer && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
+		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
+	}
+	if !scalar && refField.Kind() == reflect.Struct && refField.CanAddr() && refField.Type().Name() == "" {
+		return parseInternal(refField.Addr().Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
 	if params.Ignored {
@@ -404,7 +410,11 @@ func doParseField(
 		refField = refField.Elem()
 	}
 
-	if refField.Kind() == reflect.Struct && !hasCustomOrTextParserType(refTypeField.Type, opts.FuncMap) {
+	if scalar {
+		return nil
+	}
+
+	if refField.Kind() == reflect.Struct {
 		return doParse(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
@@ -428,7 +438,7 @@ func isSliceOfStructs(refTypeField reflect.StructField, opts Options) bool {
 		if elemType.Kind() == reflect.Pointer {
 			elemType = elemType.Elem()
 		}
-		return !hasCustomOrTextParserType(elemType, opts.FuncMap)
+		return !isScalarStruct(elemType, opts.FuncMap)
 	}
 
 	return false
@@ -854,15 +864,15 @@ func isInvalidPtr(v reflect.Value) bool {
 
 var textUnmarshalerType = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem() //nolint:gochecknoglobals
 
-func hasCustomOrTextParserType(t reflect.Type, funcMap map[reflect.Type]ParserFunc) bool {
-	if t.Kind() == reflect.Pointer {
-		t = t.Elem()
+func isScalarStruct(fieldType reflect.Type, funcMap map[reflect.Type]ParserFunc) bool {
+	if fieldType.Kind() == reflect.Pointer {
+		fieldType = fieldType.Elem()
 	}
-	if _, ok := funcMap[t]; ok {
+	if fieldType.Kind() != reflect.Struct {
+		return false
+	}
+	if _, ok := funcMap[fieldType]; ok {
 		return true
 	}
-	if t.Implements(textUnmarshalerType) || reflect.PointerTo(t).Implements(textUnmarshalerType) {
-		return true
-	}
-	return false
+	return fieldType.Implements(textUnmarshalerType) || reflect.PointerTo(fieldType).Implements(textUnmarshalerType)
 }
