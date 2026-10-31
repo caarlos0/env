@@ -21,7 +21,6 @@ import (
 	"net/url"
 	"os"
 	"reflect"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -461,11 +460,12 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 		return nil
 	}
 
-	indices := make([]int, 0, len(indexSet))
+	maxIndex := -1
 	for idx := range indexSet {
-		indices = append(indices, idx)
+		if idx > maxIndex {
+			maxIndex = idx
+		}
 	}
-	slices.Sort(indices)
 
 	sliceType := ref.Type()
 	var initialized int
@@ -478,17 +478,19 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 	}
 
 	capacity := initialized
-	if len(indices) > initialized {
-		capacity = len(indices)
+	if maxIndex+1 > capacity {
+		capacity = maxIndex + 1
 	}
 	result := reflect.MakeSlice(sliceType, capacity, capacity)
 	for i := 0; i < capacity; i++ {
 		item := result.Index(i)
-		if i < initialized {
+		isPreexisting := i < initialized
+		if isPreexisting {
 			item.Set(ref.Index(i))
 		}
-		if i < len(indices) {
-			if err := doParse(item, processField, optionsWithSliceEnvPrefix(opts, indices[i])); err != nil {
+		_, hasEnv := indexSet[i]
+		if isPreexisting || hasEnv {
+			if err := doParse(item, processField, optionsWithSliceEnvPrefix(opts, i)); err != nil {
 				return err
 			}
 		}
