@@ -2189,6 +2189,267 @@ func TestIssue320(t *testing.T) {
 	isEqual(t, cfg.Baz, nil)
 }
 
+func TestIssue435NonConsecutiveSliceIndices(t *testing.T) {
+	type Test struct {
+		Str string `env:"STR"`
+		Num int    `env:"NUM"`
+	}
+
+	t.Run("exact 0 1 3 indices preserving zero-value gap", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		t.Setenv("FOO_0_STR", "a")
+		t.Setenv("FOO_0_NUM", "1")
+		t.Setenv("FOO_1_STR", "b")
+		t.Setenv("FOO_1_NUM", "2")
+		t.Setenv("FOO_3_STR", "d")
+		t.Setenv("FOO_3_NUM", "4")
+
+		cfg := Config{}
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, 4, len(cfg.Foo))
+		isEqual(t, "a", cfg.Foo[0].Str)
+		isEqual(t, 1, cfg.Foo[0].Num)
+		isEqual(t, "b", cfg.Foo[1].Str)
+		isEqual(t, 2, cfg.Foo[1].Num)
+		isEqual(t, "", cfg.Foo[2].Str)
+		isEqual(t, 0, cfg.Foo[2].Num)
+		isEqual(t, "d", cfg.Foo[3].Str)
+		isEqual(t, 4, cfg.Foo[3].Num)
+	})
+
+	t.Run("missing intermediate indices", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		t.Setenv("FOO_0_STR", "zero")
+		t.Setenv("FOO_0_NUM", "10")
+		t.Setenv("FOO_2_STR", "two")
+		t.Setenv("FOO_2_NUM", "20")
+		t.Setenv("FOO_5_STR", "five")
+		t.Setenv("FOO_5_NUM", "50")
+
+		cfg := Config{}
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, 6, len(cfg.Foo))
+		isEqual(t, "zero", cfg.Foo[0].Str)
+		isEqual(t, 10, cfg.Foo[0].Num)
+		isEqual(t, "", cfg.Foo[1].Str)
+		isEqual(t, 0, cfg.Foo[1].Num)
+		isEqual(t, "two", cfg.Foo[2].Str)
+		isEqual(t, 20, cfg.Foo[2].Num)
+		isEqual(t, "", cfg.Foo[3].Str)
+		isEqual(t, 0, cfg.Foo[3].Num)
+		isEqual(t, "", cfg.Foo[4].Str)
+		isEqual(t, 0, cfg.Foo[4].Num)
+		isEqual(t, "five", cfg.Foo[5].Str)
+		isEqual(t, 50, cfg.Foo[5].Num)
+	})
+
+	t.Run("missing index 0", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		t.Setenv("FOO_1_STR", "one")
+		t.Setenv("FOO_3_STR", "three")
+
+		cfg := Config{}
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, 4, len(cfg.Foo))
+		isEqual(t, "", cfg.Foo[0].Str)
+		isEqual(t, 0, cfg.Foo[0].Num)
+		isEqual(t, "one", cfg.Foo[1].Str)
+		isEqual(t, 0, cfg.Foo[1].Num)
+		isEqual(t, "", cfg.Foo[2].Str)
+		isEqual(t, 0, cfg.Foo[2].Num)
+		isEqual(t, "three", cfg.Foo[3].Str)
+		isEqual(t, 0, cfg.Foo[3].Num)
+	})
+
+	t.Run("numeric ordering with multi-digit indices", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		t.Setenv("FOO_10_STR", "ten")
+		t.Setenv("FOO_2_STR", "two")
+		t.Setenv("FOO_0_STR", "zero")
+
+		cfg := Config{}
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, 11, len(cfg.Foo))
+		isEqual(t, "zero", cfg.Foo[0].Str)
+		isEqual(t, "", cfg.Foo[1].Str)
+		isEqual(t, "two", cfg.Foo[2].Str)
+		isEqual(t, "ten", cfg.Foo[10].Str)
+	})
+
+	t.Run("pointer to slice of structs", func(t *testing.T) {
+		type Config struct {
+			Foo *[]Test `envPrefix:"FOO_"`
+		}
+
+		t.Setenv("FOO_0_STR", "zero")
+		t.Setenv("FOO_4_STR", "four")
+
+		cfg := Config{}
+		isNoErr(t, Parse(&cfg))
+
+		isTrue(t, cfg.Foo != nil)
+		isEqual(t, 5, len(*cfg.Foo))
+		isEqual(t, "zero", (*cfg.Foo)[0].Str)
+		isEqual(t, "", (*cfg.Foo)[1].Str)
+		isEqual(t, "", (*cfg.Foo)[2].Str)
+		isEqual(t, "", (*cfg.Foo)[3].Str)
+		isEqual(t, "four", (*cfg.Foo)[4].Str)
+	})
+
+	t.Run("pre-initialized slice overridden only at index 1", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		sample := []Test{
+			{Str: "zero", Num: 100},
+			{Str: "one", Num: 200},
+		}
+		cfg := Config{Foo: sample}
+
+		t.Setenv("FOO_1_STR", "updated")
+
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, 2, len(cfg.Foo))
+		isEqual(t, "zero", cfg.Foo[0].Str)
+		isEqual(t, 100, cfg.Foo[0].Num)
+		isEqual(t, "updated", cfg.Foo[1].Str)
+		isEqual(t, 200, cfg.Foo[1].Num)
+	})
+
+	t.Run("pre-initialized slice extended by higher index", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		sample := []Test{
+			{Str: "init0", Num: 100},
+		}
+		cfg := Config{Foo: sample}
+
+		t.Setenv("FOO_0_STR", "updated0")
+		t.Setenv("FOO_3_STR", "new3")
+		t.Setenv("FOO_3_NUM", "300")
+
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, 4, len(cfg.Foo))
+		isEqual(t, "updated0", cfg.Foo[0].Str)
+		isEqual(t, 100, cfg.Foo[0].Num)
+		isEqual(t, "", cfg.Foo[1].Str)
+		isEqual(t, 0, cfg.Foo[1].Num)
+		isEqual(t, "", cfg.Foo[2].Str)
+		isEqual(t, 0, cfg.Foo[2].Num)
+		isEqual(t, "new3", cfg.Foo[3].Str)
+		isEqual(t, 300, cfg.Foo[3].Num)
+	})
+
+	t.Run("unprefixed slice", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `env:",init"`
+		}
+
+		t.Setenv("0_STR", "zero")
+		t.Setenv("3_STR", "three")
+
+		cfg := Config{}
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, 4, len(cfg.Foo))
+		isEqual(t, "zero", cfg.Foo[0].Str)
+		isEqual(t, "", cfg.Foo[1].Str)
+		isEqual(t, "", cfg.Foo[2].Str)
+		isEqual(t, "three", cfg.Foo[3].Str)
+	})
+
+	t.Run("non-integer and invalid index formats ignored", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		t.Setenv("FOO_0_STR", "zero")
+		t.Setenv("FOO_BAR_STR", "ignored")
+		t.Setenv("FOO_-1_STR", "negative")
+		t.Setenv("FOO_00_STR", "leading_zero")
+		t.Setenv("FOO_2_STR", "two")
+
+		cfg := Config{}
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, 3, len(cfg.Foo))
+		isEqual(t, "zero", cfg.Foo[0].Str)
+		isEqual(t, "", cfg.Foo[1].Str)
+		isEqual(t, "two", cfg.Foo[2].Str)
+	})
+
+	t.Run("required field on pre-initialized tail element fails when unset", func(t *testing.T) {
+		type RequiredTest struct {
+			Str string `env:"STR,required"`
+		}
+		type Config struct {
+			Foo []RequiredTest `envPrefix:"FOO_"`
+		}
+
+		cfg := Config{
+			Foo: []RequiredTest{
+				{Str: "initial0"},
+				{Str: "initial1"},
+			},
+		}
+
+		t.Setenv("FOO_0_STR", "updated0")
+
+		err := Parse(&cfg)
+		isErrorWithMessage(t, err, `env: required environment variable "FOO_1_STR" is not set`)
+		isTrue(t, errors.Is(err, VarIsNotSetError{}))
+	})
+
+	t.Run("default value applied to pre-initialized tail element", func(t *testing.T) {
+		type DefaultTest struct {
+			Str string `env:"STR" envDefault:"tail-default"`
+			Num int    `env:"NUM" envDefault:"42"`
+		}
+		type Config struct {
+			Foo []DefaultTest `envPrefix:"FOO_"`
+		}
+
+		cfg := Config{
+			Foo: []DefaultTest{
+				{Str: "initial0", Num: 10},
+				{Str: "initial1", Num: 20},
+			},
+		}
+
+		t.Setenv("FOO_0_STR", "updated0")
+		t.Setenv("FOO_0_NUM", "10")
+
+		isNoErr(t, Parse(&cfg))
+
+		isEqual(t, 2, len(cfg.Foo))
+		isEqual(t, "updated0", cfg.Foo[0].Str)
+		isEqual(t, 10, cfg.Foo[0].Num)
+		isEqual(t, "tail-default", cfg.Foo[1].Str)
+		isEqual(t, 42, cfg.Foo[1].Num)
+	})
+}
+
 func TestParseWithOptionsRenamedDefault(t *testing.T) {
 	type config struct {
 		Str string `env:"STR" envDefault:"foo" myDefault:"bar"`
