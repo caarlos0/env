@@ -1051,6 +1051,43 @@ func TestParseExpandWithDefaultOption(t *testing.T) {
 	isEqual(t, "3000:5000", cfg.NoDefault)
 }
 
+func TestParseExpandCyclicReference(t *testing.T) {
+	type config struct {
+		Self     string `env:"SELF,expand"`
+		Indirect string `env:"INDIRECT,expand"`
+		Twice    string `env:"TWICE,expand"`
+	}
+
+	t.Setenv("SELF", "a-${SELF}")
+	t.Setenv("INDIRECT", "b-${LOOP_A}")
+	t.Setenv("LOOP_A", "${LOOP_B}")
+	t.Setenv("LOOP_B", "${LOOP_A}")
+	t.Setenv("TWICE", "${ONE}${ONE}")
+	t.Setenv("ONE", "1")
+
+	cfg := config{}
+	err := Parse(&cfg)
+
+	isNoErr(t, err)
+	isEqual(t, "a-", cfg.Self)
+	isEqual(t, "b-", cfg.Indirect)
+	isEqual(t, "11", cfg.Twice)
+}
+
+func TestParseExpandReadsEarlierFieldWithSameKey(t *testing.T) {
+	type config struct {
+		RawPort string `env:"PORT" envDefault:"3000"`
+		Port    int    `env:"PORT,expand" envDefault:"${PORT}"`
+	}
+
+	var cfg config
+	err := ParseWithOptions(&cfg, Options{Environment: map[string]string{}})
+
+	isNoErr(t, err)
+	isEqual(t, "3000", cfg.RawPort)
+	isEqual(t, 3000, cfg.Port)
+}
+
 func TestParseUnsetRequireOptions(t *testing.T) {
 	type config struct {
 		Password string `env:"PASSWORD,unset,required"`
