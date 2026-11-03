@@ -1482,11 +1482,23 @@ func TestParseCustomScalarStructAsNestedContainer(t *testing.T) {
 			name        string
 			environment map[string]string
 			want        string
+			wantErr     error
 		}{
 			{
 				name:        "absent inferred input",
 				environment: map[string]string{"SCALAR": "scalar", "VALUE": "nested"},
 				want:        "nested",
+			},
+			{
+				name:        "empty inferred input",
+				environment: map[string]string{"SCALAR": "scalar", "NESTED": "", "VALUE": "nested"},
+				want:        "nested",
+			},
+			{
+				name:        "empty inferred input with absent child",
+				environment: map[string]string{"SCALAR": "scalar", "NESTED": ""},
+				want:        "old",
+				wantErr:     AggregateError{Errors: []error{VarIsNotSetError{Key: "VALUE"}}},
 			},
 			{
 				name:        "present inferred input",
@@ -1512,6 +1524,10 @@ func TestParseCustomScalarStructAsNestedContainer(t *testing.T) {
 					},
 				})
 
+				if required && test.wantErr != nil {
+					isEqual(t, test.wantErr, err)
+					return
+				}
 				isNoErr(t, err)
 				isEqual(t, "scalar", cfg.Scalar.Value)
 				isEqual(t, test.want, cfg.Nested.Value)

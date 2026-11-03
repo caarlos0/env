@@ -386,9 +386,8 @@ func doParseField(
 
 	explicitKey, _ := parseKeyForOption(refTypeField.Tag.Get(opts.TagName))
 	_, hasPrefix := refTypeField.Tag.Lookup(opts.PrefixTagName)
-	_, hasValue := opts.Environment[params.Key]
 	scalar := isScalarStruct(refField.Type(), opts.FuncMap) &&
-		(explicitKey != "" || params.HasDefaultValue || params.OwnKey != "" && !hasPrefix && hasValue)
+		(explicitKey != "" || params.HasDefaultValue || params.OwnKey != "" && !hasPrefix && opts.Environment[params.Key] != "")
 	if !scalar && refField.Kind() == reflect.Ptr && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
 		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
