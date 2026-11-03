@@ -809,7 +809,10 @@ func handleMap(field reflect.Value, value string, sf reflect.StructField, funcMa
 // handleMapSlice parses map values that are slices, such as map[string][]string.
 // Pairs use the same envSeparator (default ",") and envKeyValSeparator (default ":")
 // tags as scalar maps. A repeated key appends another element instead of replacing
-// the slice. Slice elements are parsed with FuncMap or the built-in parsers.
+// the slice. Each element uses encoding.TextUnmarshaler when the element type
+// implements it, including pointer receivers, and otherwise falls back to FuncMap
+// or the built-in parsers. A custom parser registered for the slice type itself is
+// handled by handleMap and keeps last-value-wins behavior.
 func handleMapSlice(
 	field reflect.Value,
 	value string,
@@ -820,11 +823,18 @@ func handleMapSlice(
 ) error {
 	elemType := sf.Type.Elem()
 	sliceElemType := elemType.Elem()
-	elemParserFunc, ok := funcMap[sliceElemType]
-	if !ok {
-		elemParserFunc, ok = defaultBuiltInParsers[sliceElemType.Kind()]
+	// Match handleSlice: TextUnmarshaler outranks FuncMap and kind parsers.
+	// UnmarshalText errors are not retried with the fallback parsers.
+	useTextUnmarshaler := sliceElemImplementsTextUnmarshaler(sliceElemType)
+	var elemParserFunc ParserFunc
+	if !useTextUnmarshaler {
+		var ok bool
+		elemParserFunc, ok = funcMap[sliceElemType]
 		if !ok {
-			return newNoParserError(sf)
+			elemParserFunc, ok = defaultBuiltInParsers[sliceElemType.Kind()]
+			if !ok {
+				return newNoParserError(sf)
+			}
 		}
 	}
 
@@ -850,7 +860,7 @@ func handleMapSlice(
 			return newParseError(sf, err)
 		}
 
-		elem, err := elemParserFunc(pairs[1])
+		elemVal, err := parseMapSliceElement(sliceElemType, pairs[1], useTextUnmarshaler, elemParserFunc)
 		if err != nil {
 			return newParseError(sf, err)
 		}
@@ -860,12 +870,61 @@ func handleMapSlice(
 		if !current.IsValid() {
 			current = reflect.MakeSlice(elemType, 0, 1)
 		}
-		current = reflect.Append(current, reflect.ValueOf(elem).Convert(sliceElemType))
+		current = reflect.Append(current, elemVal)
 		result.SetMapIndex(keyValue, current)
 	}
 
 	field.Set(result)
 	return nil
+}
+
+// sliceElemImplementsTextUnmarshaler reports whether a slice element can be
+// decoded with encoding.TextUnmarshaler. Pointer elements are unwrapped once
+// and pointer receivers are detected with reflect.New, same as handleSlice.
+func sliceElemImplementsTextUnmarshaler(elemType reflect.Type) bool {
+	concrete := elemType
+	if concrete.Kind() == reflect.Pointer {
+		concrete = concrete.Elem()
+	}
+	_, ok := reflect.New(concrete).Interface().(encoding.TextUnmarshaler)
+	return ok
+}
+
+// parseMapSliceElement decodes one map-slice element. TextUnmarshaler is tried
+// first, including pointer receivers. When the element type does not implement
+// it, parser (FuncMap or a built-in parser) is used.
+func parseMapSliceElement(
+	elemType reflect.Type,
+	raw string,
+	useTextUnmarshaler bool,
+	parser ParserFunc,
+) (reflect.Value, error) {
+	if useTextUnmarshaler {
+		return unmarshalTextSliceElem(elemType, raw)
+	}
+
+	parsed, err := parser(raw)
+	if err != nil {
+		return reflect.Value{}, err
+	}
+	return reflect.ValueOf(parsed).Convert(elemType), nil
+}
+
+// unmarshalTextSliceElem allocates one element and calls UnmarshalText on its
+// pointer so pointer receivers see the value that will be stored.
+func unmarshalTextSliceElem(elemType reflect.Type, raw string) (reflect.Value, error) {
+	concrete := elemType
+	if concrete.Kind() == reflect.Pointer {
+		concrete = concrete.Elem()
+	}
+	ptr := reflect.New(concrete)
+	if err := ptr.Interface().(encoding.TextUnmarshaler).UnmarshalText([]byte(raw)); err != nil {
+		return reflect.Value{}, err
+	}
+	if elemType.Kind() == reflect.Pointer {
+		return ptr, nil
+	}
+	return ptr.Elem(), nil
 }
 
 func asTextUnmarshaler(field reflect.Value) encoding.TextUnmarshaler {

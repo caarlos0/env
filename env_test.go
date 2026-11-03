@@ -579,6 +579,89 @@ func TestParseMapSliceCustomParserKeepsLastValue(t *testing.T) {
 	isEqual(t, map[string][]string{"foo": {"c", "d"}}, cfg.Map)
 }
 
+func TestParseMapSliceHonorsElementTextUnmarshaler(t *testing.T) {
+	type valueConfig struct {
+		Levels map[string][]LogLevel `env:"MAP_LOG_LEVELS"`
+	}
+	type pointerConfig struct {
+		Levels map[string][]*LogLevel `env:"MAP_LOG_LEVELS"`
+	}
+
+	t.Run("repeated debug and info", func(t *testing.T) {
+		var cfg valueConfig
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{
+				"MAP_LOG_LEVELS": "foo:debug,foo:info,foo:debug",
+			},
+		})
+		isNoErr(t, err)
+		isEqual(t, map[string][]LogLevel{
+			"foo": {DebugLevel, InfoLevel, DebugLevel},
+		}, cfg.Levels)
+	})
+
+	t.Run("numeric value is rejected", func(t *testing.T) {
+		var cfg valueConfig
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"MAP_LOG_LEVELS": "foo:7"},
+		})
+		isErrorWithMessage(
+			t,
+			err,
+			`env: parse error on field "Levels" of type "map[string][]env.LogLevel": unknown level: "7"`,
+		)
+	})
+
+	t.Run("pointer elements", func(t *testing.T) {
+		var cfg pointerConfig
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{
+				"MAP_LOG_LEVELS": "foo:debug,foo:info",
+			},
+		})
+		isNoErr(t, err)
+		debug := DebugLevel
+		info := InfoLevel
+		isEqual(t, map[string][]*LogLevel{
+			"foo": {&debug, &info},
+		}, cfg.Levels)
+
+		err = ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"MAP_LOG_LEVELS": "foo:7"},
+		})
+		isErrorWithMessage(
+			t,
+			err,
+			`env: parse error on field "Levels" of type "map[string][]*env.LogLevel": unknown level: "7"`,
+		)
+	})
+}
+
+func TestParseMapSliceCustomParserKeepsLastValueForTextUnmarshaler(t *testing.T) {
+	type config struct {
+		Levels map[string][]LogLevel `env:"MAP_LOG_LEVELS"`
+	}
+
+	var cfg config
+	err := ParseWithOptions(&cfg, Options{
+		Environment: map[string]string{"MAP_LOG_LEVELS": "foo:debug,foo:info"},
+		FuncMap: map[reflect.Type]ParserFunc{
+			reflect.TypeOf([]LogLevel{}): func(v string) (interface{}, error) {
+				switch v {
+				case "debug":
+					return []LogLevel{DebugLevel}, nil
+				case "info":
+					return []LogLevel{InfoLevel, InfoLevel}, nil
+				default:
+					return nil, fmt.Errorf("unexpected %s", v)
+				}
+			},
+		},
+	})
+	isNoErr(t, err)
+	isEqual(t, map[string][]LogLevel{"foo": {InfoLevel, InfoLevel}}, cfg.Levels)
+}
+
 func TestParsesEnvInvalidMap(t *testing.T) {
 	type config struct {
 		MapStringString map[string]string `env:"MAP_STRING_STRING" envSeparator:","`
