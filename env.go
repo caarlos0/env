@@ -388,8 +388,8 @@ func doParseField(
 	explicitKey, _ := parseKeyForOption(refTypeField.Tag.Get(opts.TagName))
 	_, hasPrefix := refTypeField.Tag.Lookup(opts.PrefixTagName)
 	_, hasValue := opts.Environment[params.Key]
-	scalar := isScalarStruct(refField.Type(), opts.FuncMap) &&
-		(explicitKey != "" || params.HasDefaultValue || params.OwnKey != "" && !hasPrefix && hasValue)
+	scalarBinding := explicitKey != "" || params.HasDefaultValue || (params.OwnKey != "" && !hasPrefix && hasValue)
+	scalar := isScalarStruct(refField.Type(), opts.FuncMap) && scalarBinding
 	if !scalar && refField.Kind() == reflect.Pointer && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
 		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
@@ -418,30 +418,35 @@ func doParseField(
 		return doParse(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
-	if isSliceOfStructs(refTypeField, opts) {
-		return doParseSlice(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
+	if elemType, ok := sliceStructElemType(refTypeField.Type); ok {
+		if !(isScalarStruct(elemType, opts.FuncMap) && scalarBinding) {
+			return doParseSlice(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
+		}
 	}
 
 	return nil
 }
 
-func isSliceOfStructs(refTypeField reflect.StructField, opts Options) bool {
-	field := refTypeField.Type
-
-	// *[]struct
-	if field.Kind() == reflect.Pointer {
-		field = field.Elem()
+func sliceStructElemType(t reflect.Type) (reflect.Type, bool) {
+	if t.Kind() == reflect.Pointer {
+		t = t.Elem()
 	}
-
-	if field.Kind() == reflect.Slice && field.Elem().Kind() == reflect.Struct {
-		elemType := field.Elem()
-		if elemType.Kind() == reflect.Pointer {
-			elemType = elemType.Elem()
-		}
-		return !isScalarStruct(elemType, opts.FuncMap)
+	if t.Kind() != reflect.Slice {
+		return nil, false
 	}
+	elem := t.Elem()
+	if elem.Kind() == reflect.Pointer {
+		elem = elem.Elem()
+	}
+	if elem.Kind() == reflect.Struct {
+		return elem, true
+	}
+	return nil, false
+}
 
-	return false
+func isSliceOfStructs(refTypeField reflect.StructField) bool {
+	_, ok := sliceStructElemType(refTypeField.Type)
+	return ok
 }
 
 func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) error {

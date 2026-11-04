@@ -2551,3 +2551,88 @@ func TestParseCustomScalarStructAsNestedContainer(t *testing.T) {
 		}
 	}
 }
+
+func TestParseCustomScalarStructAsIndexedContainer(t *testing.T) {
+	type scalar struct {
+		Value string `env:"VALUE"`
+	}
+
+	t.Run("prefix-only slice []scalar", func(t *testing.T) {
+		var cfg struct {
+			Nested []scalar `envPrefix:"NESTED_"`
+		}
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{
+				"NESTED_0_VALUE": "new",
+			},
+			FuncMap: map[reflect.Type]ParserFunc{
+				reflect.TypeOf(scalar{}): func(value string) (interface{}, error) {
+					return scalar{Value: value}, nil
+				},
+			},
+		})
+		isNoErr(t, err)
+		isEqual(t, 1, len(cfg.Nested))
+		isEqual(t, "new", cfg.Nested[0].Value)
+	})
+
+	t.Run("prefix-only pointer to slice *[]scalar", func(t *testing.T) {
+		var cfg struct {
+			Nested *[]scalar `envPrefix:"NESTED_"`
+		}
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{
+				"NESTED_0_VALUE": "new",
+			},
+			FuncMap: map[reflect.Type]ParserFunc{
+				reflect.TypeOf(scalar{}): func(value string) (interface{}, error) {
+					return scalar{Value: value}, nil
+				},
+			},
+		})
+		isNoErr(t, err)
+		isEqual(t, 1, len(*cfg.Nested))
+		isEqual(t, "new", (*cfg.Nested)[0].Value)
+	})
+
+	t.Run("preinitialized slice retains and updates elements", func(t *testing.T) {
+		var cfg struct {
+			Nested []scalar `envPrefix:"NESTED_"`
+		}
+		cfg.Nested = []scalar{{Value: "stale"}}
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{
+				"NESTED_0_VALUE": "new",
+			},
+			FuncMap: map[reflect.Type]ParserFunc{
+				reflect.TypeOf(scalar{}): func(value string) (interface{}, error) {
+					return scalar{Value: value}, nil
+				},
+			},
+		})
+		isNoErr(t, err)
+		isEqual(t, 1, len(cfg.Nested))
+		isEqual(t, "new", cfg.Nested[0].Value)
+	})
+
+	t.Run("scalar-bound slice is not overwritten by indexed variables", func(t *testing.T) {
+		var cfg struct {
+			Values []scalar `env:"VALUES"`
+		}
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{
+				"VALUES":         "v1,v2",
+				"VALUES_0_VALUE": "evil",
+			},
+			FuncMap: map[reflect.Type]ParserFunc{
+				reflect.TypeOf(scalar{}): func(value string) (interface{}, error) {
+					return scalar{Value: value}, nil
+				},
+			},
+		})
+		isNoErr(t, err)
+		isEqual(t, 2, len(cfg.Values))
+		isEqual(t, "v1", cfg.Values[0].Value)
+		isEqual(t, "v2", cfg.Values[1].Value)
+	})
+}
