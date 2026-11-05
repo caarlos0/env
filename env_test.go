@@ -2454,3 +2454,32 @@ func TestEnvBleed(t *testing.T) {
 		isEqual(t, "", cfg.Foo)
 	})
 }
+
+func TestLargeIntAndUint(t *testing.T) {
+	if strconv.IntSize != 64 {
+		t.Skip("skipping 64-bit int test on 32-bit platform")
+	}
+
+	type ConfigLarge struct {
+		LargeInt    int    `env:"LARGE_INT"`
+		NegativeInt int    `env:"NEG_INT"`
+		LargeUint   uint   `env:"LARGE_UINT"`
+		LargeInts   []int  `env:"LARGE_INTS"`
+		LargeUints  []uint `env:"LARGE_UINTS"`
+	}
+
+	t.Setenv("LARGE_INT", "3000000000")
+	t.Setenv("NEG_INT", "-3000000000")
+	t.Setenv("LARGE_UINT", "5000000000")
+	t.Setenv("LARGE_INTS", "3000000001,3000000002")
+	t.Setenv("LARGE_UINTS", "5000000001,5000000002")
+
+	var cfg ConfigLarge
+	err := Parse(&cfg)
+	isNoErr(t, err)
+	isEqual(t, 3000000000, cfg.LargeInt)
+	isEqual(t, -3000000000, cfg.NegativeInt)
+	isEqual(t, uint(5000000000), cfg.LargeUint)
+	isEqual(t, []int{3000000001, 3000000002}, cfg.LargeInts)
+	isEqual(t, []uint{5000000001, 5000000002}, cfg.LargeUints)
+}
