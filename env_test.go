@@ -637,6 +637,79 @@ func TestParseMapSliceHonorsElementTextUnmarshaler(t *testing.T) {
 	})
 }
 
+func TestParseMapSlicePointerElementFallback(t *testing.T) {
+	t.Run("distinct int pointers", func(t *testing.T) {
+		type config struct {
+			M map[string][]*int `env:"M"`
+		}
+
+		var cfg config
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"M": "k:1,k:2"},
+		})
+		isNoErr(t, err)
+		got := cfg.M["k"]
+		isEqual(t, 2, len(got))
+		isEqual(t, 1, *got[0])
+		isEqual(t, 2, *got[1])
+		isFalse(t, got[0] == got[1])
+	})
+
+	t.Run("custom parser on underlying type", func(t *testing.T) {
+		type MyInt int
+		type config struct {
+			M map[string][]*MyInt `env:"M"`
+		}
+
+		var cfg config
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"M": "k:#1,k:#2"},
+			FuncMap: map[reflect.Type]ParserFunc{
+				reflect.TypeOf(MyInt(0)): func(v string) (interface{}, error) {
+					n, convErr := strconv.Atoi(strings.TrimPrefix(v, "#"))
+					if convErr != nil {
+						return nil, convErr
+					}
+					return MyInt(n), nil
+				},
+			},
+		})
+		isNoErr(t, err)
+		got := cfg.M["k"]
+		isEqual(t, 2, len(got))
+		isEqual(t, MyInt(1), *got[0])
+		isEqual(t, MyInt(2), *got[1])
+		isFalse(t, got[0] == got[1])
+	})
+
+	t.Run("exact pointer parser outranks underlying kind", func(t *testing.T) {
+		type config struct {
+			M map[string][]*int `env:"M"`
+		}
+
+		var cfg config
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"M": "k:1,k:2"},
+			FuncMap: map[reflect.Type]ParserFunc{
+				reflect.TypeOf((*int)(nil)): func(v string) (interface{}, error) {
+					n, convErr := strconv.Atoi(v)
+					if convErr != nil {
+						return nil, convErr
+					}
+					n *= 10
+					return &n, nil
+				},
+			},
+		})
+		isNoErr(t, err)
+		got := cfg.M["k"]
+		isEqual(t, 2, len(got))
+		isEqual(t, 10, *got[0])
+		isEqual(t, 20, *got[1])
+		isFalse(t, got[0] == got[1])
+	})
+}
+
 func TestParseMapSliceCustomParserKeepsLastValueForTextUnmarshaler(t *testing.T) {
 	type config struct {
 		Levels map[string][]LogLevel `env:"MAP_LOG_LEVELS"`

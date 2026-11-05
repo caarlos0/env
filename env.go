@@ -811,8 +811,10 @@ func handleMap(field reflect.Value, value string, sf reflect.StructField, funcMa
 // tags as scalar maps. A repeated key appends another element instead of replacing
 // the slice. Each element uses encoding.TextUnmarshaler when the element type
 // implements it, including pointer receivers, and otherwise falls back to FuncMap
-// or the built-in parsers. A custom parser registered for the slice type itself is
-// handled by handleMap and keeps last-value-wins behavior.
+// or the built-in parsers. Pointer elements without TextUnmarshaler keep an exact
+// FuncMap entry for the pointer type; otherwise they use the pointed-to type's
+// parser and are allocated, matching handleSlice. A custom parser registered for
+// the slice type itself is handled by handleMap and keeps last-value-wins behavior.
 func handleMapSlice(
 	field reflect.Value,
 	value string,
@@ -827,11 +829,23 @@ func handleMapSlice(
 	// UnmarshalText errors are not retried with the fallback parsers.
 	useTextUnmarshaler := sliceElemImplementsTextUnmarshaler(sliceElemType)
 	var elemParserFunc ParserFunc
+	// allocatePointer is set when the selected parser returns the pointed-to
+	// value and the slice element itself is a pointer.
+	allocatePointer := false
 	if !useTextUnmarshaler {
 		var ok bool
+		// Exact type first, including a parser registered for the pointer type.
 		elemParserFunc, ok = funcMap[sliceElemType]
 		if !ok {
-			elemParserFunc, ok = defaultBuiltInParsers[sliceElemType.Kind()]
+			lookupType := sliceElemType
+			if lookupType.Kind() == reflect.Pointer {
+				lookupType = lookupType.Elem()
+				allocatePointer = true
+				elemParserFunc, ok = funcMap[lookupType]
+			}
+			if !ok {
+				elemParserFunc, ok = defaultBuiltInParsers[lookupType.Kind()]
+			}
 			if !ok {
 				return newNoParserError(sf)
 			}
@@ -860,7 +874,7 @@ func handleMapSlice(
 			return newParseError(sf, err)
 		}
 
-		elemVal, err := parseMapSliceElement(sliceElemType, pairs[1], useTextUnmarshaler, elemParserFunc)
+		elemVal, err := parseMapSliceElement(sliceElemType, pairs[1], useTextUnmarshaler, elemParserFunc, allocatePointer)
 		if err != nil {
 			return newParseError(sf, err)
 		}
@@ -892,12 +906,14 @@ func sliceElemImplementsTextUnmarshaler(elemType reflect.Type) bool {
 
 // parseMapSliceElement decodes one map-slice element. TextUnmarshaler is tried
 // first, including pointer receivers. When the element type does not implement
-// it, parser (FuncMap or a built-in parser) is used.
+// it, parser (FuncMap or a built-in parser) is used. allocatePointer wraps a
+// value parsed as the pointed-to type, matching handleSlice.
 func parseMapSliceElement(
 	elemType reflect.Type,
 	raw string,
 	useTextUnmarshaler bool,
 	parser ParserFunc,
+	allocatePointer bool,
 ) (reflect.Value, error) {
 	if useTextUnmarshaler {
 		return unmarshalTextSliceElem(elemType, raw)
@@ -907,7 +923,15 @@ func parseMapSliceElement(
 	if err != nil {
 		return reflect.Value{}, err
 	}
-	return reflect.ValueOf(parsed).Convert(elemType), nil
+	value := reflect.ValueOf(parsed)
+	if allocatePointer {
+		concrete := elemType.Elem()
+		value = value.Convert(concrete)
+		ptr := reflect.New(concrete)
+		ptr.Elem().Set(value)
+		return ptr, nil
+	}
+	return value.Convert(elemType), nil
 }
 
 // unmarshalTextSliceElem allocates one element and calls UnmarshalText on its
