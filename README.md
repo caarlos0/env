@@ -97,6 +97,7 @@ Complete list:
 - `url.URL`
 
 Pointers, slices and slices of pointers, and maps of those types are also supported.
+Maps of slices such as `map[string][]string` use the same separators; duplicate keys append (`foo:bar,foo:baz`).
 
 You may also add custom parsers for your types.
 

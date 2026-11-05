@@ -503,6 +503,277 @@ func TestParsesEnv_Map(t *testing.T) {
 	isEqual(t, withCustomSeparator, cfg.CustomSeparatorMapStringString)
 }
 
+func TestParseMapStringToStringSlice(t *testing.T) {
+	type config struct {
+		Map map[string][]string `env:"MAP_STRING_TO_STRINGS"`
+	}
+	type customConfig struct {
+		Map map[string][]string `env:"MAP_STRING_TO_STRINGS" envSeparator:"|" envKeyValSeparator:"="`
+	}
+	type defaultConfig struct {
+		Map map[string][]string `env:"MAP_STRING_TO_STRINGS" envDefault:"foo:bar,foo:baz"`
+	}
+
+	tests := []struct {
+		name    string
+		env     map[string]string
+		custom  bool
+		withDef bool
+		want    map[string][]string
+		wantErr bool
+	}{
+		{
+			name: "single value",
+			env:  map[string]string{"MAP_STRING_TO_STRINGS": "foo:bar"},
+			want: map[string][]string{"foo": {"bar"}},
+		},
+		{
+			name: "multiple values append on duplicate keys",
+			env:  map[string]string{"MAP_STRING_TO_STRINGS": "foo:bar,foo:baz"},
+			want: map[string][]string{"foo": {"bar", "baz"}},
+		},
+		{
+			name: "interleaved keys keep append order",
+			env:  map[string]string{"MAP_STRING_TO_STRINGS": "foo:bar,bar:qux,foo:baz"},
+			want: map[string][]string{
+				"foo": {"bar", "baz"},
+				"bar": {"qux"},
+			},
+		},
+		{
+			name: "empty value",
+			env:  map[string]string{"MAP_STRING_TO_STRINGS": "foo:"},
+			want: map[string][]string{"foo": {""}},
+		},
+		{
+			name:   "custom separators",
+			env:    map[string]string{"MAP_STRING_TO_STRINGS": "foo=bar|foo=baz"},
+			custom: true,
+			want:   map[string][]string{"foo": {"bar", "baz"}},
+		},
+		{
+			name:    "empty env falls back to envDefault",
+			env:     map[string]string{"MAP_STRING_TO_STRINGS": ""},
+			withDef: true,
+			want:    map[string][]string{"foo": {"bar", "baz"}},
+		},
+		{
+			name: "unset env leaves map nil",
+			env:  map[string]string{},
+			want: nil,
+		},
+		{
+			name:    "invalid pair",
+			env:     map[string]string{"MAP_STRING_TO_STRINGS": "foo"},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := Options{Environment: tt.env}
+			var (
+				err error
+				got map[string][]string
+			)
+			switch {
+			case tt.custom:
+				var cfg customConfig
+				err = ParseWithOptions(&cfg, opts)
+				got = cfg.Map
+			case tt.withDef:
+				var cfg defaultConfig
+				err = ParseWithOptions(&cfg, opts)
+				got = cfg.Map
+			default:
+				var cfg config
+				err = ParseWithOptions(&cfg, opts)
+				got = cfg.Map
+			}
+			if tt.wantErr {
+				isTrue(t, errors.Is(err, ParseError{}))
+				return
+			}
+			isNoErr(t, err)
+			isEqual(t, tt.want, got)
+		})
+	}
+}
+
+func TestParseMapSliceCustomParserKeepsLastValue(t *testing.T) {
+	type config struct {
+		Map map[string][]string `env:"MAP_STRING_TO_STRINGS"`
+	}
+
+	var cfg config
+	err := ParseWithOptions(&cfg, Options{
+		Environment: map[string]string{"MAP_STRING_TO_STRINGS": "foo:a+b,foo:c+d"},
+		FuncMap: map[reflect.Type]ParserFunc{
+			reflect.TypeOf([]string{}): func(v string) (interface{}, error) {
+				return strings.Split(v, "+"), nil
+			},
+		},
+	})
+	isNoErr(t, err)
+	isEqual(t, map[string][]string{"foo": {"c", "d"}}, cfg.Map)
+}
+
+func TestParseMapSliceHonorsElementTextUnmarshaler(t *testing.T) {
+	type valueConfig struct {
+		Levels map[string][]LogLevel `env:"MAP_LOG_LEVELS"`
+	}
+	type pointerConfig struct {
+		Levels map[string][]*LogLevel `env:"MAP_LOG_LEVELS"`
+	}
+
+	t.Run("repeated debug and info", func(t *testing.T) {
+		var cfg valueConfig
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{
+				"MAP_LOG_LEVELS": "foo:debug,foo:info,foo:debug",
+			},
+		})
+		isNoErr(t, err)
+		isEqual(t, map[string][]LogLevel{
+			"foo": {DebugLevel, InfoLevel, DebugLevel},
+		}, cfg.Levels)
+	})
+
+	t.Run("numeric value is rejected", func(t *testing.T) {
+		var cfg valueConfig
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"MAP_LOG_LEVELS": "foo:7"},
+		})
+		isErrorWithMessage(
+			t,
+			err,
+			`env: parse error on field "Levels" of type "map[string][]env.LogLevel": unknown level: "7"`,
+		)
+	})
+
+	t.Run("pointer elements", func(t *testing.T) {
+		var cfg pointerConfig
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{
+				"MAP_LOG_LEVELS": "foo:debug,foo:info",
+			},
+		})
+		isNoErr(t, err)
+		debug := DebugLevel
+		info := InfoLevel
+		isEqual(t, map[string][]*LogLevel{
+			"foo": {&debug, &info},
+		}, cfg.Levels)
+
+		err = ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"MAP_LOG_LEVELS": "foo:7"},
+		})
+		isErrorWithMessage(
+			t,
+			err,
+			`env: parse error on field "Levels" of type "map[string][]*env.LogLevel": unknown level: "7"`,
+		)
+	})
+}
+
+func TestParseMapSlicePointerElementFallback(t *testing.T) {
+	t.Run("distinct int pointers", func(t *testing.T) {
+		type config struct {
+			M map[string][]*int `env:"M"`
+		}
+
+		var cfg config
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"M": "k:1,k:2"},
+		})
+		isNoErr(t, err)
+		got := cfg.M["k"]
+		isEqual(t, 2, len(got))
+		isEqual(t, 1, *got[0])
+		isEqual(t, 2, *got[1])
+		isFalse(t, got[0] == got[1])
+	})
+
+	t.Run("custom parser on underlying type", func(t *testing.T) {
+		type MyInt int
+		type config struct {
+			M map[string][]*MyInt `env:"M"`
+		}
+
+		var cfg config
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"M": "k:#1,k:#2"},
+			FuncMap: map[reflect.Type]ParserFunc{
+				reflect.TypeOf(MyInt(0)): func(v string) (interface{}, error) {
+					n, convErr := strconv.Atoi(strings.TrimPrefix(v, "#"))
+					if convErr != nil {
+						return nil, convErr
+					}
+					return MyInt(n), nil
+				},
+			},
+		})
+		isNoErr(t, err)
+		got := cfg.M["k"]
+		isEqual(t, 2, len(got))
+		isEqual(t, MyInt(1), *got[0])
+		isEqual(t, MyInt(2), *got[1])
+		isFalse(t, got[0] == got[1])
+	})
+
+	t.Run("exact pointer parser outranks underlying kind", func(t *testing.T) {
+		type config struct {
+			M map[string][]*int `env:"M"`
+		}
+
+		var cfg config
+		err := ParseWithOptions(&cfg, Options{
+			Environment: map[string]string{"M": "k:1,k:2"},
+			FuncMap: map[reflect.Type]ParserFunc{
+				reflect.TypeOf((*int)(nil)): func(v string) (interface{}, error) {
+					n, convErr := strconv.Atoi(v)
+					if convErr != nil {
+						return nil, convErr
+					}
+					n *= 10
+					return &n, nil
+				},
+			},
+		})
+		isNoErr(t, err)
+		got := cfg.M["k"]
+		isEqual(t, 2, len(got))
+		isEqual(t, 10, *got[0])
+		isEqual(t, 20, *got[1])
+		isFalse(t, got[0] == got[1])
+	})
+}
+
+func TestParseMapSliceCustomParserKeepsLastValueForTextUnmarshaler(t *testing.T) {
+	type config struct {
+		Levels map[string][]LogLevel `env:"MAP_LOG_LEVELS"`
+	}
+
+	var cfg config
+	err := ParseWithOptions(&cfg, Options{
+		Environment: map[string]string{"MAP_LOG_LEVELS": "foo:debug,foo:info"},
+		FuncMap: map[reflect.Type]ParserFunc{
+			reflect.TypeOf([]LogLevel{}): func(v string) (interface{}, error) {
+				switch v {
+				case "debug":
+					return []LogLevel{DebugLevel}, nil
+				case "info":
+					return []LogLevel{InfoLevel, InfoLevel}, nil
+				default:
+					return nil, fmt.Errorf("unexpected %s", v)
+				}
+			},
+		},
+	})
+	isNoErr(t, err)
+	isEqual(t, map[string][]LogLevel{"foo": {InfoLevel, InfoLevel}}, cfg.Levels)
+}
+
 func TestParsesEnvInvalidMap(t *testing.T) {
 	type config struct {
 		MapStringString map[string]string `env:"MAP_STRING_STRING" envSeparator:","`

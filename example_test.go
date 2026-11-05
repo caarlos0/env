@@ -117,6 +117,21 @@ func ExampleParse_separator() {
 	// Output: {Map:map[k1:v1 k2:v2]}
 }
 
+// Slice map values append on duplicate keys.
+// `MAP_STRING_TO_STRINGS=foo:bar,foo:baz` becomes map[foo:[bar baz]].
+func ExampleParse_mapStringToStrings() {
+	type Config struct {
+		Map map[string][]string `env:"MAP_STRING_TO_STRINGS"`
+	}
+	os.Setenv("MAP_STRING_TO_STRINGS", "foo:bar,foo:baz")
+	var cfg Config
+	if err := Parse(&cfg); err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%+v", cfg)
+	// Output: {Map:map[foo:[bar baz]]}
+}
+
 // If you set the `expand` option, environment variables (either in `${var}` or
 // `$var` format) in the string will be replaced according with the actual
 // value of the variable. For example:
