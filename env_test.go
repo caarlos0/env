@@ -1919,6 +1919,39 @@ func TestGetFieldParamsWithPrefixAndSuffix(t *testing.T) {
 	isTrue(t, areEqual(params, expectedParams))
 }
 
+func TestSuffixSliceDiscovery(t *testing.T) {
+	type Item struct {
+		Key string `env:"KEY,required"`
+	}
+
+	t.Run("sibling suffix tags", func(t *testing.T) {
+		type Config struct {
+			US []Item `envPrefix:"API_" envSuffix:"_US"`
+			MX []Item `envPrefix:"API_" envSuffix:"_MX"`
+		}
+		var cfg Config
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: map[string]string{
+			"API_0_KEY_US": "us0",
+			"API_0_KEY_MX": "mx0",
+			"API_1_KEY_MX": "mx1",
+		}}))
+		isEqual(t, []Item{{Key: "us0"}}, cfg.US)
+		isEqual(t, []Item{{Key: "mx0"}, {Key: "mx1"}}, cfg.MX)
+	})
+
+	t.Run("global suffix", func(t *testing.T) {
+		type Config struct {
+			Items []Item `envPrefix:"API_"`
+		}
+		var cfg Config
+		isNoErr(t, ParseWithOptions(&cfg, Options{Suffix: "_US", Environment: map[string]string{
+			"API_0_KEY_US": "us",
+			"API_1_KEY_MX": "mx",
+		}}))
+		isEqual(t, []Item{{Key: "us"}}, cfg.Items)
+	})
+}
+
 func TestNoEnvKey(t *testing.T) {
 	type Config struct {
 		Foo      string
