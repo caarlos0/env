@@ -17,7 +17,9 @@ package env
 
 import (
 	"encoding"
+	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"os"
 	"reflect"
@@ -434,37 +436,52 @@ func isSliceOfStructs(refTypeField reflect.StructField) bool {
 	return false
 }
 
+const maxSliceGaps = 1000
+
+func isCanonicalIndex(s string) bool {
+	if s == "" || (len(s) > 1 && s[0] == '0') {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) error {
 	if opts.Prefix != "" && !strings.HasSuffix(opts.Prefix, string(underscore)) {
 		opts.Prefix += string(underscore)
 	}
 
+	var hasPrefix bool
 	indexSet := make(map[int]struct{})
 	for environment := range opts.Environment {
 		if !strings.HasPrefix(environment, opts.Prefix) {
 			continue
 		}
+		hasPrefix = true
 		rest := environment[len(opts.Prefix):]
 		idxStr, _, found := strings.Cut(rest, string(underscore))
 		if !found {
 			continue
 		}
 		idx, err := strconv.Atoi(idxStr)
-		if err != nil || idx < 0 || strconv.Itoa(idx) != idxStr {
+		if err != nil {
+			if errors.Is(err, strconv.ErrRange) && isCanonicalIndex(idxStr) {
+				return fmt.Errorf("slice index %q causes integer overflow", idxStr)
+			}
+			continue
+		}
+		if idx < 0 || strconv.Itoa(idx) != idxStr {
 			continue
 		}
 		indexSet[idx] = struct{}{}
 	}
 
-	if len(indexSet) == 0 {
+	if !hasPrefix {
 		return nil
-	}
-
-	maxIndex := -1
-	for idx := range indexSet {
-		if idx > maxIndex {
-			maxIndex = idx
-		}
 	}
 
 	sliceType := ref.Type()
@@ -477,10 +494,37 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 		initialized = ref.Len()
 	}
 
+	if len(indexSet) == 0 && initialized == 0 {
+		return nil
+	}
+
+	maxIndex := -1
+	for idx := range indexSet {
+		if idx > maxIndex {
+			maxIndex = idx
+		}
+	}
+
+	if maxIndex == math.MaxInt {
+		return fmt.Errorf("slice index %d causes integer overflow", maxIndex)
+	}
+
 	capacity := initialized
 	if maxIndex+1 > capacity {
+		newElements := (maxIndex + 1) - initialized
+		populatedNew := 0
+		for idx := range indexSet {
+			if idx >= initialized {
+				populatedNew++
+			}
+		}
+		gaps := newElements - populatedNew
+		if gaps > maxSliceGaps {
+			return fmt.Errorf("excessive sparse slice gap allocation of %d elements exceeds limit %d", gaps, maxSliceGaps)
+		}
 		capacity = maxIndex + 1
 	}
+
 	result := reflect.MakeSlice(sliceType, capacity, capacity)
 	for i := 0; i < capacity; i++ {
 		item := result.Index(i)
