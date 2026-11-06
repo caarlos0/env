@@ -174,6 +174,10 @@ type Options struct {
 	// Used internally. maps the env variable key to its resolved string value.
 	// (for env var expansion)
 	rawEnvVars map[string]string
+
+	// Used internally. visits envEnableIf fields even when disabled
+	// (for GetFieldParams).
+	ignoreEnableIf bool
 }
 
 // expand replaces ${var} or $var in val, expanding the values it refers to
@@ -262,6 +266,7 @@ func optionsWithSliceEnvPrefix(opts Options, index int) Options {
 		SetDefaultsForZeroValuesOnly: opts.SetDefaultsForZeroValuesOnly,
 		FuncMap:                      opts.FuncMap,
 		rawEnvVars:                   opts.rawEnvVars,
+		ignoreEnableIf:               opts.ignoreEnableIf,
 	}
 }
 
@@ -278,6 +283,7 @@ func optionsWithEnvPrefix(field reflect.StructField, opts Options) Options {
 		SetDefaultsForZeroValuesOnly: opts.SetDefaultsForZeroValuesOnly,
 		FuncMap:                      opts.FuncMap,
 		rawEnvVars:                   opts.rawEnvVars,
+		ignoreEnableIf:               opts.ignoreEnableIf,
 	}
 }
 
@@ -327,6 +333,8 @@ func GetFieldParams(v interface{}) ([]FieldParams, error) {
 // tags it found.
 func GetFieldParamsWithOptions(v interface{}, opts Options) ([]FieldParams, error) {
 	var result []FieldParams
+	o := customOptions(opts)
+	o.ignoreEnableIf = true
 	err := parseInternal(
 		v,
 		func(_ reflect.Value, _ reflect.StructField, _ Options, fieldParams FieldParams) error {
@@ -335,7 +343,7 @@ func GetFieldParamsWithOptions(v interface{}, opts Options) ([]FieldParams, erro
 			}
 			return nil
 		},
-		customOptions(opts),
+		o,
 	)
 	if err != nil {
 		return nil, err
@@ -389,6 +397,10 @@ func doParseField(
 	opts Options,
 ) error {
 	if !refField.CanSet() {
+		return nil
+	}
+	// Skip fields disabled by envEnableIf.
+	if key := refTypeField.Tag.Get("envEnableIf"); key != "" && !opts.ignoreEnableIf && !isEnvTrue(opts.Prefix+key, opts.Environment) {
 		return nil
 	}
 	if refField.Kind() == reflect.Pointer && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
@@ -563,6 +575,15 @@ type FieldParams struct {
 	Expand          bool
 	Init            bool
 	Ignored         bool
+	// EnabledByEnv holds the name of a boolean env var (from the `envEnableIf`
+	// struct tag). When that variable resolves to "true", this field is treated
+	// as both required and notEmpty regardless of its other tag options.
+	EnabledByEnv string
+
+	// enforceEnabled is true when EnabledByEnv is set and the field holds a
+	// value of its own, so the implicit required/notEmpty checks apply.
+	// Grouping structs only scope their children and are never enforced.
+	enforceEnabled bool
 }
 
 func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, error) {
@@ -573,6 +594,11 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 
 	defaultValue, hasDefaultValue := field.Tag.Lookup(opts.DefaultValueTagName)
 
+	enabledByEnv := field.Tag.Get("envEnableIf")
+	if enabledByEnv != "" {
+		enabledByEnv = opts.Prefix + enabledByEnv
+	}
+
 	result := FieldParams{
 		OwnKey:          ownKey,
 		Key:             opts.Prefix + ownKey,
@@ -580,6 +606,8 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 		DefaultValue:    defaultValue,
 		HasDefaultValue: hasDefaultValue,
 		Ignored:         ownKey == "-",
+		EnabledByEnv:    enabledByEnv,
+		enforceEnabled:  enabledByEnv != "" && !isGroupingField(field, opts.FuncMap),
 	}
 
 	for _, tag := range tags {
@@ -608,6 +636,38 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 	return result, nil
 }
 
+// isEnvTrue reports whether the environment variable named key resolves to a
+// truthy value ("1", "t", "T", "TRUE", "true", "True") using the same rules as
+// strconv.ParseBool.
+func isEnvTrue(key string, envs map[string]string) bool {
+	v := strings.ToLower(strings.TrimSpace(envs[key]))
+	return v == "true" || v == "1" || v == "t"
+}
+
+var textUnmarshalerType = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
+
+// isGroupingField reports whether the field only groups nested env fields (a
+// struct, pointer to struct, or slice of structs that has no parser of its
+// own) rather than holding a value read from its own environment variable.
+func isGroupingField(field reflect.StructField, funcMap map[reflect.Type]ParserFunc) bool {
+	t := field.Type
+	if isSliceOfStructs(field) {
+		if t.Kind() == reflect.Pointer {
+			t = t.Elem()
+		}
+		t = t.Elem()
+	} else if t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	if t.Kind() != reflect.Struct {
+		return false
+	}
+	if _, ok := funcMap[t]; ok {
+		return false
+	}
+	return !reflect.PointerTo(t).Implements(textUnmarshalerType)
+}
+
 func get(fieldParams FieldParams, opts Options) (val string, isDefault bool, err error) {
 	var exists bool
 
@@ -634,11 +694,14 @@ func get(fieldParams FieldParams, opts Options) (val string, isDefault bool, err
 		defer os.Unsetenv(fieldParams.Key)
 	}
 
-	if fieldParams.Required && !exists && fieldParams.OwnKey != "" {
+	// Enabled envEnableIf fields are required and notEmpty.
+	enabled := fieldParams.enforceEnabled
+
+	if (fieldParams.Required || enabled) && !exists && fieldParams.OwnKey != "" {
 		return "", false, newVarIsNotSetError(fieldParams.Key)
 	}
 
-	if fieldParams.NotEmpty && val == "" {
+	if (fieldParams.NotEmpty || (enabled && fieldParams.OwnKey != "")) && val == "" {
 		return "", false, newEmptyVarError(fieldParams.Key)
 	}
 
