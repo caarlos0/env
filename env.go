@@ -403,7 +403,7 @@ func doParseField(
 		return nil
 	}
 	if refField.Kind() == reflect.Pointer && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
-		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
+		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefixSuffix(refTypeField, opts))
 	}
 	if refField.Kind() == reflect.Struct && refField.CanAddr() && refField.Type().Name() == "" {
 		return parseInternal(refField.Addr().Interface(), processField, optionsWithEnvPrefixSuffix(refTypeField, opts))
