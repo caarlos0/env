@@ -337,6 +337,25 @@ func ExampleParse_prefix() {
 	// Output: {A:{Foo:a} B:{Foo:b}}
 }
 
+// Setting suffixes for inner types.
+func ExampleParse_suffix() {
+	type Inner struct {
+		Foo string `env:"FOO,required"`
+	}
+	type Config struct {
+		A Inner `envSuffix:"_A"`
+		B Inner `envSuffix:"_B"`
+	}
+	os.Setenv("FOO_A", "a")
+	os.Setenv("FOO_B", "b")
+	var cfg Config
+	if err := Parse(&cfg); err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%+v", cfg)
+	// Output: {A:{Foo:a} B:{Foo:b}}
+}
+
 // Setting prefixes for the entire config.
 func ExampleParseWithOptions_prefix() {
 	type Config struct {
@@ -346,6 +365,63 @@ func ExampleParseWithOptions_prefix() {
 	var cfg Config
 	if err := ParseWithOptions(&cfg, Options{
 		Prefix: "MY_APP_",
+	}); err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%+v", cfg)
+	// Output: {Foo:a}
+}
+
+// Setting both prefix and suffix for inner types.
+func ExampleParse_prefixAndSuffix() {
+	type Inner struct {
+		Foo string `env:"FOO,required"`
+	}
+	type Config struct {
+		A Inner `envPrefix:"A_" envSuffix:"_A"`
+		B Inner `envPrefix:"B_" envSuffix:"_B"`
+	}
+	os.Setenv("A_FOO_A", "a")
+	os.Setenv("B_FOO_B", "b")
+	var cfg Config
+	if err := Parse(&cfg); err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%+v", cfg)
+	// Output: {A:{Foo:a} B:{Foo:b}}
+}
+
+// Setting both prefix and suffix for the entire config.
+func ExampleParseWithOptions_prefixAndSuffix() {
+	type Inner struct {
+		Foo string `env:"FOO"`
+	}
+	type Config struct {
+		A Inner `envPrefix:"A_"`
+		B Inner `envSuffix:"_B"`
+	}
+	os.Setenv("PFX_A_FOO_SFX", "a")
+	os.Setenv("PFX_FOO_B_SFX", "b")
+	var cfg Config
+	if err := ParseWithOptions(&cfg, Options{
+		Prefix: "PFX_",
+		Suffix: "_SFX",
+	}); err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("%+v", cfg)
+	// Output: {A:{Foo:a} B:{Foo:b}}
+}
+
+// Setting suffixes for the entire config.
+func ExampleParseWithOptions_suffix() {
+	type Config struct {
+		Foo string `env:"FOO"`
+	}
+	os.Setenv("FOO_MY_APP", "a")
+	var cfg Config
+	if err := ParseWithOptions(&cfg, Options{
+		Suffix: "_MY_APP",
 	}); err != nil {
 		fmt.Println(err)
 	}
