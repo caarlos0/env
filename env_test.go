@@ -1802,6 +1802,34 @@ func TestNoEnvKey(t *testing.T) {
 	isEqual(t, "", cfg.bar)
 }
 
+func TestUseFieldNameTrailingCapital(t *testing.T) {
+	type Config struct {
+		MyA string
+	}
+	var cfg Config
+	isNoErr(t, ParseWithOptions(&cfg, Options{
+		UseFieldNameByDefault: true,
+		Environment: map[string]string{
+			"MY_A": "set",
+		},
+	}))
+	isEqual(t, "set", cfg.MyA)
+}
+
+func TestUseFieldNameUnicodeCapital(t *testing.T) {
+	type Config struct {
+		ƵB string
+	}
+	var cfg Config
+	isNoErr(t, ParseWithOptions(&cfg, Options{
+		UseFieldNameByDefault: true,
+		Environment: map[string]string{
+			"ƵB": "set",
+		},
+	}))
+	isEqual(t, "set", cfg.ƵB)
+}
+
 func TestToEnv(t *testing.T) {
 	for in, out := range map[string]string{
 		"Foo":          "FOO",
@@ -1815,6 +1843,10 @@ func TestToEnv(t *testing.T) {
 		"SSHPort":      "SSH_PORT",
 		"_SSH___Port_": "SSH_PORT",
 		"_PortHTTP":    "PORT_HTTP",
+		"MyA":          "MY_A",
+		"ƵB":           "ƵB",
+		"FooB":         "FOO_B",
+		"AbC":          "AB_C",
 	} {
 		t.Run(in, func(t *testing.T) {
 			isEqual(t, out, toEnvName(in))
