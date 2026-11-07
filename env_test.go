@@ -18,6 +18,45 @@ import (
 	"time"
 )
 
+func TestNativeIntegerRange(t *testing.T) {
+	minInt, maxInt, maxUint := "-2147483648", "2147483647", "4294967295"
+	intOverflow, uintOverflow := "2147483648", "4294967296"
+	if strconv.IntSize == 64 {
+		minInt, maxInt, maxUint = "-9223372036854775808", "9223372036854775807", "18446744073709551615"
+		intOverflow, uintOverflow = "9223372036854775808", "18446744073709551616"
+	}
+
+	t.Run("valid", func(t *testing.T) {
+		var cfg struct {
+			MinInt  int  `env:"MIN_INT"`
+			MaxInt  int  `env:"MAX_INT"`
+			MaxUint uint `env:"MAX_UINT"`
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: map[string]string{
+			"MIN_INT": minInt, "MAX_INT": maxInt, "MAX_UINT": maxUint,
+		}}))
+		isEqual(t, minInt, strconv.FormatInt(int64(cfg.MinInt), 10))
+		isEqual(t, maxInt, strconv.FormatInt(int64(cfg.MaxInt), 10))
+		isEqual(t, maxUint, strconv.FormatUint(uint64(cfg.MaxUint), 10))
+	})
+
+	t.Run("int_overflow", func(t *testing.T) {
+		var cfg struct {
+			Value int `env:"VALUE"`
+		}
+		err := ParseWithOptions(&cfg, Options{Environment: map[string]string{"VALUE": intOverflow}})
+		isErrorWithMessage(t, err, `env: parse error on field "Value" of type "int": strconv.ParseInt: parsing `+strconv.Quote(intOverflow)+`: value out of range`)
+	})
+
+	t.Run("uint_overflow", func(t *testing.T) {
+		var cfg struct {
+			Value uint `env:"VALUE"`
+		}
+		err := ParseWithOptions(&cfg, Options{Environment: map[string]string{"VALUE": uintOverflow}})
+		isErrorWithMessage(t, err, `env: parse error on field "Value" of type "uint": strconv.ParseUint: parsing `+strconv.Quote(uintOverflow)+`: value out of range`)
+	})
+}
+
 type unmarshaler struct {
 	time.Duration
 }
@@ -1049,6 +1088,43 @@ func TestParseExpandWithDefaultOption(t *testing.T) {
 	isEqual(t, "jhon@localhost:5000", cfg.MixedDefault)
 	isEqual(t, "msg: this is used instead", cfg.OverrideDefault)
 	isEqual(t, "3000:5000", cfg.NoDefault)
+}
+
+func TestParseExpandCyclicReference(t *testing.T) {
+	type config struct {
+		Self     string `env:"SELF,expand"`
+		Indirect string `env:"INDIRECT,expand"`
+		Twice    string `env:"TWICE,expand"`
+	}
+
+	t.Setenv("SELF", "a-${SELF}")
+	t.Setenv("INDIRECT", "b-${LOOP_A}")
+	t.Setenv("LOOP_A", "${LOOP_B}")
+	t.Setenv("LOOP_B", "${LOOP_A}")
+	t.Setenv("TWICE", "${ONE}${ONE}")
+	t.Setenv("ONE", "1")
+
+	cfg := config{}
+	err := Parse(&cfg)
+
+	isNoErr(t, err)
+	isEqual(t, "a-", cfg.Self)
+	isEqual(t, "b-", cfg.Indirect)
+	isEqual(t, "11", cfg.Twice)
+}
+
+func TestParseExpandReadsEarlierFieldWithSameKey(t *testing.T) {
+	type config struct {
+		RawPort string `env:"PORT" envDefault:"3000"`
+		Port    int    `env:"PORT,expand" envDefault:"${PORT}"`
+	}
+
+	var cfg config
+	err := ParseWithOptions(&cfg, Options{Environment: map[string]string{}})
+
+	isNoErr(t, err)
+	isEqual(t, "3000", cfg.RawPort)
+	isEqual(t, 3000, cfg.Port)
 }
 
 func TestParseUnsetRequireOptions(t *testing.T) {
@@ -2200,15 +2276,16 @@ func TestIssue435NonConsecutiveSliceIndices(t *testing.T) {
 			Foo []Test `envPrefix:"FOO_"`
 		}
 
-		t.Setenv("FOO_0_STR", "a")
-		t.Setenv("FOO_0_NUM", "1")
-		t.Setenv("FOO_1_STR", "b")
-		t.Setenv("FOO_1_NUM", "2")
-		t.Setenv("FOO_3_STR", "d")
-		t.Setenv("FOO_3_NUM", "4")
-
 		cfg := Config{}
-		isNoErr(t, Parse(&cfg))
+		env := map[string]string{
+			"FOO_0_STR": "a",
+			"FOO_0_NUM": "1",
+			"FOO_1_STR": "b",
+			"FOO_1_NUM": "2",
+			"FOO_3_STR": "d",
+			"FOO_3_NUM": "4",
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
 
 		isEqual(t, 4, len(cfg.Foo))
 		isEqual(t, "a", cfg.Foo[0].Str)
@@ -2226,15 +2303,16 @@ func TestIssue435NonConsecutiveSliceIndices(t *testing.T) {
 			Foo []Test `envPrefix:"FOO_"`
 		}
 
-		t.Setenv("FOO_0_STR", "zero")
-		t.Setenv("FOO_0_NUM", "10")
-		t.Setenv("FOO_2_STR", "two")
-		t.Setenv("FOO_2_NUM", "20")
-		t.Setenv("FOO_5_STR", "five")
-		t.Setenv("FOO_5_NUM", "50")
-
 		cfg := Config{}
-		isNoErr(t, Parse(&cfg))
+		env := map[string]string{
+			"FOO_0_STR": "zero",
+			"FOO_0_NUM": "10",
+			"FOO_2_STR": "two",
+			"FOO_2_NUM": "20",
+			"FOO_5_STR": "five",
+			"FOO_5_NUM": "50",
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
 
 		isEqual(t, 6, len(cfg.Foo))
 		isEqual(t, "zero", cfg.Foo[0].Str)
@@ -2256,11 +2334,12 @@ func TestIssue435NonConsecutiveSliceIndices(t *testing.T) {
 			Foo []Test `envPrefix:"FOO_"`
 		}
 
-		t.Setenv("FOO_1_STR", "one")
-		t.Setenv("FOO_3_STR", "three")
-
 		cfg := Config{}
-		isNoErr(t, Parse(&cfg))
+		env := map[string]string{
+			"FOO_1_STR": "one",
+			"FOO_3_STR": "three",
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
 
 		isEqual(t, 4, len(cfg.Foo))
 		isEqual(t, "", cfg.Foo[0].Str)
@@ -2278,12 +2357,13 @@ func TestIssue435NonConsecutiveSliceIndices(t *testing.T) {
 			Foo []Test `envPrefix:"FOO_"`
 		}
 
-		t.Setenv("FOO_10_STR", "ten")
-		t.Setenv("FOO_2_STR", "two")
-		t.Setenv("FOO_0_STR", "zero")
-
 		cfg := Config{}
-		isNoErr(t, Parse(&cfg))
+		env := map[string]string{
+			"FOO_10_STR": "ten",
+			"FOO_2_STR":  "two",
+			"FOO_0_STR":  "zero",
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
 
 		isEqual(t, 11, len(cfg.Foo))
 		isEqual(t, "zero", cfg.Foo[0].Str)
@@ -2297,11 +2377,12 @@ func TestIssue435NonConsecutiveSliceIndices(t *testing.T) {
 			Foo *[]Test `envPrefix:"FOO_"`
 		}
 
-		t.Setenv("FOO_0_STR", "zero")
-		t.Setenv("FOO_4_STR", "four")
-
 		cfg := Config{}
-		isNoErr(t, Parse(&cfg))
+		env := map[string]string{
+			"FOO_0_STR": "zero",
+			"FOO_4_STR": "four",
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
 
 		isTrue(t, cfg.Foo != nil)
 		isEqual(t, 5, len(*cfg.Foo))
@@ -2322,10 +2403,11 @@ func TestIssue435NonConsecutiveSliceIndices(t *testing.T) {
 			{Str: "one", Num: 200},
 		}
 		cfg := Config{Foo: sample}
+		env := map[string]string{
+			"FOO_1_STR": "updated",
+		}
 
-		t.Setenv("FOO_1_STR", "updated")
-
-		isNoErr(t, Parse(&cfg))
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
 
 		isEqual(t, 2, len(cfg.Foo))
 		isEqual(t, "zero", cfg.Foo[0].Str)
@@ -2343,12 +2425,13 @@ func TestIssue435NonConsecutiveSliceIndices(t *testing.T) {
 			{Str: "init0", Num: 100},
 		}
 		cfg := Config{Foo: sample}
+		env := map[string]string{
+			"FOO_0_STR": "updated0",
+			"FOO_3_STR": "new3",
+			"FOO_3_NUM": "300",
+		}
 
-		t.Setenv("FOO_0_STR", "updated0")
-		t.Setenv("FOO_3_STR", "new3")
-		t.Setenv("FOO_3_NUM", "300")
-
-		isNoErr(t, Parse(&cfg))
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
 
 		isEqual(t, 4, len(cfg.Foo))
 		isEqual(t, "updated0", cfg.Foo[0].Str)
@@ -2366,11 +2449,12 @@ func TestIssue435NonConsecutiveSliceIndices(t *testing.T) {
 			Foo []Test `env:",init"`
 		}
 
-		t.Setenv("0_STR", "zero")
-		t.Setenv("3_STR", "three")
-
 		cfg := Config{}
-		isNoErr(t, Parse(&cfg))
+		env := map[string]string{
+			"0_STR": "zero",
+			"3_STR": "three",
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
 
 		isEqual(t, 4, len(cfg.Foo))
 		isEqual(t, "zero", cfg.Foo[0].Str)
@@ -2384,14 +2468,15 @@ func TestIssue435NonConsecutiveSliceIndices(t *testing.T) {
 			Foo []Test `envPrefix:"FOO_"`
 		}
 
-		t.Setenv("FOO_0_STR", "zero")
-		t.Setenv("FOO_BAR_STR", "ignored")
-		t.Setenv("FOO_-1_STR", "negative")
-		t.Setenv("FOO_00_STR", "leading_zero")
-		t.Setenv("FOO_2_STR", "two")
-
 		cfg := Config{}
-		isNoErr(t, Parse(&cfg))
+		env := map[string]string{
+			"FOO_0_STR":   "zero",
+			"FOO_BAR_STR": "ignored",
+			"FOO_-1_STR":  "negative",
+			"FOO_00_STR":  "leading_zero",
+			"FOO_2_STR":   "two",
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
 
 		isEqual(t, 3, len(cfg.Foo))
 		isEqual(t, "zero", cfg.Foo[0].Str)
@@ -2413,10 +2498,11 @@ func TestIssue435NonConsecutiveSliceIndices(t *testing.T) {
 				{Str: "initial1"},
 			},
 		}
+		env := map[string]string{
+			"FOO_0_STR": "updated0",
+		}
 
-		t.Setenv("FOO_0_STR", "updated0")
-
-		err := Parse(&cfg)
+		err := ParseWithOptions(&cfg, Options{Environment: env})
 		isErrorWithMessage(t, err, `env: required environment variable "FOO_1_STR" is not set`)
 		isTrue(t, errors.Is(err, VarIsNotSetError{}))
 	})
@@ -2436,11 +2522,12 @@ func TestIssue435NonConsecutiveSliceIndices(t *testing.T) {
 				{Str: "initial1", Num: 20},
 			},
 		}
+		env := map[string]string{
+			"FOO_0_STR": "updated0",
+			"FOO_0_NUM": "10",
+		}
 
-		t.Setenv("FOO_0_STR", "updated0")
-		t.Setenv("FOO_0_NUM", "10")
-
-		isNoErr(t, Parse(&cfg))
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
 
 		isEqual(t, 2, len(cfg.Foo))
 		isEqual(t, "updated0", cfg.Foo[0].Str)
@@ -2649,6 +2736,22 @@ func TestSetDefaultsForZeroValuesOnly(t *testing.T) {
 			isEqual(t, tc.Expected, *cfg)
 		})
 	}
+}
+
+// Regression for #364: SetDefaultsForZeroValuesOnly is about defaults.
+// An env value set in the environment should still win over a non-zero
+// field, otherwise users can't override pre-populated config via env at
+// all.
+func TestSetDefaultsForZeroValuesOnly_EnvOverridesNonZero(t *testing.T) {
+	type Config struct {
+		Username string `env:"USERNAME" envDefault:"admin"`
+	}
+	cfg := Config{Username: "root"}
+	isNoErr(t, ParseWithOptions(&cfg, Options{
+		Environment:                  map[string]string{"USERNAME": "user1"},
+		SetDefaultsForZeroValuesOnly: true,
+	}))
+	isEqual(t, "user1", cfg.Username)
 }
 
 func TestParseWithOptionsRenamedPrefix(t *testing.T) {

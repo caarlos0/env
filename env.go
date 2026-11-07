@@ -37,7 +37,7 @@ var defaultBuiltInParsers = map[reflect.Kind]ParserFunc{ //nolint:gochecknogloba
 		return v, nil
 	},
 	reflect.Int: func(v string) (interface{}, error) {
-		i, err := strconv.ParseInt(v, 10, 32)
+		i, err := strconv.ParseInt(v, 10, strconv.IntSize)
 		return int(i), err
 	},
 	reflect.Int16: func(v string) (interface{}, error) {
@@ -56,7 +56,7 @@ var defaultBuiltInParsers = map[reflect.Kind]ParserFunc{ //nolint:gochecknogloba
 		return int8(i), err
 	},
 	reflect.Uint: func(v string) (interface{}, error) {
-		i, err := strconv.ParseUint(v, 10, 32)
+		i, err := strconv.ParseUint(v, 10, strconv.IntSize)
 		return uint(i), err
 	},
 	reflect.Uint16: func(v string) (interface{}, error) {
@@ -178,12 +178,24 @@ type Options struct {
 	rawEnvVars map[string]string
 }
 
-func (opts *Options) getRawEnv(s string) string {
-	val := opts.rawEnvVars[s]
-	if val == "" {
-		val = opts.Environment[s]
-	}
-	return os.Expand(val, opts.getRawEnv)
+// expand replaces ${var} or $var in val, expanding the values it refers to
+// as well. visiting holds the variables being expanded, so a reference back
+// to one of them (e.g. A=${A}) expands to an empty string instead of
+// recursing until the stack overflows.
+func (opts *Options) expand(val string, visiting map[string]bool) string {
+	return os.Expand(val, func(s string) string {
+		if visiting[s] {
+			return ""
+		}
+		visiting[s] = true
+		defer delete(visiting, s)
+
+		raw := opts.rawEnvVars[s]
+		if raw == "" {
+			raw = opts.Environment[s]
+		}
+		return opts.expand(raw, visiting)
+	})
 }
 
 func defaultOptions() Options {
@@ -485,13 +497,14 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 	}
 
 	sliceType := ref.Type()
+	initial := ref
 	var initialized int
 	if reflect.Pointer == ref.Kind() {
 		sliceType = sliceType.Elem()
-		// Due to the rest of code the pre-initialized slice has no chance for this situation
-		initialized = 0
-	} else {
-		initialized = ref.Len()
+		initial = ref.Elem()
+	}
+	if initial.IsValid() {
+		initialized = initial.Len()
 	}
 
 	if len(indexSet) == 0 && initialized == 0 {
@@ -530,7 +543,7 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 		item := result.Index(i)
 		isPreexisting := i < initialized
 		if isPreexisting {
-			item.Set(ref.Index(i))
+			item.Set(initial.Index(i))
 		}
 		_, hasEnv := indexSet[i]
 		if isPreexisting || hasEnv {
@@ -553,12 +566,17 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 }
 
 func setField(refField reflect.Value, refTypeField reflect.StructField, opts Options, fieldParams FieldParams) error {
-	value, err := get(fieldParams, opts)
+	value, isDefault, err := get(fieldParams, opts)
 	if err != nil {
 		return err
 	}
 
-	if value != "" && (!opts.SetDefaultsForZeroValuesOnly || refField.IsZero()) {
+	// SetDefaultsForZeroValuesOnly is about defaults: a real env value
+	// should still win over a non-zero field. The previous form treated
+	// any non-empty value as a default, so an explicit env override was
+	// silently dropped when the destination already held something
+	// non-zero. See #364.
+	if value != "" && (!isDefault || !opts.SetDefaultsForZeroValuesOnly || refField.IsZero()) {
 		return set(refField, refTypeField, value, opts.FuncMap)
 	}
 
@@ -644,8 +662,8 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 	return result, nil
 }
 
-func get(fieldParams FieldParams, opts Options) (val string, err error) {
-	var exists, isDefault bool
+func get(fieldParams FieldParams, opts Options) (val string, isDefault bool, err error) {
+	var exists bool
 
 	val, exists, isDefault = getOr(
 		fieldParams.Key,
@@ -655,7 +673,13 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	)
 
 	if fieldParams.Expand {
-		val = os.Expand(val, opts.getRawEnv)
+		visiting := map[string]bool{}
+		// A reference to this field's own key is a cycle, unless an earlier
+		// field with the same key already cached a value to read.
+		if opts.rawEnvVars[fieldParams.Key] == "" {
+			visiting[fieldParams.Key] = true
+		}
+		val = opts.expand(val, visiting)
 	}
 
 	opts.rawEnvVars[fieldParams.Key] = val
@@ -665,18 +689,18 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 	}
 
 	if fieldParams.Required && !exists && fieldParams.OwnKey != "" {
-		return "", newVarIsNotSetError(fieldParams.Key)
+		return "", false, newVarIsNotSetError(fieldParams.Key)
 	}
 
 	if fieldParams.NotEmpty && val == "" {
-		return "", newEmptyVarError(fieldParams.Key)
+		return "", false, newEmptyVarError(fieldParams.Key)
 	}
 
 	if fieldParams.LoadFile && val != "" {
 		filename := val
 		val, err = getFromFile(filename)
 		if err != nil {
-			return "", newLoadFileContentError(filename, fieldParams.Key, err)
+			return "", false, newLoadFileContentError(filename, fieldParams.Key, err)
 		}
 	}
 
@@ -685,7 +709,7 @@ func get(fieldParams FieldParams, opts Options) (val string, err error) {
 			opts.OnSet(fieldParams.Key, val, isDefault)
 		}
 	}
-	return val, err
+	return val, isDefault, err
 }
 
 // split the env tag's key into the expected key and desired option, if any.
