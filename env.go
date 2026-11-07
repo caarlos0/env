@@ -17,7 +17,9 @@ package env
 
 import (
 	"encoding"
+	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"os"
 	"reflect"
@@ -446,66 +448,118 @@ func isSliceOfStructs(refTypeField reflect.StructField) bool {
 	return false
 }
 
+const maxSliceGaps = 1000
+
+func isCanonicalIndex(s string) bool {
+	if s == "" || (len(s) > 1 && s[0] == '0') {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) error {
 	if opts.Prefix != "" && !strings.HasSuffix(opts.Prefix, string(underscore)) {
 		opts.Prefix += string(underscore)
 	}
 
-	var environments []string
+	var hasPrefix bool
+	indexSet := make(map[int]struct{})
 	for environment := range opts.Environment {
-		if strings.HasPrefix(environment, opts.Prefix) {
-			environments = append(environments, environment)
+		if !strings.HasPrefix(environment, opts.Prefix) {
+			continue
+		}
+		hasPrefix = true
+		rest := environment[len(opts.Prefix):]
+		idxStr, _, found := strings.Cut(rest, string(underscore))
+		if !found {
+			continue
+		}
+		idx, err := strconv.Atoi(idxStr)
+		if err != nil {
+			if errors.Is(err, strconv.ErrRange) && isCanonicalIndex(idxStr) {
+				return fmt.Errorf("slice index %q causes integer overflow", idxStr)
+			}
+			continue
+		}
+		if idx < 0 || strconv.Itoa(idx) != idxStr {
+			continue
+		}
+		indexSet[idx] = struct{}{}
+	}
+
+	if !hasPrefix {
+		return nil
+	}
+
+	sliceType := ref.Type()
+	initial := ref
+	var initialized int
+	if reflect.Pointer == ref.Kind() {
+		sliceType = sliceType.Elem()
+		initial = ref.Elem()
+	}
+	if initial.IsValid() {
+		initialized = initial.Len()
+	}
+
+	if len(indexSet) == 0 && initialized == 0 {
+		return nil
+	}
+
+	maxIndex := -1
+	for idx := range indexSet {
+		if idx > maxIndex {
+			maxIndex = idx
 		}
 	}
 
-	if len(environments) > 0 {
-		counter := 0
-		for finished := false; !finished; {
-			finished = true
-			prefix := fmt.Sprintf("%s%d%c", opts.Prefix, counter, underscore)
-			for _, variable := range environments {
-				if strings.HasPrefix(variable, prefix) {
-					counter++
-					finished = false
-					break
-				}
+	if maxIndex == math.MaxInt {
+		return fmt.Errorf("slice index %d causes integer overflow", maxIndex)
+	}
+
+	capacity := initialized
+	if maxIndex+1 > capacity {
+		newElements := (maxIndex + 1) - initialized
+		populatedNew := 0
+		for idx := range indexSet {
+			if idx >= initialized {
+				populatedNew++
 			}
 		}
+		gaps := newElements - populatedNew
+		if gaps > maxSliceGaps {
+			return fmt.Errorf("excessive sparse slice gap allocation of %d elements exceeds limit %d", gaps, maxSliceGaps)
+		}
+		capacity = maxIndex + 1
+	}
 
-		sliceType := ref.Type()
-		initial := ref
-		var initialized int
-		if reflect.Pointer == ref.Kind() {
-			sliceType = sliceType.Elem()
-			initial = ref.Elem()
+	result := reflect.MakeSlice(sliceType, capacity, capacity)
+	for i := 0; i < capacity; i++ {
+		item := result.Index(i)
+		isPreexisting := i < initialized
+		if isPreexisting {
+			item.Set(initial.Index(i))
 		}
-		if initial.IsValid() {
-			initialized = initial.Len()
-		}
-
-		var capacity int
-		if capacity = initialized; counter > initialized {
-			capacity = counter
-		}
-		result := reflect.MakeSlice(sliceType, capacity, capacity)
-		for i := 0; i < capacity; i++ {
-			item := result.Index(i)
-			if i < initialized {
-				item.Set(initial.Index(i))
-			}
+		_, hasEnv := indexSet[i]
+		if isPreexisting || hasEnv {
 			if err := doParse(item, processField, optionsWithSliceEnvPrefix(opts, i)); err != nil {
 				return err
 			}
 		}
+	}
 
-		if result.Len() > 0 {
-			if reflect.Pointer == ref.Kind() {
-				resultPtr := reflect.New(sliceType)
-				resultPtr.Elem().Set(result)
-				result = resultPtr
-			}
-			ref.Set(result)
+	if result.Len() > 0 {
+		if reflect.Pointer == ref.Kind() {
+			resultPtr := reflect.New(sliceType)
+			resultPtr.Elem().Set(result)
+			result = resultPtr
 		}
+		ref.Set(result)
 	}
 
 	return nil

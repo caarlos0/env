@@ -2265,6 +2265,409 @@ func TestIssue320(t *testing.T) {
 	isEqual(t, cfg.Baz, nil)
 }
 
+func TestIssue435NonConsecutiveSliceIndices(t *testing.T) {
+	type Test struct {
+		Str string `env:"STR"`
+		Num int    `env:"NUM"`
+	}
+
+	t.Run("exact 0 1 3 indices preserving zero-value gap", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		cfg := Config{}
+		env := map[string]string{
+			"FOO_0_STR": "a",
+			"FOO_0_NUM": "1",
+			"FOO_1_STR": "b",
+			"FOO_1_NUM": "2",
+			"FOO_3_STR": "d",
+			"FOO_3_NUM": "4",
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
+
+		isEqual(t, 4, len(cfg.Foo))
+		isEqual(t, "a", cfg.Foo[0].Str)
+		isEqual(t, 1, cfg.Foo[0].Num)
+		isEqual(t, "b", cfg.Foo[1].Str)
+		isEqual(t, 2, cfg.Foo[1].Num)
+		isEqual(t, "", cfg.Foo[2].Str)
+		isEqual(t, 0, cfg.Foo[2].Num)
+		isEqual(t, "d", cfg.Foo[3].Str)
+		isEqual(t, 4, cfg.Foo[3].Num)
+	})
+
+	t.Run("missing intermediate indices", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		cfg := Config{}
+		env := map[string]string{
+			"FOO_0_STR": "zero",
+			"FOO_0_NUM": "10",
+			"FOO_2_STR": "two",
+			"FOO_2_NUM": "20",
+			"FOO_5_STR": "five",
+			"FOO_5_NUM": "50",
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
+
+		isEqual(t, 6, len(cfg.Foo))
+		isEqual(t, "zero", cfg.Foo[0].Str)
+		isEqual(t, 10, cfg.Foo[0].Num)
+		isEqual(t, "", cfg.Foo[1].Str)
+		isEqual(t, 0, cfg.Foo[1].Num)
+		isEqual(t, "two", cfg.Foo[2].Str)
+		isEqual(t, 20, cfg.Foo[2].Num)
+		isEqual(t, "", cfg.Foo[3].Str)
+		isEqual(t, 0, cfg.Foo[3].Num)
+		isEqual(t, "", cfg.Foo[4].Str)
+		isEqual(t, 0, cfg.Foo[4].Num)
+		isEqual(t, "five", cfg.Foo[5].Str)
+		isEqual(t, 50, cfg.Foo[5].Num)
+	})
+
+	t.Run("missing index 0", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		cfg := Config{}
+		env := map[string]string{
+			"FOO_1_STR": "one",
+			"FOO_3_STR": "three",
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
+
+		isEqual(t, 4, len(cfg.Foo))
+		isEqual(t, "", cfg.Foo[0].Str)
+		isEqual(t, 0, cfg.Foo[0].Num)
+		isEqual(t, "one", cfg.Foo[1].Str)
+		isEqual(t, 0, cfg.Foo[1].Num)
+		isEqual(t, "", cfg.Foo[2].Str)
+		isEqual(t, 0, cfg.Foo[2].Num)
+		isEqual(t, "three", cfg.Foo[3].Str)
+		isEqual(t, 0, cfg.Foo[3].Num)
+	})
+
+	t.Run("numeric ordering with multi-digit indices", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		cfg := Config{}
+		env := map[string]string{
+			"FOO_10_STR": "ten",
+			"FOO_2_STR":  "two",
+			"FOO_0_STR":  "zero",
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
+
+		isEqual(t, 11, len(cfg.Foo))
+		isEqual(t, "zero", cfg.Foo[0].Str)
+		isEqual(t, "", cfg.Foo[1].Str)
+		isEqual(t, "two", cfg.Foo[2].Str)
+		isEqual(t, "ten", cfg.Foo[10].Str)
+	})
+
+	t.Run("pointer to slice of structs", func(t *testing.T) {
+		type Config struct {
+			Foo *[]Test `envPrefix:"FOO_"`
+		}
+
+		cfg := Config{}
+		env := map[string]string{
+			"FOO_0_STR": "zero",
+			"FOO_4_STR": "four",
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
+
+		isTrue(t, cfg.Foo != nil)
+		isEqual(t, 5, len(*cfg.Foo))
+		isEqual(t, "zero", (*cfg.Foo)[0].Str)
+		isEqual(t, "", (*cfg.Foo)[1].Str)
+		isEqual(t, "", (*cfg.Foo)[2].Str)
+		isEqual(t, "", (*cfg.Foo)[3].Str)
+		isEqual(t, "four", (*cfg.Foo)[4].Str)
+	})
+
+	t.Run("pre-initialized slice overridden only at index 1", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		sample := []Test{
+			{Str: "zero", Num: 100},
+			{Str: "one", Num: 200},
+		}
+		cfg := Config{Foo: sample}
+		env := map[string]string{
+			"FOO_1_STR": "updated",
+		}
+
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
+
+		isEqual(t, 2, len(cfg.Foo))
+		isEqual(t, "zero", cfg.Foo[0].Str)
+		isEqual(t, 100, cfg.Foo[0].Num)
+		isEqual(t, "updated", cfg.Foo[1].Str)
+		isEqual(t, 200, cfg.Foo[1].Num)
+	})
+
+	t.Run("pre-initialized slice extended by higher index", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		sample := []Test{
+			{Str: "init0", Num: 100},
+		}
+		cfg := Config{Foo: sample}
+		env := map[string]string{
+			"FOO_0_STR": "updated0",
+			"FOO_3_STR": "new3",
+			"FOO_3_NUM": "300",
+		}
+
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
+
+		isEqual(t, 4, len(cfg.Foo))
+		isEqual(t, "updated0", cfg.Foo[0].Str)
+		isEqual(t, 100, cfg.Foo[0].Num)
+		isEqual(t, "", cfg.Foo[1].Str)
+		isEqual(t, 0, cfg.Foo[1].Num)
+		isEqual(t, "", cfg.Foo[2].Str)
+		isEqual(t, 0, cfg.Foo[2].Num)
+		isEqual(t, "new3", cfg.Foo[3].Str)
+		isEqual(t, 300, cfg.Foo[3].Num)
+	})
+
+	t.Run("unprefixed slice", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `env:",init"`
+		}
+
+		cfg := Config{}
+		env := map[string]string{
+			"0_STR": "zero",
+			"3_STR": "three",
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
+
+		isEqual(t, 4, len(cfg.Foo))
+		isEqual(t, "zero", cfg.Foo[0].Str)
+		isEqual(t, "", cfg.Foo[1].Str)
+		isEqual(t, "", cfg.Foo[2].Str)
+		isEqual(t, "three", cfg.Foo[3].Str)
+	})
+
+	t.Run("non-integer and invalid index formats ignored", func(t *testing.T) {
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		cfg := Config{}
+		env := map[string]string{
+			"FOO_0_STR":   "zero",
+			"FOO_BAR_STR": "ignored",
+			"FOO_-1_STR":  "negative",
+			"FOO_00_STR":  "leading_zero",
+			"FOO_2_STR":   "two",
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
+
+		isEqual(t, 3, len(cfg.Foo))
+		isEqual(t, "zero", cfg.Foo[0].Str)
+		isEqual(t, "", cfg.Foo[1].Str)
+		isEqual(t, "two", cfg.Foo[2].Str)
+	})
+
+	t.Run("required field on pre-initialized tail element fails when unset", func(t *testing.T) {
+		type RequiredTest struct {
+			Str string `env:"STR,required"`
+		}
+		type Config struct {
+			Foo []RequiredTest `envPrefix:"FOO_"`
+		}
+
+		cfg := Config{
+			Foo: []RequiredTest{
+				{Str: "initial0"},
+				{Str: "initial1"},
+			},
+		}
+		env := map[string]string{
+			"FOO_0_STR": "updated0",
+		}
+
+		err := ParseWithOptions(&cfg, Options{Environment: env})
+		isErrorWithMessage(t, err, `env: required environment variable "FOO_1_STR" is not set`)
+		isTrue(t, errors.Is(err, VarIsNotSetError{}))
+	})
+
+	t.Run("default value applied to pre-initialized tail element", func(t *testing.T) {
+		type DefaultTest struct {
+			Str string `env:"STR" envDefault:"tail-default"`
+			Num int    `env:"NUM" envDefault:"42"`
+		}
+		type Config struct {
+			Foo []DefaultTest `envPrefix:"FOO_"`
+		}
+
+		cfg := Config{
+			Foo: []DefaultTest{
+				{Str: "initial0", Num: 10},
+				{Str: "initial1", Num: 20},
+			},
+		}
+		env := map[string]string{
+			"FOO_0_STR": "updated0",
+			"FOO_0_NUM": "10",
+		}
+
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
+
+		isEqual(t, 2, len(cfg.Foo))
+		isEqual(t, "updated0", cfg.Foo[0].Str)
+		isEqual(t, 10, cfg.Foo[0].Num)
+		isEqual(t, "tail-default", cfg.Foo[1].Str)
+		isEqual(t, 42, cfg.Foo[1].Num)
+	})
+
+	t.Run("initialized unprefixed slice applies defaults with only PATH in environment", func(t *testing.T) {
+		type Entry struct {
+			Str string `env:"STR" envDefault:"def-val"`
+		}
+		type Config struct {
+			Foo []Entry `env:",init"`
+		}
+
+		cfg := Config{
+			Foo: []Entry{{}},
+		}
+		env := map[string]string{
+			"PATH": "/bin",
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
+		isEqual(t, 1, len(cfg.Foo))
+		isEqual(t, "def-val", cfg.Foo[0].Str)
+	})
+
+	t.Run("initialized unprefixed slice validates required field with only PATH in environment", func(t *testing.T) {
+		type Entry struct {
+			Name string `env:"NAME,required"`
+		}
+		type Config struct {
+			Foo []Entry `env:",init"`
+		}
+
+		cfg := Config{
+			Foo: []Entry{{}},
+		}
+		env := map[string]string{
+			"PATH": "/bin",
+		}
+		err := ParseWithOptions(&cfg, Options{Environment: env})
+		isErrorWithMessage(t, err, `env: required environment variable "0_NAME" is not set`)
+		isTrue(t, errors.Is(err, VarIsNotSetError{}))
+	})
+
+	t.Run("initialized prefixed slice applies defaults with unrelated prefix environment variable", func(t *testing.T) {
+		type Entry struct {
+			Str string `env:"STR" envDefault:"prefixed-default"`
+		}
+		type Config struct {
+			Foo []Entry `envPrefix:"FOO_"`
+		}
+
+		cfg := Config{
+			Foo: []Entry{{}},
+		}
+		env := map[string]string{
+			"FOO_OTHER": "val",
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
+		isEqual(t, 1, len(cfg.Foo))
+		isEqual(t, "prefixed-default", cfg.Foo[0].Str)
+	})
+
+	t.Run("initialized prefixed slice validates required field with unrelated prefix environment variable", func(t *testing.T) {
+		type Entry struct {
+			Name string `env:"NAME,required"`
+		}
+		type Config struct {
+			Foo []Entry `envPrefix:"FOO_"`
+		}
+
+		cfg := Config{
+			Foo: []Entry{{}},
+		}
+		env := map[string]string{
+			"FOO_OTHER": "val",
+		}
+		err := ParseWithOptions(&cfg, Options{Environment: env})
+		isErrorWithMessage(t, err, `env: required environment variable "FOO_0_NAME" is not set`)
+		isTrue(t, errors.Is(err, VarIsNotSetError{}))
+	})
+
+	t.Run("portable MaxInt with index zero returns error without integer overflow", func(t *testing.T) {
+		type Test struct {
+			Str string `env:"STR"`
+		}
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		maxIntStr := strconv.Itoa(int(^uint(0) >> 1))
+		env := map[string]string{
+			"FOO_0_STR": "valid",
+			fmt.Sprintf("FOO_%s_STR", maxIntStr): "overflow",
+		}
+		var cfg Config
+		err := ParseWithOptions(&cfg, Options{Environment: env})
+		isTrue(t, err != nil)
+		isTrue(t, len(cfg.Foo) == 0)
+	})
+
+	t.Run("huge sparse index returns error without allocating huge slice", func(t *testing.T) {
+		type Test struct {
+			Num int64 `env:"NUM"`
+		}
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		env := map[string]string{
+			"FOO_1000000000_NUM": "1",
+		}
+		var cfg Config
+		err := ParseWithOptions(&cfg, Options{Environment: env})
+		isTrue(t, err != nil)
+		isTrue(t, len(cfg.Foo) == 0)
+	})
+
+	t.Run("contiguous slice above 1000 elements supported", func(t *testing.T) {
+		type Test struct {
+			Str string `env:"STR"`
+		}
+		type Config struct {
+			Foo []Test `envPrefix:"FOO_"`
+		}
+
+		env := make(map[string]string, 1005)
+		for i := 0; i <= 1001; i++ {
+			env[fmt.Sprintf("FOO_%d_STR", i)] = fmt.Sprintf("val-%d", i)
+		}
+		var cfg Config
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: env}))
+		isEqual(t, 1002, len(cfg.Foo))
+		isEqual(t, "val-0", cfg.Foo[0].Str)
+		isEqual(t, "val-1001", cfg.Foo[1001].Str)
+	})
+}
+
 func TestParseWithOptionsRenamedDefault(t *testing.T) {
 	type config struct {
 		Str string `env:"STR" envDefault:"foo" myDefault:"bar"`
