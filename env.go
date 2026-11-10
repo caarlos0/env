@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 )
 
 var defaultBuiltInParsers = map[reflect.Kind]ParserFunc{ //nolint:gochecknoglobals
@@ -538,11 +539,18 @@ func toEnvName(input string) string {
 			continue
 		}
 		if len(output) > 0 && unicode.IsUpper(c) {
-			if len(input) > i+1 {
-				peek := rune(input[i+1])
-				if unicode.IsLower(peek) || unicode.IsLower(rune(input[i-1])) {
+			prev, _ := utf8.DecodeLastRuneInString(input[:i])
+			prevLower := i > 0 && unicode.IsLower(prev)
+			// i is a byte offset. Step over this rune before the lookahead,
+			// or a multibyte capital hides the following letter.
+			next := i + utf8.RuneLen(c)
+			if next < len(input) {
+				peek, _ := utf8.DecodeRuneInString(input[next:])
+				if unicode.IsLower(peek) || prevLower {
 					output = append(output, underscore)
 				}
+			} else if prevLower {
+				output = append(output, underscore)
 			}
 		}
 		output = append(output, unicode.ToUpper(c))
