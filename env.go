@@ -391,16 +391,20 @@ func doParseField(
 	if !refField.CanSet() {
 		return nil
 	}
-	if refField.Kind() == reflect.Pointer && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
-		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
-	}
-	if refField.Kind() == reflect.Struct && refField.CanAddr() && refField.Type().Name() == "" {
-		return parseInternal(refField.Addr().Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
-	}
-
 	params, err := parseFieldParams(refTypeField, opts)
 	if err != nil {
 		return err
+	}
+
+	explicitKey, _ := parseKeyForOption(refTypeField.Tag.Get(opts.TagName))
+	_, hasPrefix := refTypeField.Tag.Lookup(opts.PrefixTagName)
+	scalar := isScalarStruct(refField.Type(), opts.FuncMap) &&
+		(explicitKey != "" || params.HasDefaultValue || params.OwnKey != "" && !hasPrefix && opts.Environment[params.Key] != "")
+	if !scalar && refField.Kind() == reflect.Pointer && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
+		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
+	}
+	if !scalar && refField.Kind() == reflect.Struct && refField.CanAddr() && refField.Type().Name() == "" {
+		return parseInternal(refField.Addr().Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
 	if params.Ignored {
@@ -416,6 +420,10 @@ func doParseField(
 		refField = refField.Elem()
 	}
 
+	if scalar {
+		return nil
+	}
+
 	if refField.Kind() == reflect.Struct {
 		return doParse(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
@@ -425,6 +433,19 @@ func doParseField(
 	}
 
 	return nil
+}
+
+func isScalarStruct(fieldType reflect.Type, funcMap map[reflect.Type]ParserFunc) bool {
+	if fieldType.Kind() == reflect.Pointer {
+		fieldType = fieldType.Elem()
+	}
+	if fieldType.Kind() != reflect.Struct {
+		return false
+	}
+	if _, ok := funcMap[fieldType]; ok {
+		return true
+	}
+	return reflect.PointerTo(fieldType).Implements(reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem())
 }
 
 func isSliceOfStructs(refTypeField reflect.StructField) bool {
