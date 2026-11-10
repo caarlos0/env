@@ -18,6 +18,45 @@ import (
 	"time"
 )
 
+func TestNativeIntegerRange(t *testing.T) {
+	minInt, maxInt, maxUint := "-2147483648", "2147483647", "4294967295"
+	intOverflow, uintOverflow := "2147483648", "4294967296"
+	if strconv.IntSize == 64 {
+		minInt, maxInt, maxUint = "-9223372036854775808", "9223372036854775807", "18446744073709551615"
+		intOverflow, uintOverflow = "9223372036854775808", "18446744073709551616"
+	}
+
+	t.Run("valid", func(t *testing.T) {
+		var cfg struct {
+			MinInt  int  `env:"MIN_INT"`
+			MaxInt  int  `env:"MAX_INT"`
+			MaxUint uint `env:"MAX_UINT"`
+		}
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: map[string]string{
+			"MIN_INT": minInt, "MAX_INT": maxInt, "MAX_UINT": maxUint,
+		}}))
+		isEqual(t, minInt, strconv.FormatInt(int64(cfg.MinInt), 10))
+		isEqual(t, maxInt, strconv.FormatInt(int64(cfg.MaxInt), 10))
+		isEqual(t, maxUint, strconv.FormatUint(uint64(cfg.MaxUint), 10))
+	})
+
+	t.Run("int_overflow", func(t *testing.T) {
+		var cfg struct {
+			Value int `env:"VALUE"`
+		}
+		err := ParseWithOptions(&cfg, Options{Environment: map[string]string{"VALUE": intOverflow}})
+		isErrorWithMessage(t, err, `env: parse error on field "Value" of type "int": strconv.ParseInt: parsing `+strconv.Quote(intOverflow)+`: value out of range`)
+	})
+
+	t.Run("uint_overflow", func(t *testing.T) {
+		var cfg struct {
+			Value uint `env:"VALUE"`
+		}
+		err := ParseWithOptions(&cfg, Options{Environment: map[string]string{"VALUE": uintOverflow}})
+		isErrorWithMessage(t, err, `env: parse error on field "Value" of type "uint": strconv.ParseUint: parsing `+strconv.Quote(uintOverflow)+`: value out of range`)
+	})
+}
+
 type unmarshaler struct {
 	time.Duration
 }
@@ -1049,6 +1088,43 @@ func TestParseExpandWithDefaultOption(t *testing.T) {
 	isEqual(t, "jhon@localhost:5000", cfg.MixedDefault)
 	isEqual(t, "msg: this is used instead", cfg.OverrideDefault)
 	isEqual(t, "3000:5000", cfg.NoDefault)
+}
+
+func TestParseExpandCyclicReference(t *testing.T) {
+	type config struct {
+		Self     string `env:"SELF,expand"`
+		Indirect string `env:"INDIRECT,expand"`
+		Twice    string `env:"TWICE,expand"`
+	}
+
+	t.Setenv("SELF", "a-${SELF}")
+	t.Setenv("INDIRECT", "b-${LOOP_A}")
+	t.Setenv("LOOP_A", "${LOOP_B}")
+	t.Setenv("LOOP_B", "${LOOP_A}")
+	t.Setenv("TWICE", "${ONE}${ONE}")
+	t.Setenv("ONE", "1")
+
+	cfg := config{}
+	err := Parse(&cfg)
+
+	isNoErr(t, err)
+	isEqual(t, "a-", cfg.Self)
+	isEqual(t, "b-", cfg.Indirect)
+	isEqual(t, "11", cfg.Twice)
+}
+
+func TestParseExpandReadsEarlierFieldWithSameKey(t *testing.T) {
+	type config struct {
+		RawPort string `env:"PORT" envDefault:"3000"`
+		Port    int    `env:"PORT,expand" envDefault:"${PORT}"`
+	}
+
+	var cfg config
+	err := ParseWithOptions(&cfg, Options{Environment: map[string]string{}})
+
+	isNoErr(t, err)
+	isEqual(t, "3000", cfg.RawPort)
+	isEqual(t, 3000, cfg.Port)
 }
 
 func TestParseUnsetRequireOptions(t *testing.T) {
@@ -2418,6 +2494,22 @@ func TestSetDefaultsForZeroValuesOnly(t *testing.T) {
 			isEqual(t, tc.Expected, *cfg)
 		})
 	}
+}
+
+// Regression for #364: SetDefaultsForZeroValuesOnly is about defaults.
+// An env value set in the environment should still win over a non-zero
+// field, otherwise users can't override pre-populated config via env at
+// all.
+func TestSetDefaultsForZeroValuesOnly_EnvOverridesNonZero(t *testing.T) {
+	type Config struct {
+		Username string `env:"USERNAME" envDefault:"admin"`
+	}
+	cfg := Config{Username: "root"}
+	isNoErr(t, ParseWithOptions(&cfg, Options{
+		Environment:                  map[string]string{"USERNAME": "user1"},
+		SetDefaultsForZeroValuesOnly: true,
+	}))
+	isEqual(t, "user1", cfg.Username)
 }
 
 func TestParseWithOptionsRenamedPrefix(t *testing.T) {
