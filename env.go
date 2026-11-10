@@ -523,8 +523,11 @@ func toEnvName(input string) string {
 		if len(output) > 0 && unicode.IsUpper(c) {
 			prev, _ := utf8.DecodeLastRuneInString(input[:i])
 			prevLower := i > 0 && unicode.IsLower(prev)
-			if len(input) > i+1 {
-				peek, _ := utf8.DecodeRuneInString(input[i+1:])
+			// i is a byte offset. Step over this rune before the lookahead,
+			// or a multibyte capital hides the following letter.
+			next := i + utf8.RuneLen(c)
+			if next < len(input) {
+				peek, _ := utf8.DecodeRuneInString(input[next:])
 				if unicode.IsLower(peek) || prevLower {
 					output = append(output, underscore)
 				}

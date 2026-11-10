@@ -1754,6 +1754,20 @@ func TestUseFieldNameUnicodeCapital(t *testing.T) {
 	isEqual(t, "set", cfg.ƵB)
 }
 
+func TestUseFieldNameUnicodeLookahead(t *testing.T) {
+	type Config struct {
+		AƵa string
+	}
+	var cfg Config
+	isNoErr(t, ParseWithOptions(&cfg, Options{
+		UseFieldNameByDefault: true,
+		Environment: map[string]string{
+			"A_ƵA": "set",
+		},
+	}))
+	isEqual(t, "set", cfg.AƵa)
+}
+
 func TestToEnv(t *testing.T) {
 	for in, out := range map[string]string{
 		"Foo":          "FOO",
@@ -1769,6 +1783,8 @@ func TestToEnv(t *testing.T) {
 		"_PortHTTP":    "PORT_HTTP",
 		"MyA":          "MY_A",
 		"ƵB":           "ƵB",
+		"AƵa":          "A_ƵA",
+		"BƵa":          "B_ƵA",
 		"FooB":         "FOO_B",
 		"AbC":          "AB_C",
 	} {
