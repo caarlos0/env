@@ -197,11 +197,15 @@ func (opts *Options) expand(val string, visiting map[string]bool) string {
 }
 
 func defaultOptions() Options {
+	return optionsWithEnvironment(toMap(os.Environ()))
+}
+
+func optionsWithEnvironment(env map[string]string) Options {
 	return Options{
 		TagName:             "env",
 		PrefixTagName:       "envPrefix",
 		DefaultValueTagName: "envDefault",
-		Environment:         toMap(os.Environ()),
+		Environment:         env,
 		FuncMap:             defaultTypeParsers(),
 		rawEnvVars:          make(map[string]string),
 	}
@@ -244,7 +248,12 @@ func isZero(v reflect.Value) bool {
 }
 
 func customOptions(opts Options) Options {
-	defOpts := defaultOptions()
+	// Read the process environment only if the caller did not give one.
+	env := opts.Environment
+	if env == nil {
+		env = toMap(os.Environ())
+	}
+	defOpts := optionsWithEnvironment(env)
 	mergeOptions(&defOpts, &opts)
 	return defOpts
 }
