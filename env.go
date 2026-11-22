@@ -407,6 +407,7 @@ func doParseField(
 		return nil
 	}
 
+	scalarSlice := isScalarSliceBinding(refTypeField, params, opts)
 	if err := processField(refField, refTypeField, opts, params); err != nil {
 		return err
 	}
@@ -420,11 +421,34 @@ func doParseField(
 		return doParse(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
-	if isSliceOfStructs(refTypeField) {
+	if isSliceOfStructs(refTypeField) && !scalarSlice {
 		return doParseSlice(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
 	return nil
+}
+
+// isScalarSliceBinding distinguishes scalar-decoded elements from indexed
+// struct containers. Keep prefix-only and empty inferred bindings as containers.
+func isScalarSliceBinding(field reflect.StructField, params FieldParams, opts Options) bool {
+	if !isSliceOfStructs(field) {
+		return false
+	}
+
+	sliceType := field.Type
+	if sliceType.Kind() == reflect.Pointer {
+		sliceType = sliceType.Elem()
+	}
+	elementType := sliceType.Elem()
+	_, hasParser := opts.FuncMap[elementType]
+	if !hasParser && !reflect.PointerTo(elementType).Implements(reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()) {
+		return false
+	}
+
+	explicitKey, _ := parseKeyForOption(field.Tag.Get(opts.TagName))
+	_, hasPrefix := field.Tag.Lookup(opts.PrefixTagName)
+	return explicitKey != "" || params.HasDefaultValue ||
+		params.OwnKey != "" && !hasPrefix && opts.Environment[params.Key] != ""
 }
 
 func isSliceOfStructs(refTypeField reflect.StructField) bool {
