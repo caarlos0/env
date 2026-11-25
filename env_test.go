@@ -2509,3 +2509,39 @@ func TestEnvBleed(t *testing.T) {
 		isEqual(t, "", cfg.Foo)
 	})
 }
+
+func TestIssue440(t *testing.T) {
+	type config struct {
+		URL url.URL `env:"URL"`
+	}
+	environ := map[string]string{
+		"URL":  "http://example.com/a/b",
+		"PATH": "/usr/bin",
+		"HOST": "evil",
+	}
+
+	t.Run("tag", func(t *testing.T) {
+		var cfg config
+		isNoErr(t, ParseWithOptions(&cfg, Options{Environment: environ}))
+		isEqual(t, "http://example.com/a/b", cfg.URL.String())
+	})
+
+	t.Run("field name", func(t *testing.T) {
+		var cfg config
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			Environment:           environ,
+			UseFieldNameByDefault: true,
+		}))
+		isEqual(t, "http://example.com/a/b", cfg.URL.String())
+	})
+
+	t.Run("required if no def", func(t *testing.T) {
+		var cfg config
+		isNoErr(t, ParseWithOptions(&cfg, Options{
+			Environment:           map[string]string{"URL": "http://example.com/a/b"},
+			UseFieldNameByDefault: true,
+			RequiredIfNoDef:       true,
+		}))
+		isEqual(t, "http://example.com/a/b", cfg.URL.String())
+	})
+}
