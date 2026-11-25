@@ -391,10 +391,13 @@ func doParseField(
 	if !refField.CanSet() {
 		return nil
 	}
-	if refField.Kind() == reflect.Pointer && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
+
+	scalar := isScalarParseable(refTypeField.Type, opts)
+
+	if !scalar && refField.Kind() == reflect.Pointer && refField.Elem().Kind() == reflect.Struct && !refField.IsNil() {
 		return parseInternal(refField.Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
-	if refField.Kind() == reflect.Struct && refField.CanAddr() && refField.Type().Name() == "" {
+	if !scalar && refField.Kind() == reflect.Struct && refField.CanAddr() && refField.Type().Name() == "" {
 		return parseInternal(refField.Addr().Interface(), processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
@@ -416,7 +419,7 @@ func doParseField(
 		refField = refField.Elem()
 	}
 
-	if refField.Kind() == reflect.Struct {
+	if refField.Kind() == reflect.Struct && !scalar {
 		return doParse(refField, processField, optionsWithEnvPrefix(refTypeField, opts))
 	}
 
@@ -425,6 +428,25 @@ func doParseField(
 	}
 
 	return nil
+}
+
+var textUnmarshalerType = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem() //nolint:gochecknoglobals
+
+// isScalarParseable reports whether the given type is set from a single env
+// var value instead of being descended into as a nested struct: either a
+// parser is registered for it in FuncMap, or a pointer to it implements
+// encoding.TextUnmarshaler.
+func isScalarParseable(t reflect.Type, opts Options) bool {
+	if t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	if t.Kind() != reflect.Struct {
+		return false
+	}
+	if _, ok := opts.FuncMap[t]; ok {
+		return true
+	}
+	return reflect.PointerTo(t).Implements(textUnmarshalerType)
 }
 
 func isSliceOfStructs(refTypeField reflect.StructField) bool {
