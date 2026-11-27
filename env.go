@@ -576,7 +576,7 @@ func parseFieldParams(field reflect.StructField, opts Options) (FieldParams, err
 	result := FieldParams{
 		OwnKey:          ownKey,
 		Key:             opts.Prefix + ownKey,
-		Required:        opts.RequiredIfNoDef,
+		Required:        opts.RequiredIfNoDef && !hasDefaultValue,
 		DefaultValue:    defaultValue,
 		HasDefaultValue: hasDefaultValue,
 		Ignored:         ownKey == "-",
