@@ -1866,6 +1866,26 @@ func TestGetFieldParams(t *testing.T) {
 	isTrue(t, areEqual(params, expectedParams))
 }
 
+func TestGetFieldParamsRequiredIfNoDef(t *testing.T) {
+	var cfg struct {
+		Address  string `env:"ADDRESS"`
+		Port     string `env:"PORT" envDefault:"8080"`
+		Prefix   string `env:"PREFIX" envDefault:""`
+		Explicit string `env:"EXPLICIT,required" envDefault:"local"`
+	}
+
+	params, err := GetFieldParamsWithOptions(&cfg, Options{RequiredIfNoDef: true})
+	isNoErr(t, err)
+
+	var required []string
+	for _, param := range params {
+		if param.Required {
+			required = append(required, param.Key)
+		}
+	}
+	isEqual(t, []string{"ADDRESS", "EXPLICIT"}, required)
+}
+
 func TestGetFieldParamsWithPrefix(t *testing.T) {
 	var config FieldParamsConfig
 
