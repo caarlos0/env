@@ -458,7 +458,12 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 		}
 	}
 
-	if len(environments) > 0 {
+	initial := reflect.Indirect(ref)
+	var initialized int
+	if initial.IsValid() {
+		initialized = initial.Len()
+	}
+	if len(environments) > 0 || initialized > 0 {
 		counter := 0
 		for finished := false; !finished; {
 			finished = true
@@ -473,14 +478,8 @@ func doParseSlice(ref reflect.Value, processField processFieldFn, opts Options) 
 		}
 
 		sliceType := ref.Type()
-		initial := ref
-		var initialized int
 		if reflect.Pointer == ref.Kind() {
 			sliceType = sliceType.Elem()
-			initial = ref.Elem()
-		}
-		if initial.IsValid() {
-			initialized = initial.Len()
 		}
 
 		var capacity int
